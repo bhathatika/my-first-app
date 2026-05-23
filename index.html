@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Web ePub Creator Pro</title>
-    <!-- Tailwind CSS လှမ်းခေါ်ခြင်း -->
+    <!-- Tailwind CSS -->
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Padauk:wght@400;700&display=swap');
@@ -57,7 +57,7 @@
         <!-- စာအုပ်အချက်အလက်များ -->
         <div class="space-y-4">
             <div>
-                <label id="lblTitle" class="block text-sm font-bold text-gray-400 mb-1">...စာအုပ်အမည် (Book Title)</label>
+                <label id="lblTitle" class="block text-sm font-bold text-gray-400 mb-1">စာအုပ်အမည် (Book Title)</label>
                 <input type="text" id="bookTitle" placeholder="Book Title New" class="w-full p-2.5 rounded bg-gray-950 border border-gray-700 text-white focus:outline-emerald-500">
             </div>
             <div>
@@ -80,18 +80,28 @@
                 <button id="btnAddChapter" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-1 px-3 rounded text-sm transition">+ အခန်းတိုးမည်</button>
             </div>
             <div id="chaptersContainer" class="space-y-3 max-h-72 overflow-y-auto pr-1">
-                <!-- Chapters တိုးလာရင် ဒီနေရာမှာ ပေါ်လာပါမယ် -->
+                <!-- Chapters ပေါ်မည့်နေရာ -->
             </div>
+        </div>
+
+        <!-- 🚀 EPUB GENERATE BUTTON (ပြန်ထည့်ပေးထားသော ခလုတ်) -->
+        <div class="pt-4 border-t border-gray-700">
+            <button id="btnGenerate" class="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white py-3 rounded-xl font-bold transition shadow-lg text-md flex items-center justify-center space-x-2">
+                <span>📥 ePub စာအုပ်ထုတ်မည် (Generate ePub)</span>
+            </button>
         </div>
 
     </div>
 
-    <!-- Firebase Legacy (Compat) SDK များ -->
+    <!-- ePub Generation အတွက် လိုအပ်သော Libraries များ -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/epub-gen-memory/dist/epub-gen-memory.bundle.min.js"></script>
+
+    <!-- Firebase SDK များ -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 
-    <!-- မိမိရဲ့ app.js ကို ချိတ်ဆက်ခြင်း -->
     <script src="app.js"></script>
 </body>
 </html>
