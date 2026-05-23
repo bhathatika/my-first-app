@@ -8,29 +8,34 @@
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Padauk:wght@400;700&display=swap');
-        body { font-family: 'Padauk', sans-serif; }
+        body { font-family: 'Padauk', sans-serif; transition: background-color 0.3s, color 0.3s; }
     </style>
 </head>
-<body class="bg-gray-900 text-gray-100 min-h-screen p-4 flex flex-col items-center">
+<body id="bodyTag" class="bg-gray-900 text-gray-100 min-h-screen p-4 flex flex-col items-center">
 
-    <div class="w-full max-w-md bg-gray-800 rounded-xl p-6 shadow-2xl space-y-6">
+    <div id="mainContainer" class="w-full max-w-md bg-gray-800 rounded-xl p-6 shadow-2xl space-y-6 border border-gray-750">
         
         <!-- Header အပိုင်း -->
         <div class="flex justify-between items-center border-b border-gray-700 pb-4">
             <h1 class="text-2xl font-bold text-emerald-400">🟢 ePub Creator Pro</h1>
-            <button id="authBtn" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-1 px-3 rounded text-sm transition">
-                Sign In
-            </button>
+            <div class="flex items-center space-x-2">
+                <button id="themeBtn" class="bg-gray-700 hover:bg-gray-650 text-white font-bold py-1 px-2.5 rounded text-xs transition">
+                    ☀️ Light Mode
+                </button>
+                <button id="authBtn" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-1 px-3 rounded text-xs transition">
+                    Sign In
+                </button>
+            </div>
         </div>
 
-        <!-- 🔐 Authentication Section (Hidden by default) -->
+        <!-- 🔐 Authentication Section -->
         <div id="authSection" class="hidden bg-gray-750 p-4 rounded-lg border border-gray-700 space-y-3">
             <h3 id="authTitle" class="text-md font-bold text-gray-300">အကောင့်ဝင်ရန် / အကောင့်ဖွင့်ရန်</h3>
             <input type="email" id="emailInput" placeholder="Email လိပ်စာ" class="w-full p-2 rounded bg-gray-700 text-white border border-gray-600 focus:outline-emerald-500 text-sm">
             <input type="password" id="passwordInput" placeholder="Password (အနည်းဆုံး ၆ လုံး)" class="w-full p-2 rounded bg-gray-700 text-white border border-gray-600 focus:outline-emerald-500 text-sm">
             <div class="flex space-x-2">
-                <button id="signInSubmit" class="flex-1 bg-emerald-600 hover:bg-emerald-500 py-1.5 rounded font-bold text-sm">Sign In</button>
-                <button id="signUpSubmit" class="flex-1 bg-blue-600 hover:bg-blue-500 py-1.5 rounded font-bold text-sm">Sign Up</button>
+                <button id="signInSubmit" class="flex-1 bg-emerald-600 hover:bg-emerald-500 py-1.5 rounded font-bold text-sm text-white">Sign In</button>
+                <button id="signUpSubmit" class="flex-1 bg-blue-600 hover:bg-blue-500 py-1.5 rounded font-bold text-sm text-white">Sign Up</button>
             </div>
             <button id="closeAuth" class="w-full text-xs text-gray-400 hover:text-gray-200 mt-1">ပိတ်မည်</button>
         </div>
@@ -41,10 +46,10 @@
         </div>
 
         <!-- 💾 စာအုပ် BACKUP စီမံခန့်ခွဲမှု -->
-        <div class="border border-gray-750 rounded-lg p-4 space-y-3 bg-gray-850">
-            <h2 class="text-center font-bold text-gray-300">💾 စာအုပ် BACKUP စီမံခန့်ခွဲမှု</h2>
-            <button id="btnBackup" class="w-full bg-slate-700 hover:bg-slate-650 py-2 rounded font-bold transition text-sm">📩 လက်ရှိစာအုပ်ကို ဖိုင်သိမ်းမည် (Backup)</button>
-            <button id="btnLoadBackup" class="w-full bg-blue-900 hover:bg-blue-800 py-2 rounded font-bold transition text-sm">📥 စာအုပ်ဟောင်း ပြန်တင်မည် (Load Backup)</button>
+        <div id="backupBox" class="border border-gray-700 rounded-lg p-4 space-y-3 bg-gray-850">
+            <h2 id="backupTitle" class="text-center font-bold text-gray-300">💾 စာအုပ် BACKUP စီမံခန့်ခွဲမှု</h2>
+            <button id="btnBackup" class="w-full bg-slate-700 hover:bg-slate-650 text-white py-2 rounded font-bold transition text-sm">📩 လက်ရှိစာအုပ်ကို ဖိုင်သိမ်းမည် (Backup)</button>
+            <button id="btnLoadBackup" class="w-full bg-blue-900 hover:bg-blue-800 text-white py-2 rounded font-bold transition text-sm">📥 စာအုပ်ဟောင်း ပြန်တင်မည် (Load Backup)</button>
             <input type="file" id="fileInput" class="hidden" accept=".json">
             <button id="btnReset" class="w-full bg-rose-950 hover:bg-rose-900 text-rose-300 py-2 rounded font-bold transition text-sm border border-rose-800">🧹 စာအုပ်အသစ်အတွက် အစကပြန်စမည် (Reset)</button>
         </div>
@@ -52,29 +57,36 @@
         <!-- စာအုပ်အချက်အလက်များ -->
         <div class="space-y-4">
             <div>
-                <label class="block text-sm font-bold text-gray-400 mb-1">စာအုပ်အမည် (Book Title)</label>
-                <input type="text" id="bookTitle" placeholder="Book Title New" class="w-full p-2.5 rounded bg-gray-900 border border-gray-700 focus:outline-emerald-500">
+                <label id="lblTitle" class="block text-sm font-bold text-gray-400 mb-1">...စာအုပ်အမည် (Book Title)</label>
+                <input type="text" id="bookTitle" placeholder="Book Title New" class="w-full p-2.5 rounded bg-gray-950 border border-gray-700 text-white focus:outline-emerald-500">
             </div>
             <div>
-                <label class="block text-sm font-bold text-gray-400 mb-1">စာရေးဆရာ (Author)</label>
-                <input type="text" id="bookAuthor" placeholder="Author Name" class="w-full p-2.5 rounded bg-gray-900 border border-gray-700 focus:outline-emerald-500">
+                <label id="lblAuthor" class="block text-sm font-bold text-gray-400 mb-1">စာရေးဆရာ (Author)</label>
+                <input type="text" id="bookAuthor" placeholder="Author Name" class="w-full p-2.5 rounded bg-gray-950 border border-gray-700 text-white focus:outline-emerald-500">
+            </div>
+            <div>
+                <label id="lblCover" class="block text-sm font-bold text-gray-400 mb-1">မျက်နှာဖုံးပုံ (Cover Image)</label>
+                <div class="flex items-center space-x-3 bg-gray-950 p-2 rounded border border-gray-700">
+                    <input type="file" id="coverInput" accept="image/*" class="text-xs text-gray-400 file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-gray-700 file:text-white hover:file:bg-gray-650">
+                    <img id="coverPreview" class="hidden w-12 h-16 object-cover rounded border border-gray-600 shadow">
+                </div>
             </div>
         </div>
 
         <!-- အခန်းများ Section -->
         <div class="space-y-3">
             <div class="flex justify-between items-center">
-                <h3 class="text-lg font-bold text-gray-300">အခန်းများ (Chapters)</h3>
+                <h3 id="lblChapters" class="text-lg font-bold text-gray-300">အခန်းများ (Chapters)</h3>
                 <button id="btnAddChapter" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-1 px-3 rounded text-sm transition">+ အခန်းတိုးမည်</button>
             </div>
-            <div id="chaptersContainer" class="space-y-3 max-h-60 overflow-y-auto pr-1">
+            <div id="chaptersContainer" class="space-y-3 max-h-72 overflow-y-auto pr-1">
                 <!-- Chapters တိုးလာရင် ဒီနေရာမှာ ပေါ်လာပါမယ် -->
             </div>
         </div>
 
     </div>
 
-    <!-- Firebase Legacy (Compat) SDK များကို လှမ်းခေါ်ခြင်း (Single HTML အတွက် အသင့်တော်ဆုံးဖြစ်သည်) -->
+    <!-- Firebase Legacy (Compat) SDK များ -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
