@@ -111,7 +111,7 @@ function cleanHtmlForXhtml(htmlContent) {
     return clean;
 }
 
-// Base64 မှ Binary Blob ပြောင်းလဲပေးသည့် လုံခြုံစိတ်ချရသော လုပ်ဆောင်ချက်
+// Base64 မှ Binary Blob ပြောင်းလဲပေးသည့် လုပ်ဆောင်ချက်
 function base64ToBlob(base64Str, contentType) {
     const byteCharacters = atob(base64Str);
     const byteArrays = [];
@@ -127,7 +127,7 @@ function base64ToBlob(base64Str, contentType) {
     return new Blob(byteArrays, { type: contentType });
 }
 
-// 🌟 Generate ePub Core Logic (Typo အားလုံးပြင်ဆင်ပြီး ဓာတ်ပုံအားလုံးသိမ်းဆည်းပေးမည့် စနစ်သစ်)
+// 🌟 Generate ePub Core Logic (Regex မှားယွင်းမှု လုံးဝကင်းစင်သွားသော ကုဒ်ဗားရှင်းအသစ်)
 btnGenerate.addEventListener('click', async () => {
     if (chapters.length === 0) {
         alert('ကျေးဇူးပြု၍ အခန်းအနည်းဆုံးတစ်ခု အရင်ထည့်ပါ!');
@@ -160,19 +160,19 @@ btnGenerate.addEventListener('click', async () => {
         let doc = parser.parseFromString(`<div>${ch.content}</div>`, 'text/html');
         let imgs = doc.querySelectorAll('img');
         
-        // 🌟 FIXED: Regex မသုံးတော့ဘဲ Browser Native String Manipulation ဖြင့် စိတ်ချရစွာ ပုံထုတ်ယူခြင်း
+        // 🌟 FIXED: Regex စနစ်ကို လုံးဝဖယ်ထုတ်ပြီး ရိုးရှင်းစိတ်ချရသော ခွဲထုတ်နည်းကို သုံးထားပါသည်
         imgs.forEach((img) => {
             let src = img.getAttribute('src');
             if (src && src.startsWith('data:image')) {
                 imageCounter++;
                 
                 try {
-                    // data:image/png;base64,xxxx စာသားကို ခွဲထုတ်ခြင်း
+                    // data:image/png;base64,xxxx စာသားကို ကော်မာဖြင့် ခွဲထုတ်ခြင်း
                     const parts = src.split(',');
                     const meta = parts[0];
                     const base64Data = parts[1];
                     
-                    // Mime Type နှုတ်ယူခြင်း
+                    // ပုံအမျိုးအစား (Mime Type) ခွဲခြားခြင်း
                     let mimeType = 'image/jpeg'; 
                     if (meta.includes('image/png')) mimeType = 'image/png';
                     if (meta.includes('image/gif')) mimeType = 'image/gif';
@@ -181,12 +181,12 @@ btnGenerate.addEventListener('click', async () => {
                     let ext = mimeType.split('/')[1];
                     let imgFilename = `img_${imageCounter}.${ext}`;
                     
-                    // Blob ပြောင်းပြီး zip ထဲထည့်ခြင်း
+                    // Binary Blob သို့ပြောင်းပြီး zip ဖိုင်ထဲ ထည့်သွင်းခြင်း
                     let imgBlob = base64ToBlob(base64Data, mimeType);
                     imagesFolder.file(imgFilename, imgBlob);
                     manifestImages += `<item id="img${imageCounter}" href="images/${imgFilename}" media-type="${mimeType}"/>\n`;
                     
-                    // <p> tag mismatch ပြဿနာကို တရားဝင် ခွဲထုတ်ပြင်ဆင်ခြင်း
+                    // <p> tag mismatch မဖြစ်စေရန် သီးသန့် div ထဲ ထည့်ခြင်း
                     let parentP = img.closest('p');
                     
                     let newImg = document.createElement('img');
@@ -205,7 +205,7 @@ btnGenerate.addEventListener('click', async () => {
                         img.parentNode.replaceChild(imgContainer, img);
                     }
                 } catch(e) {
-                    console.error("Image splitting failed: ", e);
+                    console.error("Image processing error: ", e);
                 }
             }
         });
@@ -313,7 +313,7 @@ fileInput.addEventListener('change', (e) => {
 
 // Reset Form
 btnReset.addEventListener('click', () => {
-    if(confirm('စာအုပ်အသစ်စရန် သေချက်ပါသလား? ရှိသမျှစာများ ပျက်ပါမည်။')) {
+    if(confirm('စာအုပ်အသစ်စရန် သေချာပါသလား? ရှိသမျှစာများ ပျက်ပါမည်။')) {
         document.getElementById('bookTitle').value = '';
         document.getElementById('bookAuthor').value = '';
         chapters = [];
