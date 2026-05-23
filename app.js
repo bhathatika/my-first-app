@@ -1,4 +1,4 @@
-// APP VERSION: 4.5.1 (Fixed Syntax Error - Split UI System)
+// APP VERSION: 4.5.2 (Fixed First-Load Overwrite & Quill Sync Bug)
 const firebaseConfig = {
   apiKey: "AIzaSyByguLw2U9d1nEIOUiPNHcOkYkBaMhR_Qk",
   authDomain: "epub-creator-pro.firebaseapp.com",
@@ -23,6 +23,7 @@ let currentUser = null;
 let coverBase64 = "";
 let isLightMode = false;
 let globalQuill = null;
+let isSettingEditorContent = false; // Prevent auto-save loop during program loading
 
 // DOM Elements
 const bodyTag = document.getElementById('bodyTag');
@@ -48,7 +49,7 @@ const userInfoStatus = document.getElementById('userInfoStatus');
 const userEmailDisplay = document.getElementById('userEmailDisplay');
 const btnGenerate = document.getElementById('btnGenerate');
 
-// Initialize Global Quill Editor
+// Initialize Global Quill Editor Securely
 function initGlobalEditor() {
     if (globalQuill) return;
     globalQuill = new Quill('#global-quill-editor', {
@@ -64,8 +65,9 @@ function initGlobalEditor() {
         }
     });
 
-    // Editor Content Auto Save
+    // Editor Content Auto Save with Guard Flag
     globalQuill.on('text-change', () => {
+        if (isSettingEditorContent) return; // Skip save if the program is just setting up data
         if (selectedChapterIndex !== null && chaptersData[selectedChapterIndex]) {
             chaptersData[selectedChapterIndex].content = globalQuill.root.innerHTML;
             saveData();
@@ -91,7 +93,9 @@ if (activeChTitle) {
 if (btnClearContent) {
     btnClearContent.addEventListener('click', () => {
         if (selectedChapterIndex !== null && confirm("ဤအခန်းတွင်းရှိ စာသားအားလုံးကို ဖျက်ရန် သေချာပါသလား။")) {
+            isSettingEditorContent = true;
             globalQuill.root.innerHTML = "";
+            isSettingEditorContent = false;
             chaptersData[selectedChapterIndex].content = "";
             saveData();
         }
@@ -286,8 +290,11 @@ if (btnAddChapter) {
 window.selectChapter = function(index) {
     if (index === null || index < 0 || index >= chaptersData.length) return;
     selectedChapterIndex = index;
+    
+    // 1. Ensure Editor is Initialized first
     initGlobalEditor();
 
+    // 2. Visual highlight updates
     chaptersData.forEach((_, idx) => {
         const item = document.getElementById(`ch-item-${idx}`);
         if (item) {
@@ -299,16 +306,20 @@ window.selectChapter = function(index) {
         }
     });
 
+    // 3. Set content securely using Guard Flag to prevent auto-wipeout
     if (activeEditorSection) activeEditorSection.classList.remove('hidden');
     if (activeChTitle) activeChTitle.value = chaptersData[index].title.includes("အခန်းခေါင်းစဉ်မရှိ") ? "" : chaptersData[index].title;
+    
     if (globalQuill) {
-        globalQuill.root.innerHTML = chaptersData[index].content || "";
+        isSettingEditorContent = true; // Turn flag ON
+        globalQuill.root.innerHTML = chaptersData[index].content || "<div></div>";
+        setTimeout(() => { isSettingEditorContent = false; }, 100); // Turn flag OFF safely
     }
 };
 
 window.deleteChapter = function(event, index) {
     event.stopPropagation();
-    if (confirm("ဤအခန်းကို ဖျက်ပစ်ရန် သေချာပါသလား။")) {
+    if (confirm("ဤအခန်းကို ဖျက်ပစ်ရန် သေချက်ပါသလား။")) {
         chaptersData.splice(index, 1);
         renderChaptersList();
         if (chaptersData.length > 0) {
@@ -329,6 +340,10 @@ if (bookAuthorInput) bookAuthorInput.addEventListener('input', saveData);
 const btnBackup = document.getElementById('btnBackup');
 if (btnBackup) {
     btnBackup.addEventListener('click', () => {
+        // Sync current editor before export
+        if (selectedChapterIndex !== null && globalQuill) {
+            chaptersData[selectedChapterIndex].content = globalQuill.root.innerHTML;
+        }
         const titleValue = bookTitleInput ? bookTitleInput.value : 'untitled';
         const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(getAppData()));
         const dl = document.createElement('a');
@@ -372,6 +387,12 @@ if (btnReset) {
 // --- 📥 NATIVE EPUB GENERATION SYSTEM ---
 if (btnGenerate) {
     btnGenerate.addEventListener('click', async () => {
+        // CRITICAL SYNC: Ensure current editing chapter is saved into data structure before export
+        if (selectedChapterIndex !== null && globalQuill) {
+            chaptersData[selectedChapterIndex].content = globalQuill.root.innerHTML;
+            saveData();
+        }
+
         const data = getAppData();
         if (!data.title) return alert("စာအုပ်ခေါင်းစဉ် အရင်ဖြည့်ပါဗျာ။");
         if (!window.JSZip) return alert("JSZip Library မပွင့်သေးပါ၊ အင်တာနက်လိုင်း ပြန်စစ်ပေးပါ။");
@@ -505,7 +526,7 @@ if (btnGenerate) {
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
             
-            alert("🎉 ePub စာအုပ်ကို စနစ်သစ်အတိုင်း အောင်မြင်စွာ ထုတ်လုပ်ပြီးပါပြီဗျာ!");
+            alert("🎉 ePub စာအုပ်ကို စနစ်သစ်အတိုင်း (စာသားများအပြည့်အစုံဖြင့်) အောင်မြင်စွာ ထုတ်လုပ်ပြီးပါပြီဗျာ!");
         } catch (err) {
             console.error(err);
             alert("အမှားဖြစ်သွားပါသည်: " + err.message);
