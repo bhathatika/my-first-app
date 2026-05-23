@@ -102,16 +102,18 @@ function selectChapter(idx) {
     activeEditorSection.scrollIntoView({ behavior: 'smooth' });
 }
 
-// XHTML ကို Clean လုပ်ပေးမည့် Utility
+// XHTML စနစ်ညှပ်ချက်များနှင့် ကိုက်ညီအောင် လုံခြုံစွာ ပြင်ဆင်ပေးသည့် စနစ်
 function cleanHtmlForXhtml(htmlContent) {
     if (!htmlContent) return '<p></p>';
     let clean = htmlContent;
+    // self-closing tag မဖြစ်ခဲ့ရင် <br/> ပြောင်းပေးခြင်း
     clean = clean.replace(/<br\s*\/?>/gi, '<br/>');
+    // စာလုံးခြားကွက်များကို XML Entity ပြောင်းလဲခြင်း
     clean = clean.replace(/&nbsp;/g, '&#160;');
     return clean;
 }
 
-// Base64 မှ Binary Blob ပြောင်းလဲပေးသည့် လုပ်ဆောင်ချက်
+// Base64 မှ Binary Blob သို့ ပြောင်းလဲပေးခြင်း
 function base64ToBlob(base64Str, contentType) {
     const byteCharacters = atob(base64Str);
     const byteArrays = [];
@@ -127,7 +129,7 @@ function base64ToBlob(base64Str, contentType) {
     return new Blob(byteArrays, { type: contentType });
 }
 
-// 🌟 Generate ePub Core Logic (Regex မှားယွင်းမှု လုံးဝကင်းစင်သွားသော ကုဒ်ဗားရှင်းအသစ်)
+// 🌟 Generate ePub Core Logic (Tag Mismatch လုံးဝမဖြစ်စေမည့် ဗားရှင်းသစ်)
 btnGenerate.addEventListener('click', async () => {
     if (chapters.length === 0) {
         alert('ကျေးဇူးပြု၍ အခန်းအနည်းဆုံးတစ်ခု အရင်ထည့်ပါ!');
@@ -157,22 +159,20 @@ btnGenerate.addEventListener('click', async () => {
         spineChapters += `<itemref idref="ch${idx}"/>\n`;
         
         let parser = new DOMParser();
+        // XMLParser Error ကင်းဝေးစေရန် စနစ်တကျ Parse လုပ်ခြင်း
         let doc = parser.parseFromString(`<div>${ch.content}</div>`, 'text/html');
         let imgs = doc.querySelectorAll('img');
         
-        // 🌟 FIXED: Regex စနစ်ကို လုံးဝဖယ်ထုတ်ပြီး ရိုးရှင်းစိတ်ချရသော ခွဲထုတ်နည်းကို သုံးထားပါသည်
         imgs.forEach((img) => {
             let src = img.getAttribute('src');
             if (src && src.startsWith('data:image')) {
                 imageCounter++;
                 
                 try {
-                    // data:image/png;base64,xxxx စာသားကို ကော်မာဖြင့် ခွဲထုတ်ခြင်း
                     const parts = src.split(',');
                     const meta = parts[0];
                     const base64Data = parts[1];
                     
-                    // ပုံအမျိုးအစား (Mime Type) ခွဲခြားခြင်း
                     let mimeType = 'image/jpeg'; 
                     if (meta.includes('image/png')) mimeType = 'image/png';
                     if (meta.includes('image/gif')) mimeType = 'image/gif';
@@ -181,29 +181,19 @@ btnGenerate.addEventListener('click', async () => {
                     let ext = mimeType.split('/')[1];
                     let imgFilename = `img_${imageCounter}.${ext}`;
                     
-                    // Binary Blob သို့ပြောင်းပြီး zip ဖိုင်ထဲ ထည့်သွင်းခြင်း
                     let imgBlob = base64ToBlob(base64Data, mimeType);
                     imagesFolder.file(imgFilename, imgBlob);
                     manifestImages += `<item id="img${imageCounter}" href="images/${imgFilename}" media-type="${mimeType}"/>\n`;
                     
-                    // <p> tag mismatch မဖြစ်စေရန် သီးသန့် div ထဲ ထည့်ခြင်း
-                    let parentP = img.closest('p');
-                    
+                    // 🌟 FIXED: <p> tag mismatch မဖြစ်စေရန် မူရင်းနေရာမှာတင် တိုက်ရိုက်အစားထိုးပြီး 
+                    // XHTML-compliant ဖြစ်အောင် <img /> ကို စနစ်တကျ ပိတ်ပေးပါသည်
                     let newImg = document.createElement('img');
                     newImg.setAttribute('src', `images/${imgFilename}`);
                     newImg.setAttribute('alt', `Image ${imageCounter}`);
+                    newImg.className = 'epub-img';
                     
-                    let imgContainer = document.createElement('div');
-                    imgContainer.className = 'img-container';
-                    imgContainer.appendChild(newImg);
-                    
-                    if (parentP) {
-                        parentP.parentNode.insertBefore(imgContainer, parentP.nextSibling);
-                        img.remove();
-                        if (parentP.innerHTML.trim() === '') parentP.remove();
-                    } else {
-                        img.parentNode.replaceChild(imgContainer, img);
-                    }
+                    // မူရင်း Base64 ပုံနေရာမှာ အသစ်ပြောင်းလဲထားတဲ့ ပုံလမ်းကြောင်းနဲ့ အစားထိုးလဲလှယ်ခြင်း
+                    img.parentNode.replaceChild(newImg, img);
                 } catch(e) {
                     console.error("Image processing error: ", e);
                 }
@@ -222,8 +212,7 @@ btnGenerate.addEventListener('click', async () => {
         body { font-family: sans-serif; padding: 1em; line-height: 1.6; color: #000000; background-color: #ffffff; }
         h1 { text-align: center; color: #111111; font-size: 1.5em; margin-bottom: 1em; }
         p { margin-bottom: 0.8em; text-align: justify; }
-        .img-container { text-align: center; margin: 1.5em 0; display: block; width: 100%; }
-        .img-container img { max-width: 100%; height: auto; display: inline-block; }
+        .epub-img { max-width: 100%; height: auto; display: block; margin: 1.5em auto; text-align: center; }
     </style>
 </head>
 <body>
