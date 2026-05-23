@@ -1,4 +1,4 @@
-// APP VERSION: 4.1.0 (Fixed Syntax Errors)
+// APP VERSION: 4.2.0 (Fixed Refresh data loss & HTML tags preservation)
 const firebaseConfig = {
   apiKey: "AIzaSyByguLw2U9d1nEIOUiPNHcOkYkBaMhR_Qk",
   authDomain: "epub-creator-pro.firebaseapp.com",
@@ -128,26 +128,6 @@ auth.onAuthStateChanged(user => {
     }
 });
 
-// --- ✨ HTML TAG REMOVER ---
-function cleanHtmlToText(htmlString) {
-    if (!htmlString) return "";
-    const tempDiv = document.createElement("div");
-    tempDiv.innerHTML = htmlString;
-    
-    const paragraphs = tempDiv.querySelectorAll("p, br");
-    paragraphs.forEach(el => {
-        if(el.tagName.toLowerCase() === 'br') {
-            el.parentNode.insertBefore(document.createTextNode("\n"), el);
-            el.parentNode.removeChild(el);
-        } else if(el.tagName.toLowerCase() === 'p') {
-            el.appendChild(document.createTextNode("\n"));
-        }
-    });
-    
-    let textResult = tempDiv.textContent || tempDiv.innerText || "";
-    return textResult.trim();
-}
-
 // --- 💾 DATA SYSTEM ---
 function getAppData() {
     const dataChapters = [];
@@ -191,6 +171,7 @@ function loadDataFromCloud() {
 
 function renderApp(jsonData) {
     try {
+        if (!jsonData) return;
         const data = JSON.parse(jsonData);
         if (bookTitleInput) bookTitleInput.value = data.title || "";
         if (bookAuthorInput) bookAuthorInput.value = data.author || "";
@@ -209,8 +190,8 @@ function renderApp(jsonData) {
             
             if(data.chapters && data.chapters.length > 0) {
                 data.chapters.forEach(ch => {
-                    let cleanedContent = cleanHtmlToText(ch.content);
-                    addChapter(ch.title, cleanedContent, ch.imgBase64);
+                    // ကပ်ပါလာတဲ့ စာသားတွေကို တိုက်ရိုက် ထည့်သွင်းပေးလိုက်ပါတယ် (အမှားမတက်စေရန် လုံခြုံရေးတိုးမြှင့်ထား)
+                    addChapter(ch.title || "", ch.content || "", ch.imgBase64 || "");
                 });
             } else {
                 addChapter();
@@ -218,6 +199,8 @@ function renderApp(jsonData) {
         }
     } catch (e) {
         console.error("Render error:", e);
+        // အကယ်၍ အမှားတစ်ခုခုတက်ရင်တောင် အခန်းအလွတ်တစ်ခု ဖွင့်ပေးပါတယ်
+        if (chaptersContainer && chaptersContainer.innerHTML === "") addChapter();
     }
 }
 
@@ -238,7 +221,7 @@ function addChapter(title = "", content = "", imgBase64 = "") {
             <span class="text-xs font-bold text-emerald-500">အခန်း - ${index + 1}</span>
         </div>
         
-        <input type="text" id="chTitle-${index}" value="${title}" placeholder="အခန်းခေါင်းစဉ်" class="w-full p-2 bg-gray-950 rounded text-sm text-white border border-gray-700 focus:outline-emerald-500">
+        <input type="text" id="chTitle-${index}" placeholder="အခန်းခေါင်းစဉ်" class="w-full p-2 bg-gray-950 rounded text-sm text-white border border-gray-700 focus:outline-emerald-500">
         
         <div class="space-y-1">
             <label class="block text-xs font-bold text-gray-400">📷 အခန်းတွင်းထည့်မည့် ဓာတ်ပုံ (Optional)</label>
@@ -248,10 +231,16 @@ function addChapter(title = "", content = "", imgBase64 = "") {
             </div>
         </div>
 
-        <textarea id="chContent-${index}" rows="5" placeholder="စာသားများ ရေးသားရန်..." class="w-full p-2 bg-gray-950 rounded text-sm text-white border border-gray-700 focus:outline-emerald-500">${content}</textarea>
+        <textarea id="chContent-${index}" rows="5" placeholder="စာသားများ ရေးသားရန်..." class="w-full p-2 bg-gray-950 rounded text-sm text-white border border-gray-700 focus:outline-emerald-500"></textarea>
     `;
     
     chaptersContainer.appendChild(chBox);
+
+    // Value တွေကို တိုက်ရိုက်စိတ်ချရအောင် ပြန်ထည့်ပေးခြင်း
+    const tIn = document.getElementById(`chTitle-${index}`);
+    const cIn = document.getElementById(`chContent-${index}`);
+    if (tIn) tIn.value = title;
+    if (cIn) cIn.value = content;
 
     const chImgInput = document.getElementById(`chImgInput-${index}`);
     const chImgPreview = document.getElementById(`chImgPreview-${index}`);
@@ -274,8 +263,6 @@ function addChapter(title = "", content = "", imgBase64 = "") {
         });
     }
 
-    const tIn = document.getElementById(`chTitle-${index}`);
-    const cIn = document.getElementById(`chContent-${index}`);
     if (tIn) tIn.addEventListener('input', saveData);
     if (cIn) cIn.addEventListener('input', saveData);
 }
@@ -392,7 +379,9 @@ if (btnGenerate) {
                     } catch(e) { console.error("ch img error", e); }
                 }
 
-                const paragraphsHtml = ch.content
+                // ePub ထုတ်တဲ့အခါ စာသားထဲက HTML code တွေကို ဖယ်ပြီး သန့်စင်ပေးခြင်း
+                const cleanText = ch.content ? ch.content.replace(/<\/?[^>]+(>|$)/g, "") : "";
+                const paragraphsHtml = cleanText
                     .split('\n')
                     .map(p => p.trim() ? `<p style="text-indent:1.5em; margin:0.5em 0; line-height:1.6;">${p.trim()}</p>` : '')
                     .join('');
@@ -461,7 +450,7 @@ if (btnGenerate) {
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
             
-            alert("🎉 ဓာတ်ပုံများပါဝင်သော ePub စာအုပ်ကို အောင်မြင်စွာ ထုတ်လုပ်ပြီးပါပြီဗျာ!");
+            alert("🎉 ePub Сာအုပ်ကို အောင်မြင်စွာ ထုတ်လုပ်ပြီးပါပြီဗျာ!");
         } catch (err) {
             console.error(err);
             alert("အမှားဖြစ်သွားပါသည်: " + err.message);
