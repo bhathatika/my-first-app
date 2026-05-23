@@ -139,8 +139,8 @@ function getAppData() {
         cover: coverBase64,
         chapters: chapters.map((ch, index) => ({
             id: index + 1,
-            title: document.getElementById(`chTitle-${index}`).value,
-            content: document.getElementById(`chContent-${index}`).value
+            title: document.getElementById(`chTitle-${index}`) ? document.getElementById(`chTitle-${index}`).value : "",
+            content: document.getElementById(`chContent-${index}`) ? document.getElementById(`chContent-${index}`).value : ""
         }))
     };
 }
@@ -178,25 +178,32 @@ function loadDataFromCloud() {
 }
 
 function renderApp(jsonData) {
-    const data = JSON.parse(jsonData);
-    bookTitleInput.value = data.title || "";
-    bookAuthorInput.value = data.author || "";
-    
-    if (data.cover) {
-        coverBase64 = data.cover;
-        coverPreview.src = coverBase64;
-        coverPreview.classList.remove('hidden');
-    } else {
-        coverBase64 = "";
-        coverPreview.classList.add('hidden');
-    }
+    try {
+        const data = JSON.parse(jsonData);
+        bookTitleInput.value = data.title || "";
+        bookAuthorInput.value = data.author || "";
+        
+        if (data.cover) {
+            coverBase64 = data.cover;
+            coverPreview.src = coverBase64;
+            coverPreview.classList.remove('hidden');
+        } else {
+            coverBase64 = "";
+            coverPreview.classList.add('hidden');
+        }
 
-    chaptersContainer.innerHTML = "";
-    chapters = [];
-    if(data.chapters && data.chapters.length > 0) {
-        data.chapters.forEach(ch => addChapter(ch.title, ch.content));
-    } else {
-        addChapter();
+        chaptersContainer.innerHTML = "";
+        chapters = [];
+        
+        if(data.chapters && data.chapters.length > 0) {
+            data.chapters.forEach(ch => {
+                addChapter(ch.title, ch.content);
+            });
+        } else {
+            addChapter();
+        }
+    } catch (e) {
+        console.error("Render error:", e);
     }
 }
 
@@ -218,6 +225,7 @@ function addChapter(title = "", content = "") {
     
     chaptersContainer.appendChild(chBox);
 
+    // Event Listener များကို ပုံသေချိတ်ဆက်ခြင်း
     document.getElementById(`chTitle-${index}`).addEventListener('input', saveData);
     document.getElementById(`chContent-${index}`).addEventListener('input', saveData);
 }
@@ -237,14 +245,16 @@ document.getElementById('btnBackup').addEventListener('click', () => {
     downloadAnchor.remove();
 });
 
-document.getElementById('btnLoadBackup').addEventListener('click', () => document.getElementById('fileInput').click());
+document.getElementById('btnLoadBackup').addEventListener('click', () => {
+    document.getElementById('fileInput').click();
+});
 
 document.getElementById('fileInput').addEventListener('change', (e) => {
     const file = e.target.files[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = function(e) {
-        renderApp(e.target.result);
+    reader.onload = function(evt) {
+        renderApp(evt.target.result);
         saveData();
         alert("Backup ဖိုင်ကို အောင်မြင်စွာ ပြန်တင်ပြီးပါပြီ။");
     };
@@ -255,7 +265,7 @@ document.getElementById('btnReset').addEventListener('click', () => {
     if(confirm("လက်ရှိ ရေးလက်စများကို ဖျက်ပြီး အစက ပြန်စမှာ သေချက်ပါသလား။")) {
         localStorage.removeItem('epub_creator_data');
         bookTitleInput.value = "";
-        bookAuthorInput.value = ""; // ဒီနေရာမှာ စာလုံးပေါင်း ပြင်လိုက်ပါပြီဗျာ
+        bookAuthorInput.value = "";
         coverBase64 = "";
         coverPreview.classList.add('hidden');
         coverInput.value = "";
