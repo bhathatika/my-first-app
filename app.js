@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
             toolbar: [
                 ['bold', 'italic', 'underline'],
                 [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                ['clean']
+                ['image', 'clean'] // Image Tool ကိုပါ အသေအချာ ထည့်သွင်းထားပါတယ်
             ]
         }
     });
@@ -102,25 +102,32 @@ function selectChapter(idx) {
     activeEditorSection.scrollIntoView({ behavior: 'smooth' });
 }
 
-// 🌟 FIXED: HTML ကို ePub Reader တွေဖတ်နိုင်မယ့် Strict XHTML/XML Format သို့ ပြောင်းပေးမည့် Utility
+// XHTML ကို Clean လုပ်ပေးမည့် Utility
 function cleanHtmlForXhtml(htmlContent) {
     if (!htmlContent) return '<p></p>';
-    
     let clean = htmlContent;
-    
-    // <br> တွေကို <br/> ဖြစ်အောင် ပြောင်းလဲခြင်း
     clean = clean.replace(/<br\s*\/?>/gi, '<br/>');
-    
-    // <img> တွေကို <img /> ဖြစ်အောင် ပြောင်းလဲခြင်း
-    clean = clean.replace(/<img([^>]*)\s*\/?>/gi, '<img$1/>');
-    
-    // HTML Entity များ လုံခြုံမှုရှိစေရန်
     clean = clean.replace(/&nbsp;/g, '&#160;');
-    
     return clean;
 }
 
-// Generate ePub Core Logic
+// Base64 စာသားမှ ePub အသိအမှတ်ပြု Binary Blob သို့ ပြောင်းပေးသည့် လုပ်ဆောင်ချက်
+function base64ToBlob(base64Str, contentType) {
+    const byteCharacters = atob(base64Str);
+    const byteArrays = [];
+    for (let offset = 0; offset < byteCharacters.length; offset += 512) {
+        const slice = byteCharacters.slice(offset, offset + 512);
+        const byteNumbers = new Array(slice.length);
+        for (let i = 0; i < slice.length; i++) {
+            byteNumbers[i] = slice.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        byteArrays.push(byteArray);
+    }
+    return new Blob(byteArrays, { type: contentType });
+}
+
+// 🌟 Generate ePub Core Logic (ဓာတ်ပုံများခွဲထုတ်စနစ် အပြည့်အစုံ)
 btnGenerate.addEventListener('click', async () => {
     if (chapters.length === 0) {
         alert('ကျေးဇူးပြု၍ အခန်းအနည်းဆုံးတစ်ခု အရင်ထည့်ပါ!');
@@ -137,16 +144,53 @@ btnGenerate.addEventListener('click', async () => {
     metaInf.file("container.xml", `<?xml version="1.0"?><container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container"><rootfiles><rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/></rootfiles></container>`);
     
     const oebps = zip.folder("OEBPS");
+    const imagesFolder = oebps.folder("images"); // ePub အတွင်း ဓာတ်ပုံများသိမ်းဆည်းမည့် Folder
     
     let manifestChapters = '';
+    let manifestImages = '';
     let spineChapters = '';
+    let imageCounter = 0;
     
-    chapters.forEach((ch, idx) => {
+    // အခန်းတစ်ခုချင်းစီကို ပတ်ပြီး စစ်ဆေးခြင်း
+    for (let idx = 0; idx < chapters.length; idx++) {
+        let ch = chapters[idx];
         manifestChapters += `<item id="ch${idx}" href="ch${idx}.xhtml" media-type="application/xhtml+xml"/>\n`;
         spineChapters += `<itemref idref="ch${idx}"/>\n`;
         
-        // စာသားများကို Strict XML Format သို့ ရှင်းလင်းပြီးမှ ထည့်သွင်းခြင်း
-        const cleanedContent = cleanHtmlForXhtml(ch.content);
+        // ကွန်တိန်နာအသွင်ပြောင်းလဲပြီး ဓာတ်ပုံများကို ရှာဖွေဆွဲထုတ်ခြင်း
+        let parser = new DOMParser();
+        let doc = parser.parseFromString(`<div>${ch.content}</div>`, 'text/html');
+        let imgs = doc.querySelectorAll('img');
+        
+        imgs.forEach((img) => {
+            let src = img.getAttribute('src');
+            // Base64 Data စစ်စစ်ဖြစ်ပါက ခွဲထုတ်မည်
+            if (src && src.startsWith('data:image')) {
+                imageCounter++;
+                let match = src.match(/^data:(image\/[a-zA-Z+.-]+);base64,(.+)$/);
+                if (match) {
+                    let mimeType = match[1];
+                    let base64Data = match[2];
+                    let ext = mimeType.split('/')[1] || 'jpg';
+                    let imgFilename = `img_${imageCounter}.${ext}`;
+                    
+                    // Binary Blob ပြောင်းလဲပြီး Zip ဖိုင်ထဲ ထည့်သွင်းခြင်း
+                    let imgBlob = base64ToBlob(base64Data, mimeType);
+                    imagesFolder.file(imgFilename, imgBlob);
+                    
+                    // Manifest ထဲတွင် ပုံကို မှတ်ပုံတင်ခြင်း
+                    manifestImages += `<item id="img${imageCounter}" href="images/${imgFilename}" media-type="${mimeType}"/>\n`;
+                    
+                    // XHTML ကုဒ်အတွင်းရှိ src လမ်းကြောင်းကို ပြောင်းလဲပေးခြင်း
+                    img.setAttribute('src', `images/${imgFilename}`);
+                    img.setAttribute('alt', `Image ${imageCounter}`);
+                }
+            }
+        });
+        
+        // ပြန်လည်သန့်စင်ထားသော HTML ကို ရယူခြင်း
+        let processedHtml = doc.querySelector('div').innerHTML;
+        let cleanedContent = cleanHtmlForXhtml(processedHtml);
         
         const contentHtml = `<?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
@@ -157,6 +201,7 @@ btnGenerate.addEventListener('click', async () => {
         body { font-family: sans-serif; padding: 1em; line-height: 1.6; color: #000000; background-color: #ffffff; }
         h1 { text-align: center; color: #111111; font-size: 1.5em; margin-bottom: 1em; }
         p { margin-bottom: 0.8em; text-align: justify; }
+        img { max-width: 100%; height: auto; display: block; margin: 1.5em auto; }
     </style>
 </head>
 <body>
@@ -165,7 +210,7 @@ btnGenerate.addEventListener('click', async () => {
 </body>
 </html>`;
         oebps.file(`ch${idx}.xhtml`, contentHtml);
-    });
+    }
     
     const opfContent = `<?xml version="1.0" encoding="utf-8"?>
 <package xmlns="http://www.idpf.org/2007/opf" unique-identifier="bookid" version="2.0">
@@ -178,6 +223,7 @@ btnGenerate.addEventListener('click', async () => {
 <manifest>
     <item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>
     ${manifestChapters}
+    ${manifestImages}
 </manifest>
 <spine toc="ncx">
     ${spineChapters}
