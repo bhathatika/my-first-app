@@ -16,7 +16,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Quill ထဲ စာရိုက်ရင် Data ထဲ ချက်ချင်းသိမ်းမယ်
     quill.on('text-change', () => {
         if (activeChapterIndex !== null && chapters[activeChapterIndex]) {
             chapters[activeChapterIndex].content = quill.root.innerHTML;
@@ -35,7 +34,6 @@ const btnLoadBackup = document.getElementById('btnLoadBackup');
 const fileInput = document.getElementById('fileInput');
 const btnReset = document.getElementById('btnReset');
 
-// Add Chapter Event
 btnAddChapter.addEventListener('click', () => {
     const newChapter = {
         title: `အခန်း (${chapters.length + 1})`,
@@ -46,7 +44,6 @@ btnAddChapter.addEventListener('click', () => {
     selectChapter(chapters.length - 1);
 });
 
-// Active Chapter Title Sync
 activeChTitle.addEventListener('input', (e) => {
     if (activeChapterIndex !== null && chapters[activeChapterIndex]) {
         chapters[activeChapterIndex].title = e.target.value;
@@ -55,7 +52,6 @@ activeChTitle.addEventListener('input', (e) => {
     }
 });
 
-// Render Chapters List
 function renderChapters() {
     chaptersListContainer.innerHTML = '';
     chapters.forEach((ch, idx) => {
@@ -70,10 +66,8 @@ function renderChapters() {
             <button class="text-rose-400 hover:text-rose-300 font-bold px-2 py-1 text-sm btn-delete">&times;</button>
         `;
 
-        // Click to Select
         div.querySelector('.ch-title-text').addEventListener('click', () => selectChapter(idx));
         
-        // Click to Delete
         div.querySelector('.btn-delete').addEventListener('click', (e) => {
             e.stopPropagation();
             if(confirm('ဤအခန်းကို ဖျက်ရန် သေချာပါသလား?')) {
@@ -93,24 +87,37 @@ function renderChapters() {
     });
 }
 
-// Select Chapter function
 function selectChapter(idx) {
     if (idx < 0 || idx >= chapters.length) return;
     activeChapterIndex = idx;
     
-    // Highlight Active
     renderChapters();
-
     activeEditorSection.classList.remove('hidden');
     activeChTitle.value = chapters[idx].title;
     
-    // Set content to Quill
     if (quill) {
         quill.root.innerHTML = chapters[idx].content || '';
     }
     
-    // Auto-scroll screen down smoothly to view editor
     activeEditorSection.scrollIntoView({ behavior: 'smooth' });
+}
+
+// 🌟 FIXED: HTML ကို ePub Reader တွေဖတ်နိုင်မယ့် Strict XHTML/XML Format သို့ ပြောင်းပေးမည့် Utility
+function cleanHtmlForXhtml(htmlContent) {
+    if (!htmlContent) return '<p></p>';
+    
+    let clean = htmlContent;
+    
+    // <br> တွေကို <br/> ဖြစ်အောင် ပြောင်းလဲခြင်း
+    clean = clean.replace(/<br\s*\/?>/gi, '<br/>');
+    
+    // <img> တွေကို <img /> ဖြစ်အောင် ပြောင်းလဲခြင်း
+    clean = clean.replace(/<img([^>]*)\s*\/?>/gi, '<img$1/>');
+    
+    // HTML Entity များ လုံခြုံမှုရှိစေရန်
+    clean = clean.replace(/&nbsp;/g, '&#160;');
+    
+    return clean;
 }
 
 // Generate ePub Core Logic
@@ -138,11 +145,24 @@ btnGenerate.addEventListener('click', async () => {
         manifestChapters += `<item id="ch${idx}" href="ch${idx}.xhtml" media-type="application/xhtml+xml"/>\n`;
         spineChapters += `<itemref idref="ch${idx}"/>\n`;
         
+        // စာသားများကို Strict XML Format သို့ ရှင်းလင်းပြီးမှ ထည့်သွင်းခြင်း
+        const cleanedContent = cleanHtmlForXhtml(ch.content);
+        
         const contentHtml = `<?xml version="1.0" encoding="utf-8"?>
-<!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml">
-<head><title>${ch.title}</title><style>body{font-family:sans-serif;padding:1em;line-height:1.6;}h1{text-align:center;}</style></head>
-<body><h1>${ch.title}</h1><div>${ch.content}</div></body>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="my">
+<head>
+    <title>${ch.title}</title>
+    <style>
+        body { font-family: sans-serif; padding: 1em; line-height: 1.6; color: #000000; background-color: #ffffff; }
+        h1 { text-align: center; color: #111111; font-size: 1.5em; margin-bottom: 1em; }
+        p { margin-bottom: 0.8em; text-align: justify; }
+    </style>
+</head>
+<body>
+    <h1>${ch.title}</h1>
+    <div>${cleanedContent}</div>
+</body>
 </html>`;
         oebps.file(`ch${idx}.xhtml`, contentHtml);
     });
