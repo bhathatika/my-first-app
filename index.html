@@ -22,14 +22,14 @@
         .bg-gray-900 .ql-toolbar .ql-stroke { stroke: #e5e7eb; }
         .bg-gray-900 .ql-toolbar .ql-fill { fill: #e5e7eb; }
         .bg-gray-900 .ql-toolbar .ql-picker { color: #e5e7eb; }
-        .ql-container.ql-snow { border-bottom-left-radius: 0.5rem; border-bottom-right-radius: 0.5rem; overflow: hidden; }
+        .ql-container.ql-snow { border-bottom-left-radius: 0.5rem; border-bottom-right-radius: 0.5rem; }
         .bg-gray-900 .ql-container.ql-snow { background-color: #1f2937; border-color: #4b5563; }
         
-        /* စာရှိရှိ မရှိရှိ စာရိုက်ကွက်ကို လေးထောင့်ကွက် အပုံသေဖြစ်စေမည့်အပိုင်း */
+        /* FIXED: ဗီဒီယိုထဲကအတိုင်း စာရိုက်ကွက်ကို စာရှိသလောက် အောက်ကို လိုက်ဆန့်ပေးမည့်ပုံစံ */
         .ql-editor { 
-            min-height: 350px !important; /* စာမရှိလည်း အနည်းဆုံး ဒီအမြင့်အတိုင်း ရှိနေပါမယ် */
-            max-height: 450px !important; /* စာတွေအများကြီးရိုက်ရင် အောက်ကို အရှည်ကြီး ထပ်မဆန့်တော့ပါဘူး */
-            overflow-y: auto !important;   /* စာများလာရင် အကွက်ထဲမှာတင် အပေါ်အောက် ဆွဲလို့ရပါမယ် */
+            min-height: 200px;         /* စာမရှိရင် အနည်းဆုံး ဒီလောက်အမြင့် ရှိနေပါမယ် */
+            height: auto !important;    /* စာရိုက်ရင် ရိုက်သလောက် အောက်ကို အလိုအလျောက် ရှည်ဆင်းသွားပါမယ် */
+            overflow-y: visible !important; /* စာရိုက်ကွက်ထဲမှာ သီးသန့် scroll ဘား မပေါ်စေဘဲ web စာမျက်နှာတစ်ခုလုံးနဲ့ လိုက်ပါသွားပါမယ် */
             line-height: 1.6; 
         }
         
@@ -137,7 +137,7 @@
             
             <!-- Global Quill Container -->
             <div class="bg-gray-900 rounded-lg overflow-hidden shadow-inner border border-gray-700">
-                <div id="global-quill-editor"></div>
+                <div id="editor"></div>
             </div>
         </div>
 
@@ -148,6 +148,8 @@
 
     </div>
 
+    <!-- Quill.js Core Library Script -->
+    <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
     <!-- Application Script Reference -->
     <script src="app.js"></script>
     <!-- PDF.js Core Library for Text Extraction Infrastructure -->
