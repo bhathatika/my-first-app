@@ -255,7 +255,7 @@ document.getElementById('btnReset').addEventListener('click', () => {
     if(confirm("လက်ရှိ ရေးလက်စများကို ဖျက်ပြီး အစက ပြန်စမှာ သေချက်ပါသလား။")) {
         localStorage.removeItem('epub_creator_data');
         bookTitleInput.value = "";
-        bookAuthorAuthor.value = "";
+        bookAuthorInput.value = ""; // ဒီနေရာမှာ စာလုံးပေါင်း ပြင်လိုက်ပါပြီဗျာ
         coverBase64 = "";
         coverPreview.classList.add('hidden');
         coverInput.value = "";
