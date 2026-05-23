@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced ePub Creator with Multi-Book Backup</title>
+    <!-- GitHub Pages ဝဘ်ဆိုက်ပေါ်တွင် စတိုင်များ ကောင်းမွန်စွာ အလုပ်လုပ်ရန် ပြင်ပ CSS ဖိုင်ကို ချိတ်ဆက်ခြင်း -->
+    <link rel="stylesheet" href="style.css">
+    <!-- Quill Rich Text Editor Stylesheet -->
+    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #f4f6f9;
+            --container-bg: #ffffff;
+            --text-color: #333333;
+            --border-color: #cccccc;
+            --primary-color: #34495e;
+            --secondary-color: #2c3e50;
+            --success-color: #2ecc71;
+            --danger-color: #e74c3c;
+            --warning-color: #f39c12;
+            --sidebar-width: 260px;
+        }
+
+        /* မျက်စိအေးစေမည့် Deep Navy Blue Theme */
+        body.dark-mode {
+            --bg-color: #1e2530;        
+            --container-bg: #252e3c;    
+            --text-color: #cfd8dc;      
+            --border-color: #34495e;    
+            --primary-color: #51a4fa;    
+            --secondary-color: #3a4759;  
+            --success-color: #52be80;    
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: background-color 0.3s, color 0.3s;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        header {
+            background-color: var(--container-bg);
+            border-bottom: 1px solid var(--border-color);
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        header h3 {
+            color: #2ecc71; 
+        }
+
+        .main-layout {
+            display: flex;
+            flex: 1;
+            position: relative;
+        }
+
+        /* Sidebar styling */
+        .sidebar {
+            width: var(--sidebar-width);
+            background-color: var(--container-bg);
+            border-right: 1px solid var(--border-color);
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            overflow-y: auto;
+        }
+
+        .content-area {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: var(--container-bg);
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+
+        h2, h3 {
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+
+        input[type="text"], input[type="file"], select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background-color: #1a1e25; 
+            color: var(--text-color);
+            font-size: 1em;
+        }
+
+        /* Button Styling */
+        button, .file-input-label {
+            display: inline-block;
+            width: 100%;
+            padding: 11px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            text-align: center;
+            transition: opacity 0.2s;
+        }
+
+        button:hover, .file-input-label:hover {
+            opacity: 0.9;
+        }
+
+        .btn-primary { background-color: var(--primary-color); }
+        .btn-secondary { background-color: #3a4759; color: #cfd8dc; } 
+        .btn-success { background-color: var(--success-color); }      
+        .btn-danger { background-color: #2c3e50; color: #e74c3c; border: 1px solid #e74c3c; } 
+        .btn-warning { background-color: #2d384c; color: #51a4fa; border: 1px solid #51a4fa; } 
+
+        /* Backup border layout */
+        .backup-section {
+            border: 1px solid var(--border-color);
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            background-color: rgba(81, 164, 250, 0.02);
+        }
+        .backup-title {
+            font-size: 0.85em;
+            font-weight: bold;
+            color: var(--text-color);
+            margin-bottom: 8px;
+            text-align: center;
+            text-transform: uppercase;
+        }
+
+        .chapter-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 5px;
+        }
+
+        .chapter-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px;
+            background-color: var(--bg-color);
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9em;
+        }
+
+        .chapter-item.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .chapter-item button {
+            width: auto;
+            padding: 2px 6px;
+            font-size: 0.8em;
+            background-color: transparent;
+            color: #e74c3c;
+        }
+
+        /* -----------------------------------------------------------
+           💥 EDITOR FORCE FIX (စာလုံးဖြူရန် အတင်းအကျပ် ညှိနှိုင်းချက်)
+        -------------------------------------------------------------- */
+        #editor-container {
+            height: 400px;
+            background-color: #ffffff;
+            color: #333333;
+            border-bottom-left-radius: 6px;
+            border-bottom-right-radius: 6px;
+        }
+
+        /* 🌙 Dark Mode မှာ စာရိုက်ကွက်အတွင်းရှိ စာလုံးအားလုံးကို အဖြူရောင် ဖြစ်အောင် အတင်း ပြောင်းလဲခိုင်းခြင်း */
+        body.dark-mode #editor-container {
+            background-color: #2d384c !important; /* စာစီရတာ ရှင်းလင်းစေမည့် ပိုလင်းသော နောက်ခံ */
+            border: 1px solid var(--border-color);
+        }
+
+        /* ⚠️ Quill Editor အတွင်းရှိ p, span, စာသားအားလုံးကို အဖြူရောင် ဖြစ်အောင် သေချာပေါက် Override လုပ်ပါသည် */
+        body.dark-mode .ql-editor,
+        body.dark-mode .ql-editor * {
+            color: #ffffff !important; 
+            font-size: 1.05em;
+            line-height: 1.6;
+        }
+
+        /* Placeholder စာလုံးမှိန် အရောင် */
+        body.dark-mode .ql-editor.ql-blank::before {
+            color: #95a5a6 !important;
+            font-style: normal;
+        }
+
+        body.dark-mode .ql-toolbar {
+            background-color: #252e3c !important;
+            border: 1px solid var(--border-color);
+        }
+
+        body.dark-mode .ql-snow .ql-stroke {
+            stroke: #cfd8dc !important;
+        }
+
+        body.dark-mode .ql-snow .ql-fill {
+            fill: #cfd8dc !important;
+        }
+
+        body.dark-mode .ql-snow .ql-picker {
+            color: #cfd8dc !important;
+        }
+
+        .ql-toolbar {
+            background-color: #eaeaea;
+            border-top-left-radius: 6px;
+            border-top-right-radius: 6px;
+        }
+
+        #pdfStatus {
+            font-size: 0.85em;
+            margin-top: 5px;
+            color: var(--success-color);
+            font-weight: bold;
+        }
+
+        @media (max-width: 768px) {
+            .main-layout {
+                flex-direction: column;
+            }
+            .sidebar {
+                width: 100%;
+                border-right: none;
+                border-bottom: 1px solid var(--border-color);
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h3 style="margin:0;">🟢 Web ePub Creator Pro</h3>
+        <button id="modeToggle" style="width:auto; padding:6px 12px; font-size:0.85em; background-color: #252e3c; border: 1px solid #34495e;">☀️ Light Mode</button>
+    </header>
+
+    <div class="main-layout">
+        <!-- Left Sidebar Navigation Control -->
+        <div class="sidebar">
+            
+            <!-- EXCLUSIVE MULTI-BOOK BACKUP SYSTEM -->
+            <div class="backup-section">
+                <div class="backup-title">💾 စာအုပ် Backup စီမံခန့်ခွဲမှု</div>
+                <button id="backupBookBtn" class="btn-secondary" style="font-size:0.85em; margin-bottom:6px; padding:8px;">📥 လက်ရှိစာအုပ်ကို ဖိုင်သိမ်းမည် (Backup)</button>
+                
+                <label class="file-input-label btn-warning" style="font-size:0.85em; margin-bottom:6px; padding:8px;">
+                    📤 စာအုပ်ဟောင်း ပြန်တင်မည် (Load Backup)
+                    <input type="file" id="loadBackupFile" accept=".json" style="display:none;">
+                </label>
+                
+                <button id="resetAppBtn" class="btn-danger" style="font-size:0.85em; padding:8px;">🧹 စာအုပ်အသစ်အတွက် အစကပြန်စမည် (Reset)</button>
+            </div>
+
+            <div class="form-group">
+                <label>စာအုပ်အမည် (Book Title)</label>
+                <input type="text" id="bookTitle" placeholder="Enter book title..." value="My Novel">
+            </div>
+            <div class="form-group">
+                <label>စာရေးဆရာ (Author)</label>
+                <input type="text" id="bookAuthor" placeholder="Enter author name..." value="Unknown Author">
+            </div>
+            <div class="form-group">
+                <label>မျက်နှာဖုံးပုံ (Cover Image)</label>
+                <input type="file" id="coverImage" accept="image/*">
+            </div>
+
+            <hr style="border:0; border-top:1px solid var(--border-color); margin:5px 0;">
+
+            <h3>အခန်းများ (Chapters)</h3>
+            <button id="addChapterBtn" class="btn-primary">+ အခန်းတိုးမည် (Add Chapter)</button>
+            <div class="chapter-list" id="chapterList"></div>
+
+            <hr style="border:0; border-top:1px solid var(--border-color); margin:5px 0;">
+
+            <div class="form-group" style="background:rgba(82, 190, 128, 0.05); padding:10px; border-radius:6px; border:1px solid var(--success-color);">
+                <label style="color:var(--success-color);">📄 PDF မှ စာသားထုတ်ယူရန် (Optional)</label>
+                <input type="file" id="pdfFile" accept=".pdf">
+                <button id="extractPdfBtn" class="btn-success" style="margin-top:8px; padding:6px; font-size:0.9em;">⚡ PDF မှ စာသားများကို ဆွဲထုတ်မည်</button>
+                <div id="pdfStatus"></div>
+            </div>
+        </div>
+
+        <!-- Right Working Main Content Workspace Editor Area -->
+        <div class="content-area">
+            <div class="container">
+                <div class="form-group">
+                    <label>အခန်းခေါင်းစဉ် (Chapter Title)</label>
+                    <input type="text" id="chapterTitle" placeholder="Chapter Title">
+                </div>
+
+                <div class="form-group">
+                    <label>အခန်းတွင်းစာသား (Chapter Content)</label>
+                    <div id="editor-container"></div>
+                </div>
+
+                <button id="downloadEpub" class="btn-success" style="padding:15px; font-size:1.1em; margin-top:10px;">💾 ePub ဖိုင် ထုတ်ယူမည်</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- External Dependable Script Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+    <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
