@@ -1,4 +1,4 @@
-// APP VERSION: 4.5.3 (Fixed HTML Content Generator Bug)
+// APP VERSION: 4.5.5 (Fixed XHTML br Tag Mismatch Bug)
 const firebaseConfig = {
   apiKey: "AIzaSyByguLw2U9d1nEIOUiPNHcOkYkBaMhR_Qk",
   authDomain: "epub-creator-pro.firebaseapp.com",
@@ -102,7 +102,7 @@ if (btnClearContent) {
     });
 }
 
-// --- 🌗 THEME SYSTEM ---
+// --- THEME SYSTEM ---
 if (themeBtn) {
     themeBtn.addEventListener('click', () => {
         isLightMode = !isLightMode;
@@ -127,7 +127,7 @@ function applyTheme() {
 }
 if (localStorage.getItem('epub_theme') === 'light') { isLightMode = true; applyTheme(); }
 
-// --- 🖼️ COVER IMAGE PROCESS ---
+// --- COVER IMAGE PROCESS ---
 if (coverInput) {
     coverInput.addEventListener('change', (e) => {
         const file = e.target.files[0];
@@ -146,7 +146,7 @@ if (coverInput) {
     });
 }
 
-// --- 🔐 AUTH SYSTEM ---
+// --- AUTH SYSTEM ---
 if (authBtn) {
     authBtn.addEventListener('click', () => {
         if (currentUser) {
@@ -188,7 +188,7 @@ auth.onAuthStateChanged(user => {
     }
 });
 
-// --- 💾 DATA SYSTEM ---
+// --- DATA SYSTEM ---
 function getAppData() {
     return {
         title: bookTitleInput ? bookTitleInput.value : "",
@@ -247,7 +247,7 @@ function renderApp(jsonData) {
     }
 }
 
-// --- 📋 CHAPTER LIST GENERATOR ---
+// --- CHAPTER LIST GENERATOR ---
 function renderChaptersList() {
     if (!chaptersListContainer) return;
     chaptersListContainer.innerHTML = "";
@@ -333,7 +333,7 @@ window.deleteChapter = function(event, index) {
 if (bookTitleInput) bookTitleInput.addEventListener('input', saveData);
 if (bookAuthorInput) bookAuthorInput.addEventListener('input', saveData);
 
-// --- 📂 BACKUP BUTTONS ---
+// --- BACKUP BUTTONS ---
 const btnBackup = document.getElementById('btnBackup');
 if (btnBackup) {
     btnBackup.addEventListener('click', () => {
@@ -380,7 +380,7 @@ if (btnReset) {
     });
 }
 
-// --- 📥 NATIVE EPUB GENERATION SYSTEM (FIXED CONTENT PARSING) ---
+// --- 📥 NATIVE EPUB GENERATION SYSTEM (FIXED XHTML COMPLIANCE) ---
 if (btnGenerate) {
     btnGenerate.addEventListener('click', async () => {
         if (selectedChapterIndex !== null && globalQuill) {
@@ -434,9 +434,15 @@ if (btnGenerate) {
                 const ch = data.chapters[idx];
                 const chFileName = `chapter_${idx + 1}.html`;
                 
-                // Securely pass content (Never allow blank if data exists)
                 let contentHtml = ch.content && ch.content.trim() !== "" ? ch.content : "<div></div>";
                 
+                // CRITICAL FIX: Convert all unclosed <br> tags to XHTML compliant <br />
+                contentHtml = contentHtml.replace(/<br\s*>/gi, '<br />');
+                contentHtml = contentHtml.replace(/<br([^>]*)\s*>/gi, (match, p1) => {
+                    if (p1.trim().endsWith('/')) return match; 
+                    return `<br${p1} />`;
+                });
+
                 // Safe Image Parsing System
                 try {
                     const imgRegex = /<img[^>]+src="data:(image\/[^;]+);base64,([^"]+)"[^>]*>/gi;
@@ -457,7 +463,7 @@ if (btnGenerate) {
                     }
                     contentHtml = modifiedContent;
                 } catch(err) {
-                    console.error("Image regex error, skipping to raw text injection", err);
+                    console.error("Image regex error", err);
                 }
 
                 const chHtmlContent = `<?xml version="1.0" encoding="utf-8"?>
@@ -531,7 +537,7 @@ if (btnGenerate) {
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
             
-            alert("🎉 ePub စာအုပ်ကို စာသားများအပြည့်အစုံဖြင့် အောင်မြင်စွာ ထုတ်လုပ်ပြီးပါပြီဗျာ!");
+            alert("🎉 XML Tag Error များကို ရှင်းလင်းပြီး စာသားများအပြည့်အစုံဖြင့် အောင်မြင်စွာ ထုတ်လုပ်ပြီးပါပြီဗျာ!");
         } catch (err) {
             console.error(err);
             alert("အမှားဖြစ်သွားပါသည်: " + err.message);
