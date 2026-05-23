@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
             toolbar: [
                 ['bold', 'italic', 'underline'],
                 [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                ['image', 'clean'] // Image Tool ကိုပါ အသေအချာ ထည့်သွင်းထားပါတယ်
+                ['image', 'clean']
             ]
         }
     });
@@ -111,7 +111,7 @@ function cleanHtmlForXhtml(htmlContent) {
     return clean;
 }
 
-// Base64 စာသားမှ ePub အသိအမှတ်ပြု Binary Blob သို့ ပြောင်းပေးသည့် လုပ်ဆောင်ချက်
+// Base64 စာသားမှ Binary Blob ပြောင်းလဲပေးသည့် လုပ်ဆောင်ချက်
 function base64ToBlob(base64Str, contentType) {
     const byteCharacters = atob(base64Str);
     const byteArrays = [];
@@ -127,7 +127,7 @@ function base64ToBlob(base64Str, contentType) {
     return new Blob(byteArrays, { type: contentType });
 }
 
-// 🌟 Generate ePub Core Logic (ဓာတ်ပုံများခွဲထုတ်စနစ် အပြည့်အစုံ)
+// 🌟 Generate ePub Core Logic (ဓာတ်ပုံအားလုံးပါဝင်ရေးနှင့် Tag Mismatch ပြင်ဆင်မှုစနစ်)
 btnGenerate.addEventListener('click', async () => {
     if (chapters.length === 0) {
         alert('ကျေးဇူးပြု၍ အခန်းအနည်းဆုံးတစ်ခု အရင်ထည့်ပါ!');
@@ -144,51 +144,71 @@ btnGenerate.addEventListener('click', async () => {
     metaInf.file("container.xml", `<?xml version="1.0"?><container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container"><rootfiles><rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/></rootfiles></container>`);
     
     const oebps = zip.folder("OEBPS");
-    const imagesFolder = oebps.folder("images"); // ePub အတွင်း ဓာတ်ပုံများသိမ်းဆည်းမည့် Folder
+    const imagesFolder = oebps.folder("images");
     
     let manifestChapters = '';
     let manifestImages = '';
     let spineChapters = '';
     let imageCounter = 0;
     
-    // အခန်းတစ်ခုချင်းစီကို ပတ်ပြီး စစ်ဆေးခြင်း
+    // အခန်းများကို ပတ်၍ စစ်ဆေးခြင်း
     for (let idx = 0; idx < chapters.length; idx++) {
         let ch = chapters[idx];
         manifestChapters += `<item id="ch${idx}" href="ch${idx}.xhtml" media-type="application/xhtml+xml"/>\n`;
         spineChapters += `<itemref idref="ch${idx}"/>\n`;
         
-        // ကွန်တိန်နာအသွင်ပြောင်းလဲပြီး ဓာတ်ပုံများကို ရှာဖွေဆွဲထုတ်ခြင်း
         let parser = new DOMParser();
         let doc = parser.parseFromString(`<div>${ch.content}</div>`, 'text/html');
         let imgs = doc.querySelectorAll('img');
         
+        // 🌟 FIXED: အခန်းတွင်းရှိ ဓာတ်ပုံအားလုံးကို Loop ပတ်ပြီး တစ်ပုံချင်းစီ ခွဲထုတ်သိမ်းဆည်းခြင်း
         imgs.forEach((img) => {
             let src = img.getAttribute('src');
-            // Base64 Data စစ်စစ်ဖြစ်ပါက ခွဲထုတ်မည်
             if (src && src.startsWith('data:image')) {
                 imageCounter++;
-                let match = src.match(/^data:(image\/[a-zA-Z+.-]+);base64,(.+)$/);
-                if (match) {
-                    let mimeType = match[1];
-                    let base64Data = match[2];
-                    let ext = mimeType.split('/')[1] || 'jpg';
-                    let imgFilename = `img_${imageCounter}.${ext}`;
-                    
-                    // Binary Blob ပြောင်းလဲပြီး Zip ဖိုင်ထဲ ထည့်သွင်းခြင်း
+                let match = src.match(/^data:(image\/[a-zA-5+.-]+);base64,(.+)$/);
+                if (!match) {
+                    // MimeType ရှာမတွေ့ပါက default jpeg အဖြစ် သတ်မှတ်မည်
+                    match = [null, 'image/jpeg', src.split(',')[1]];
+                }
+                
+                let mimeType = match[1];
+                let base64Data = match[2];
+                let ext = mimeType.split('/')[1] || 'jpg';
+                if(ext === 'jpeg') ext = 'jpg';
+                let imgFilename = `img_${imageCounter}.${ext}`;
+                
+                try {
                     let imgBlob = base64ToBlob(base64Data, mimeType);
                     imagesFolder.file(imgFilename, imgBlob);
-                    
-                    // Manifest ထဲတွင် ပုံကို မှတ်ပုံတင်ခြင်း
                     manifestImages += `<item id="img${imageCounter}" href="images/${imgFilename}" media-type="${mimeType}"/>\n`;
                     
-                    // XHTML ကုဒ်အတွင်းရှိ src လမ်းကြောင်းကို ပြောင်းလဲပေးခြင်း
-                    img.setAttribute('src', `images/${imgFilename}`);
-                    img.setAttribute('alt', `Image ${imageCounter}`);
+                    // 🌟 FIXED: <p> tag mismatch မဖြစ်စေရန် img ကို သီးသန့် block div ဖြင့် ပြောင်းလဲထည့်သွင်းခြင်း
+                    let parentP = img.closest('p');
+                    
+                    // img tag အသစ်ကို Strict Self-closing ဖြစ်အောင် တည်ဆောက်ခြင်း
+                    let newImg = document.createElement('img');
+                    newImg.setAttribute('src', `images/${imgFilename}`);
+                    newImg.setAttribute('alt', `Image ${imageCounter}`);
+                    
+                    let imgContainer = document.createElement('div');
+                    imgContainer.className = 'img-container';
+                    imgContainer.appendChild(newImg);
+                    
+                    if (parentP) {
+                        // <p> တဂ်၏ အပြင်ဘက်သို့ ထုတ်ယူ၍ အစားထိုးခြင်း
+                        parentP.parentNode.insertBefore(imgContainer, parentP.nextSibling);
+                        img.remove(); // ပုံဟောင်းကို ဖျက်ခြင်း
+                        if (parentP.innerHTML.trim() === '') parentP.remove(); // အထဲမှာ စာမကျန်ပါက p ကိုပါဖျက်ခြင်း
+                    } else {
+                        img.parentNode.replaceChild(imgContainer, img);
+                    }
+                } catch(e) {
+                    console.error("Image processing error: ", e);
                 }
             }
         });
         
-        // ပြန်လည်သန့်စင်ထားသော HTML ကို ရယူခြင်း
         let processedHtml = doc.querySelector('div').innerHTML;
         let cleanedContent = cleanHtmlForXhtml(processedHtml);
         
@@ -200,8 +220,9 @@ btnGenerate.addEventListener('click', async () => {
     <style>
         body { font-family: sans-serif; padding: 1em; line-height: 1.6; color: #000000; background-color: #ffffff; }
         h1 { text-align: center; color: #111111; font-size: 1.5em; margin-bottom: 1em; }
-        p { margin-bottom: 0.8em; text-align: justify; }
-        img { max-width: 100%; height: auto; display: block; margin: 1.5em auto; }
+        p { margin-bottom: 0.8em; text-align: justify; text-indent: 1.5em; }
+        .img-container { text-align: center; margin: 1.5em 0; display: block; width: 100%; }
+        .img-container img { max-width: 100%; height: auto; display: inline-block; }
     </style>
 </head>
 <body>
