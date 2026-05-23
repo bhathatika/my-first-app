@@ -1,3 +1,4 @@
+// သင့်ရဲ့ ကိုယ်ပိုင် Firebase Configuration
 const firebaseConfig = {
   apiKey: "AIzaSyByguLw2U9d1nEIOUiPNHcOkYkBaMhR_Qk",
   authDomain: "epub-creator-pro.firebaseapp.com",
@@ -8,16 +9,18 @@ const firebaseConfig = {
   measurementId: "G-Q9FHPLKVBD"
 };
 
+// Initialize Firebase ဝန်ဆောင်မှုများ
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 
+// Global Variables
 let chapters = [];
 let currentUser = null;
 let coverBase64 = "";
 let isLightMode = false;
 
-// Elements
+// HTML Elements ဖမ်းယူခြင်း
 const bodyTag = document.getElementById('bodyTag');
 const mainContainer = document.getElementById('mainContainer');
 const backupBox = document.getElementById('backupBox');
@@ -87,12 +90,12 @@ closeAuth.addEventListener('click', () => authSection.classList.add('hidden'));
 
 signUpSubmit.addEventListener('click', () => {
     const email = emailInput.value.trim(); const password = passwordInput.value;
-    if(!email || !password) return alert("ဖြည့်စွက်ပါ");
+    if(!email || !password) return alert("Email နှင့် Password ဖြည့်ပါ");
     auth.createUserWithEmailAndPassword(email, password).then(() => authSection.classList.add('hidden')).catch(err => alert(err.message));
 });
 signInSubmit.addEventListener('click', () => {
     const email = emailInput.value.trim(); const password = passwordInput.value;
-    if(!email || !password) return alert("ဖြည့်စွက်ပါ");
+    if(!email || !password) return alert("Email နှင့် Password ဖြည့်ပါ");
     auth.signInWithEmailAndPassword(email, password).then(() => authSection.classList.add('hidden')).catch(err => alert(err.message));
 });
 
@@ -107,16 +110,28 @@ auth.onAuthStateChanged(user => {
     }
 });
 
-// --- ✨ HTML HTML TAG REMOVER (စာသားသန့်စင်ရေးစနစ်) ---
+// --- ✨ HTML TAG REMOVER PRO (ဘယ်လို HTML ကုဒ်မျိုးမဆို ပြောင်စင်အောင် ရှင်းထုတ်ပေးမည့် စနစ်သစ်) ---
 function cleanHtmlToText(htmlString) {
     if (!htmlString) return "";
-    let clean = htmlString;
-    // စာကြောင်းအသစ် လဲလှယ်ခြင်း
-    clean = clean.replace(/<br\s*\/?>/gi, "\n");
-    clean = clean.replace(/<\/p>/gi, "\n");
-    // တခြား tag များကို ဖျက်ခြင်း
-    clean = clean.replace(/<[^>]+>/g, "");
-    return clean.trim();
+    
+    // ယာယီ Div တစ်ခု ဆောက်ပြီး Browser စနစ်ဖြင့် Text သီးသန့်ဆွဲထုတ်ခြင်း
+    const tempDiv = document.createElement("div");
+    tempDiv.innerHTML = htmlString;
+    
+    // <br> နှင့် </p> နေရာများကို စာကြောင်းအသစ် (\n) အဖြစ် စနစ်တကျ အစားထိုးခြင်း
+    const paragraphs = tempDiv.querySelectorAll("p, br");
+    paragraphs.forEach(el => {
+        if(el.tagName.toLowerCase() === 'br') {
+            el.parentNode.insertBefore(document.createTextNode("\n"), el);
+            el.parentNode.removeChild(el);
+        } else if(el.tagName.toLowerCase() === 'p') {
+            el.appendChild(document.createTextNode("\n"));
+        }
+    });
+    
+    // စာသားသက်သက်ကိုသာ ဆွဲထုတ်ပြီး ပိုနေသော space များကို ရှင်းထုတ်သည်
+    let textResult = tempDiv.textContent || tempDiv.innerText || "";
+    return textResult.trim();
 }
 
 // --- 💾 DATA SYSTEM ---
@@ -154,27 +169,31 @@ function loadDataFromCloud() {
 }
 
 function renderApp(jsonData) {
-    const data = JSON.parse(jsonData);
-    bookTitleInput.value = data.title || "";
-    bookAuthorInput.value = data.author || "";
-    
-    if (data.cover) {
-        coverBase64 = data.cover; coverPreview.src = coverBase64; coverPreview.classList.remove('hidden');
-    } else {
-        coverBase64 = ""; coverPreview.classList.add('hidden');
-    }
+    try {
+        const data = JSON.parse(jsonData);
+        bookTitleInput.value = data.title || "";
+        bookAuthorInput.value = data.author || "";
+        
+        if (data.cover) {
+            coverBase64 = data.cover; coverPreview.src = coverBase64; coverPreview.classList.remove('hidden');
+        } else {
+            coverBase64 = ""; coverPreview.classList.add('hidden');
+        }
 
-    chaptersContainer.innerHTML = "";
-    chapters = [];
-    
-    if(data.chapters && data.chapters.length > 0) {
-        data.chapters.forEach(ch => {
-            // Backup ဖိုင်ဟောင်းမှ HTML tag များကို ရှင်းထုတ်ပြီးမှ ထည့်ပေးသည်
-            let cleanedContent = cleanHtmlToText(ch.content);
-            addChapter(ch.title, cleanedContent);
-        });
-    } else {
-        addChapter();
+        chaptersContainer.innerHTML = "";
+        chapters = [];
+        
+        if(data.chapters && data.chapters.length > 0) {
+            data.chapters.forEach(ch => {
+                // HTML ကုဒ်ဟောင်းများကို အကုန် ပြောင်စင်အောင် ရှင်းလင်းပြီးမှ ထည့်သွင်းသည်
+                let cleanedContent = cleanHtmlToText(ch.content);
+                addChapter(ch.title, cleanedContent);
+            });
+        } else {
+            addChapter();
+        }
+    } catch (e) {
+        console.error("Render error:", e);
     }
 }
 
@@ -230,7 +249,7 @@ document.getElementById('btnReset').addEventListener('click', () => {
     }
 });
 
-// --- 📥 EPUB GENERATION FUNCTION (စာအုပ်ထုတ်လုပ်ခြင်း) ---
+// --- 📥 EPUB GENERATION FUNCTION (စာအုပ်ထုတ်လုပ်ခြင်း စနစ်မှန်) ---
 btnGenerate.addEventListener('click', async () => {
     const data = getAppData();
     if (!data.title) return alert("စာအုပ်ခေါင်းစဉ် အရင်ဖြည့်ပါဗျာ။");
@@ -238,31 +257,44 @@ btnGenerate.addEventListener('click', async () => {
     btnGenerate.innerText = "⏳ စာအုပ်ထုတ်နေဆဲဖြစ်သည်...";
     btnGenerate.disabled = true;
 
-    // ePub စာအုပ်အတွက် ဒေတာပုံစံ ပြင်ဆင်ခြင်း
+    // စာအုပ်ထုတ်ရန်အတွက် စာသားများကို စနစ်တကျ ပြန်စီစဉ်ခြင်း
     const option = {
         title: data.title,
         author: data.author || "Unknown Author",
-        content: data.chapters.map(ch => ({
-            title: ch.title || "Untitled Chapter",
-            data: ch.content.split('\n').map(p => `<p>${p}</p>`).join('') // စာကြောင်းအသစ်များကို HTML Format ပြောင်းသည်
-        }))
+        content: data.chapters.map(ch => {
+            // Textarea ထဲက စာကြောင်းအသစ်တွေကို HTML Paragraph ပြောင်းပေးခြင်း
+            const paragraphsHtml = ch.content
+                .split('\n')
+                .map(p => p.trim() ? `<p>${p.trim()}</p>` : '')
+                .join('');
+            
+            return {
+                title: ch.title || "Untitled Chapter",
+                data: paragraphsHtml || "<p></p>"
+            };
+        })
     };
 
-    // မျက်နှာဖုံးပုံရှိလျှင် ထည့်သွင်းခြင်း
     if (data.cover) {
         option.cover = data.cover;
     }
 
     try {
-        // epub-gen-memory သုံးပြီး ဖိုင်ထုတ်ခြင်း
-        const blob = await window.htmlToEpub.epubGenMemory(option);
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${data.title}.epub`;
-        a.click();
-        URL.revokeObjectURL(url);
-        alert("🎉 ePub စာအုပ် ထုတ်လုပ်ပြီးပါပြီဗျာ!");
+        // Epub-gen-memory သုံးပြီး Blob ဖိုင်ပြောင်းခြင်း
+        if (window.htmlToEpub && window.htmlToEpub.epubGenMemory) {
+            const blob = await window.htmlToEpub.epubGenMemory(option);
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${data.title}.epub`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            alert("🎉 ePub စာအုပ် ထုတ်လုပ်ပြီးပါပြီဗျာ!");
+        } else {
+            alert("ePub Library စနစ် အဆင်မပြေဖြစ်နေပါသည်။ HTML ဖိုင်ကို ပြန်စစ်ပေးပါ။");
+        }
     } catch (err) {
         console.error(err);
         alert("စာအုပ်ထုတ်ရာတွင် အမှားတစ်ခုရှိနေပါသည်: " + err.message);
