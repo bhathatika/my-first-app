@@ -12,7 +12,7 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 
-let chapters = [];
+let chapters = []; // { id, imgBase64 } ပုံစံသိမ်းမည်
 let currentUser = null;
 let coverBase64 = "";
 let isLightMode = false;
@@ -60,7 +60,7 @@ function applyTheme() {
 }
 if (localStorage.getItem('epub_theme') === 'light') { isLightMode = true; applyTheme(); }
 
-// --- 🖼️ IMAGE PROCESS ---
+// --- 🖼️ COVER IMAGE PROCESS ---
 coverInput.addEventListener('change', (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -136,7 +136,8 @@ function getAppData() {
         chapters: chapters.map((ch, idx) => ({
             id: idx + 1,
             title: document.getElementById(`chTitle-${idx}`) ? document.getElementById(`chTitle-${idx}`).value : "",
-            content: document.getElementById(`chContent-${idx}`) ? document.getElementById(`chContent-${idx}`).value : ""
+            content: document.getElementById(`chContent-${idx}`) ? document.getElementById(`chContent-${idx}`).value : "",
+            imgBase64: ch.imgBase64 || "" // ဓာတ်ပုံဒေတာ သိမ်းဆည်းရန်
         }))
     };
 }
@@ -179,7 +180,7 @@ function renderApp(jsonData) {
         if(data.chapters && data.chapters.length > 0) {
             data.chapters.forEach(ch => {
                 let cleanedContent = cleanHtmlToText(ch.content);
-                addChapter(ch.title, cleanedContent);
+                addChapter(ch.title, cleanedContent, ch.imgBase64);
             });
         } else {
             addChapter();
@@ -189,23 +190,52 @@ function renderApp(jsonData) {
     }
 }
 
-// --- 📝 CHAPTERS MANAGEMENT ---
-function addChapter(title = "", content = "") {
+// --- 📝 CHAPTERS MANAGEMENT (ဓာတ်ပုံရွေးချယ်မှု စနစ်အပြည့်အစုံ ပြန်ထည့်ထားသည်) ---
+function addChapter(title = "", content = "", imgBase64 = "") {
     const index = chapters.length;
-    chapters.push({ id: index + 1 });
+    chapters.push({ id: index + 1, imgBase64: imgBase64 });
 
     const chBox = document.createElement('div');
     chBox.className = "bg-gray-750 p-3 rounded-lg border border-gray-700 space-y-2 relative";
     chBox.id = `chBox-${index}`;
+    
+    // ပုံရှိလျှင် ပြရန်၊ မရှိလျှင် ဖျောက်ထားရန် တည်ဆောက်ခြင်း
+    const imgHiddenClass = imgBase64 ? "" : "hidden";
+
     chBox.innerHTML = `
         <div class="flex justify-between items-center">
             <span class="text-xs font-bold text-emerald-500">အခန်း - ${index + 1}</span>
         </div>
         <input type="text" id="chTitle-${index}" value="${title}" placeholder="အခန်းခေါင်းစဉ်" class="w-full p-2 bg-gray-950 rounded text-sm text-white border border-gray-700 focus:outline-emerald-500">
+        
+        <!-- 📸 အခန်းလိုက် ဓာတ်ပုံထည့်ရန် နေရာသစ် -->
+        <div class="flex items-center space-x-2 bg-gray-950 p-1.5 rounded border border-gray-700">
+            <input type="file" id="chImgInput-${index}" accept="image/*" class="text-xs text-gray-400 file:mr-2 file:py-0.5 file:px-2 file:rounded file:border-0 file:text-xs file:bg-gray-700 file:text-white hover:file:bg-gray-650">
+            <img id="chImgPreview-${index}" src="${imgBase64}" class="${imgHiddenClass} w-10 h-10 object-cover rounded border border-gray-600">
+        </div>
+
         <textarea id="chContent-${index}" rows="4" placeholder="စာသားများ ရေးသားရန်..." class="w-full p-2 bg-gray-950 rounded text-sm text-white border border-gray-700 focus:outline-emerald-500">${content}</textarea>
     `;
     
     chaptersContainer.appendChild(chBox);
+
+    // ဓာတ်ပုံရွေးချယ်မှု အလုပ်လုပ်စေရန် ချိတ်ဆက်ခြင်း
+    const chImgInput = document.getElementById(`chImgInput-${index}`);
+    const chImgPreview = document.getElementById(`chImgPreview-${index}`);
+
+    chImgInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function (evt) {
+                chapters[index].imgBase64 = evt.target.result;
+                chImgPreview.src = evt.target.result;
+                chImgPreview.classList.remove('hidden');
+                saveData();
+            };
+            reader.readAsDataURL(file);
+        }
+    });
 
     document.getElementById(`chTitle-${index}`).addEventListener('input', saveData);
     document.getElementById(`chContent-${index}`).addEventListener('input', saveData);
@@ -241,7 +271,7 @@ document.getElementById('btnReset').addEventListener('click', () => {
     }
 });
 
-// --- 📥 NATIVE EPUB GENERATION SYSTEM (အမှားလုံးဝမရှိစေမယ့် ဒေါင်းလုဒ်စနစ်သစ်) ---
+// --- 📥 NATIVE EPUB GENERATION SYSTEM WITH IMAGES SUPPORT (ဓာတ်ပုံများပါ စာအုပ်ထဲသို့ တိုက်ရိုက်ထည့်သွင်းပေးမည့် စနစ်သစ်) ---
 btnGenerate.addEventListener('click', async () => {
     const data = getAppData();
     if (!data.title) return alert("စာအုပ်ခေါင်းစဉ် အရင်ဖြည့်ပါဗျာ။");
@@ -253,7 +283,7 @@ btnGenerate.addEventListener('click', async () => {
     try {
         const zip = new JSZip();
         
-        // 1. mimetype ဖိုင်ထည့်ခြင်း (မဖြစ်မနေလိုအပ်)
+        // 1. mimetype ဖိုင်ထည့်ခြင်း
         zip.file("mimetype", "application/epub+zip", { compression: "STORE" });
         
         // 2. META-INF/container.xml ဆောက်ခြင်း
@@ -265,10 +295,14 @@ btnGenerate.addEventListener('click', async () => {
 </container>`;
         zip.folder("META-INF").file("container.xml", containerXml);
 
-        // 3. OEBPS Folder ထဲမှာ အခန်းများ ဖန်တီးခြင်း
+        // 3. OEBPS Folder ထဲမှာ အခန်းများနှင့် ပုံများ စတင်ဖန်တီးခြင်း
         const oebps = zip.folder("OEBPS");
         
-        // Cover ပုံ ဆောက်ခြင်း
+        let manifestItems = "";
+        let spineItems = "";
+        let tocItems = "";
+
+        // Cover ပုံကို စာအုပ်ထဲ ထည့်သွင်းခြင်း
         let hasCover = false;
         if (data.cover && data.cover.includes("data:image/")) {
             try {
@@ -281,20 +315,37 @@ btnGenerate.addEventListener('click', async () => {
                 hasCover = true;
                 data.coverExt = ext;
                 data.coverMime = mimeType;
+                
+                manifestItems += `    <item id="cover-image" href="cover.${data.coverExt}" media-type="${data.coverMime}" properties="cover-image"/>\n`;
             } catch(e) { console.error("Cover convert error:", e); }
         }
 
-        // စာမျက်နှာ HTML များ စီစဉ်ခြင်း
-        let manifestItems = "";
-        let spineItems = "";
-        let tocItems = "";
-
-        if (hasCover) {
-            manifestItems += `    <item id="cover-image" href="cover.${data.coverExt}" media-type="${data.coverMime}" properties="cover-image"/>\n`;
-        }
-
+        // အခန်းလိုက် ဒေတာနှင့် ပုံများကို ပေါင်းစပ်ဖွဲ့စည်းခြင်း
         data.chapters.forEach((ch, idx) => {
             const chFileName = `chapter_${idx + 1}.html`;
+            let chImageTag = ""; // HTML ထဲ ထည့်မည့် img tag
+
+            // အခန်းထဲမှာ ပုံထည့်ထားခဲ့လျှင် Processing လုပ်ခြင်း
+            if (ch.imgBase64 && ch.imgBase64.includes("data:image/")) {
+                try {
+                    const imgParts = ch.imgBase64.split(',');
+                    const imgBase64Content = imgParts[1];
+                    const imgMimeType = imgParts[0].split(';')[0].split(':')[1];
+                    const imgExt = imgMimeType.split('/')[1] || 'jpg';
+                    const imgFileName = `ch_img_${idx + 1}.${imgExt}`;
+
+                    // ပုံဖိုင်ကို Zip ထဲ ထည့်သွင်းခြင်း
+                    oebps.file(imgFileName, imgBase64Content, { base64: true });
+                    
+                    // OPF Manifest ထဲ ထည့်ရန်
+                    manifestItems += `    <item id="ch-img-${idx + 1}" href="${imgFileName}" media-type="${imgMimeType}"/>\n`;
+                    
+                    // စာမျက်နှာ HTML ထဲမှာ ပြသပေးရန် img tag တည်ဆောက်ခြင်း
+                    chImageTag = `<div style="text-align:center; margin:1em 0;"><img src="${imgFileName}" style="max-w-100; max-height:300px; border-radius:6px;" alt="Chapter Image"/></div>`;
+                } catch(e) { console.error("Chapter image convert error:", e); }
+            }
+
+            // စာသားများကို Paragraph ခွဲခြင်း
             const paragraphsHtml = ch.content
                 .split('\n')
                 .map(p => p.trim() ? `<p style="text-indent:1.5em; margin:0.5em 0; line-height:1.6;">${p.trim()}</p>` : '')
@@ -308,6 +359,7 @@ btnGenerate.addEventListener('click', async () => {
 </head>
 <body>
     <h2 style="text-align:center; margin-top:1em; margin-bottom:1em;">${ch.title || `Chapter ${idx + 1}`}</h2>
+    ${chImageTag} <!-- ဓာတ်ပုံရှိလျှင် ဤနေရာတွင် ပေါ်မည်ဖြစ်သည် -->
     ${paragraphsHtml || "<p></p>"}
 </body>
 </html>`;
@@ -356,10 +408,9 @@ btnGenerate.addEventListener('click', async () => {
 </ncx>`;
         oebps.file("toc.ncx", tocNcx);
 
-        // 6. Zip ဖိုင်ကို Generate အပြီးသတ်ထုတ်ယူခြင်း
+        // 6. Zip ဖိုင်ကို Generate လုပ်ပြီး ဒေါင်းလုဒ်ချပေးခြင်း
         const contentBlob = await zip.generateAsync({ type: "blob", mimeType: "application/epub+zip" });
         
-        // ဒေါင်းလုဒ်လင့်ခ်ဖန်တီးပြီး ချိတ်ဆက်ပေးခြင်း
         const url = URL.createObjectURL(contentBlob);
         const a = document.createElement('a');
         a.href = url;
@@ -369,7 +420,7 @@ btnGenerate.addEventListener('click', async () => {
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
         
-        alert("🎉 ePub စာအုပ်ကို စနစ်တကျ ထုတ်လုပ်ပြီးပါပြီဗျာ!");
+        alert("🎉 ဓာတ်ပုံများပါဝင်သော ePub စာအုပ်ကို အောင်မြင်စွာ ထုတ်လုပ်ပြီးပါပြီဗျာ!");
     } catch (err) {
         console.error(err);
         alert("အမှားဖြစ်သွားပါသည်: " + err.message);
