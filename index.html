@@ -80,11 +80,11 @@
                 <button id="btnAddChapter" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-1 px-3 rounded text-sm transition">+ အခန်းတိုးမည်</button>
             </div>
             <div id="chaptersContainer" class="space-y-3 max-h-72 overflow-y-auto pr-1">
-                <!-- Chapters ပေါ်မည့်နေရာ -->
+                <!-- Chapters ပြန်ပေါ်မည့်နေရာ -->
             </div>
         </div>
 
-        <!-- 🚀 EPUB GENERATE BUTTON (ပြန်ထည့်ပေးထားသော ခလုတ်) -->
+        <!-- 📥 EPUB GENERATE BUTTON -->
         <div class="pt-4 border-t border-gray-700">
             <button id="btnGenerate" class="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white py-3 rounded-xl font-bold transition shadow-lg text-md flex items-center justify-center space-x-2">
                 <span>📥 ePub စာအုပ်ထုတ်မည် (Generate ePub)</span>
@@ -93,9 +93,8 @@
 
     </div>
 
-    <!-- ePub Generation အတွက် လိုအပ်သော Libraries များ -->
+    <!-- ကမ္ဘာသုံး စိတ်အချရဆုံး Zip Library တစ်ခုသာ သုံးတော့မည် -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/epub-gen-memory/dist/epub-gen-memory.bundle.min.js"></script>
 
     <!-- Firebase SDK များ -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
