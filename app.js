@@ -1,4 +1,4 @@
-// APP VERSION: 4.2.0 (Fixed Refresh data loss & HTML tags preservation)
+// APP VERSION: 4.3.0 (Ultimate HTML Strip & Refresh Data Fix)
 const firebaseConfig = {
   apiKey: "AIzaSyByguLw2U9d1nEIOUiPNHcOkYkBaMhR_Qk",
   authDomain: "epub-creator-pro.firebaseapp.com",
@@ -128,6 +128,25 @@ auth.onAuthStateChanged(user => {
     }
 });
 
+// --- ✨ HTML TAG REMOVER SYSTEM (Ultimate Fixed) ---
+function stripHtmlToPureText(htmlString) {
+    if (!htmlString) return "";
+    
+    // ၁။ ရှေးဦးစွာ <p>, <br>, <div> တဂ်တွေကို စာကြောင်းအသစ် (\n) အဖြစ် ပြောင်းလဲပေးပါတယ်
+    let parsed = htmlString
+        .replace(/<br\s*\/?>/gi, "\n")
+        .replace(/<\/p>/gi, "\n")
+        .replace(/<\/div>/gi, "\n");
+        
+    // ၂။ ကျန်ရှိနေတဲ့ တခြား HTML tags တွေအားလုံး (ဥပမာ- <strong>, <span> စတာတွေ) ကို လုံးဝ အပြီးတိုင် ဖယ်ရှားပစ်ပါတယ်
+    const tempDiv = document.createElement("div");
+    tempDiv.innerHTML = parsed;
+    let cleanText = tempDiv.textContent || tempDiv.innerText || "";
+    
+    // ၃။ စာကြောင်း အလွတ်တွေ အများကြီး မကျန်ခဲ့အောင် သန့်စင်ပေးပြီး ရလဒ်ထုတ်ပေးပါတယ်
+    return cleanText.trim().replace(/\n{3,}/g, '\n\n');
+}
+
 // --- 💾 DATA SYSTEM ---
 function getAppData() {
     const dataChapters = [];
@@ -190,8 +209,9 @@ function renderApp(jsonData) {
             
             if(data.chapters && data.chapters.length > 0) {
                 data.chapters.forEach(ch => {
-                    // ကပ်ပါလာတဲ့ စာသားတွေကို တိုက်ရိုက် ထည့်သွင်းပေးလိုက်ပါတယ် (အမှားမတက်စေရန် လုံခြုံရေးတိုးမြှင့်ထား)
-                    addChapter(ch.title || "", ch.content || "", ch.imgBase64 || "");
+                    // စာမျက်နှာပေါ် ပြန်ဖော်ပြတဲ့အချိန်မှာ HTML tag တွေကို အကုန် ရှင်းထုတ်ပြီးမှ Textarea ထဲ ထည့်ပါတယ်
+                    let cleanContent = stripHtmlToPureText(ch.content);
+                    addChapter(ch.title || "", cleanContent, ch.imgBase64 || "");
                 });
             } else {
                 addChapter();
@@ -199,7 +219,6 @@ function renderApp(jsonData) {
         }
     } catch (e) {
         console.error("Render error:", e);
-        // အကယ်၍ အမှားတစ်ခုခုတက်ရင်တောင် အခန်းအလွတ်တစ်ခု ဖွင့်ပေးပါတယ်
         if (chaptersContainer && chaptersContainer.innerHTML === "") addChapter();
     }
 }
@@ -236,7 +255,6 @@ function addChapter(title = "", content = "", imgBase64 = "") {
     
     chaptersContainer.appendChild(chBox);
 
-    // Value တွေကို တိုက်ရိုက်စိတ်ချရအောင် ပြန်ထည့်ပေးခြင်း
     const tIn = document.getElementById(`chTitle-${index}`);
     const cIn = document.getElementById(`chContent-${index}`);
     if (tIn) tIn.value = title;
@@ -379,8 +397,8 @@ if (btnGenerate) {
                     } catch(e) { console.error("ch img error", e); }
                 }
 
-                // ePub ထုတ်တဲ့အခါ စာသားထဲက HTML code တွေကို ဖယ်ပြီး သန့်စင်ပေးခြင်း
-                const cleanText = ch.content ? ch.content.replace(/<\/?[^>]+(>|$)/g, "") : "";
+                // ePub ထုတ်တဲ့အခါ စာသားထဲက HTML ကုဒ်တွေကို လုံးဝပြောင်စင်အောင် ရှင်းထုတ်ပြီးမှ စာပိုဒ် တည်ဆောက်ပါတယ်
+                const cleanText = stripHtmlToPureText(ch.content);
                 const paragraphsHtml = cleanText
                     .split('\n')
                     .map(p => p.trim() ? `<p style="text-indent:1.5em; margin:0.5em 0; line-height:1.6;">${p.trim()}</p>` : '')
