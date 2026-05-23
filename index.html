@@ -15,16 +15,18 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <style>
-        /* Quill Editor Dark Mode Styling Customization */
-        .ql-toolbar.ql-snow { background-color: #f3f4f6; border-top-left-radius: 0.375rem; border-top-right-radius: 0.375rem; }
+        /* Quill Editor UI Customization */
+        .ql-toolbar.ql-snow { background-color: #f3f4f6; border-top-left-radius: 0.5rem; border-top-right-radius: 0.5rem; }
         .bg-gray-900 .ql-toolbar.ql-snow { background-color: #374151; border-color: #4b5563; }
         .bg-gray-900 .ql-toolbar .ql-stroke { stroke: #e5e7eb; }
         .bg-gray-900 .ql-toolbar .ql-fill { fill: #e5e7eb; }
         .bg-gray-900 .ql-toolbar .ql-picker { color: #e5e7eb; }
-        .ql-container.ql-snow { border-bottom-left-radius: 0.375rem; border-bottom-right-radius: 0.375rem; font-size: 14px; min-height: 250px; background-color: #fff; text-color: #000; }
-        .bg-gray-900 .ql-container.ql-snow { background-color: #030712; border-color: #4b5563; color: #f3f4f6; }
-        .ql-editor { min-height: 250px; }
-        .ql-editor img { max-width: 100%; height: auto; display: block; margin: 10px auto; border-radius: 6px; }
+        .ql-container.ql-snow { border-bottom-left-radius: 0.5rem; border-bottom-right-radius: 0.5rem; font-size: 15px; min-height: 300px; background-color: #fff; }
+        .bg-gray-900 .ql-container.ql-snow { background-color: #0c1017; border-color: #4b5563; color: #f3f4f6; }
+        .ql-editor { min-height: 300px; line-height: 1.7; }
+        .ql-editor img { max-width: 100%; height: auto; display: block; margin: 12px auto; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.3); }
+        /* Active Chapter Highlight */
+        .active-chapter { background-color: #3b82f6 !important; color: white !important; border-color: #2563eb !important; }
     </style>
 </head>
 <body id="bodyTag" class="bg-gray-900 text-gray-100 min-h-screen p-4 flex flex-col items-center">
@@ -57,7 +59,7 @@
                 </div>
                 <input type="email" id="emailInput" placeholder="Email Address" class="w-full p-2 bg-gray-950 border border-gray-700 rounded text-xs text-white focus:outline-emerald-500">
                 <input type="password" id="passwordInput" placeholder="Password" class="w-full p-2 bg-gray-950 border border-gray-700 rounded text-xs text-white focus:outline-emerald-500">
-                <div class="grid grid-cols-2 gap-2 Pt-2">
+                <div class="grid grid-cols-2 gap-2 pt-2">
                     <button id="signInSubmit" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs py-2 rounded font-bold">Sign In</button>
                     <button id="signUpSubmit" class="bg-gray-700 hover:bg-gray-600 text-white text-xs py-2 rounded font-bold">Sign Up</button>
                 </div>
@@ -101,19 +103,48 @@
         <hr class="border-gray-700">
 
         <!-- Chapters Section -->
-        <div class="space-y-2">
-            <div class="flex justify-between items-center">
-                <h2 class="text-base font-bold text-white">အခန်းများ (Chapters)</h2>
-                <button id="btnAddChapter" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-3 py-1.5 rounded-lg font-bold flex items-center gap-1 transition shadow">+ အခန်းတိုးမည်</button>
+        <div class="space-y-3">
+            <div class="flex flex-col space-y-2">
+                <label class="block text-sm font-bold text-white">အခန်းများ (Chapters)</label>
+                <button id="btnAddChapter" class="w-full bg-blue-600 hover:bg-blue-500 text-white py-2.5 rounded-lg font-bold transition shadow flex items-center justify-center gap-1">
+                    + အခန်းတိုးမည် (Add Chapter)
+                </button>
             </div>
             
-            <!-- Dynamic Chapters Container -->
-            <div id="chaptersContainer" class="space-y-4 max-h-[500px] overflow-y-auto pr-1"></div>
+            <!-- အခန်းစာရင်းတွေ စီပြမယ့်နေရာ (Accordion/List) -->
+            <div id="chaptersListContainer" class="space-y-1.5 max-h-[220px] overflow-y-auto pr-1"></div>
+        </div>
+
+        <!-- PDF Extract Section (Optional - Added as requested in UI Style) -->
+        <div class="border border-emerald-900/40 rounded-lg p-3 bg-emerald-950/20 space-y-2">
+            <label class="block text-xs font-bold text-emerald-400 flex items-center gap-1">📄 PDF မှ စာသားထုတ်ယူရန် (Optional)</label>
+            <input type="file" id="pdfInput" accept=".pdf" class="w-full text-xs text-gray-400 file:mr-2 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-xs file:bg-gray-700 file:text-white hover:file:bg-gray-650">
+            <button id="btnExtractPdf" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs py-2 rounded font-bold transition flex items-center justify-center gap-1">
+                ⚡ PDF မှ စာသားများကို ဆွဲထုတ်မည်
+            </button>
+        </div>
+
+        <!-- သီးသန့်ခွဲထုတ်ထားတဲ့ Dynamic Editor Section -->
+        <div id="activeEditorSection" class="hidden bg-gray-850 p-4 rounded-xl border border-gray-700 space-y-3 mt-4">
+            <div>
+                <label class="block text-xs font-bold text-gray-400 mb-1">အခန်းခေါင်းစဉ် (Chapter Title)</label>
+                <input type="text" id="activeChTitle" placeholder="အခန်းခေါင်းစဉ်" class="w-full p-2 bg-gray-950 rounded text-sm text-white border border-gray-700 focus:outline-emerald-500 font-medium">
+            </div>
+            
+            <button id="btnClearContent" class="w-full bg-rose-950/50 hover:bg-rose-950 border border-rose-800 text-rose-300 text-xs py-2 rounded font-bold transition">
+                🧹 စာသားအားလုံးဖျက်ရန် (Clear All Content)
+            </button>
+
+            <div class="space-y-1">
+                <label class="block text-xs font-bold text-gray-400">အခန်းတွင်းစာသား (Chapter Content)</label>
+                <!-- Quill Global Editor Container -->
+                <div id="global-quill-editor" class="w-full"></div>
+            </div>
         </div>
 
         <!-- Action Button -->
         <button id="btnGenerate" class="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold py-3 rounded-xl shadow-lg transition flex items-center justify-center gap-2 mt-4 text-sm tracking-wide">
-            📥 ePub စာအုပ်ထုတ်မည် (Generate ePub)
+            💾 ePub ဖိုင် ထုတ်ယူမည်
         </button>
 
     </div>
