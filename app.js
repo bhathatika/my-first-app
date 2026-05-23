@@ -1,4 +1,4 @@
-// APP VERSION: 4.3.0 (Ultimate HTML Strip & Refresh Data Fix)
+// APP VERSION: 4.4.0 (Full Rich Text Editor Integration & Auto-Save Fix)
 const firebaseConfig = {
   apiKey: "AIzaSyByguLw2U9d1nEIOUiPNHcOkYkBaMhR_Qk",
   authDomain: "epub-creator-pro.firebaseapp.com",
@@ -16,7 +16,7 @@ if (!firebase.apps.length) {
 const auth = firebase.auth();
 const db = firebase.firestore();
 
-let chapters = []; 
+let chapters = []; // အခန်းတစ်ခုစီရဲ့ Quill instance နဲ့ id တွေကို သိမ်းထားရန်
 let currentUser = null;
 let coverBase64 = "";
 let isLightMode = false;
@@ -128,38 +128,20 @@ auth.onAuthStateChanged(user => {
     }
 });
 
-// --- ✨ HTML TAG REMOVER SYSTEM (Ultimate Fixed) ---
-function stripHtmlToPureText(htmlString) {
-    if (!htmlString) return "";
-    
-    // ၁။ ရှေးဦးစွာ <p>, <br>, <div> တဂ်တွေကို စာကြောင်းအသစ် (\n) အဖြစ် ပြောင်းလဲပေးပါတယ်
-    let parsed = htmlString
-        .replace(/<br\s*\/?>/gi, "\n")
-        .replace(/<\/p>/gi, "\n")
-        .replace(/<\/div>/gi, "\n");
-        
-    // ၂။ ကျန်ရှိနေတဲ့ တခြား HTML tags တွေအားလုံး (ဥပမာ- <strong>, <span> စတာတွေ) ကို လုံးဝ အပြီးတိုင် ဖယ်ရှားပစ်ပါတယ်
-    const tempDiv = document.createElement("div");
-    tempDiv.innerHTML = parsed;
-    let cleanText = tempDiv.textContent || tempDiv.innerText || "";
-    
-    // ၃။ စာကြောင်း အလွတ်တွေ အများကြီး မကျန်ခဲ့အောင် သန့်စင်ပေးပြီး ရလဒ်ထုတ်ပေးပါတယ်
-    return cleanText.trim().replace(/\n{3,}/g, '\n\n');
-}
-
 // --- 💾 DATA SYSTEM ---
 function getAppData() {
     const dataChapters = [];
-    for (let i = 0; i < chapters.length; i++) {
-        const tInput = document.getElementById(`chTitle-${i}`);
-        const cInput = document.getElementById(`chContent-${i}`);
+    chapters.forEach((ch, idx) => {
+        const tInput = document.getElementById(`chTitle-${idx}`);
+        // Quill Editor ထဲက စာသားနဲ့ ပုံတွေအကုန်လုံးကို HTML format အတိုင်း အတိအကျ ဆွဲထုတ်ယူပါတယ်
+        const htmlContent = ch.editorInstance ? ch.editorInstance.root.innerHTML : "";
+        
         dataChapters.push({
-            id: i + 1,
+            id: idx + 1,
             title: tInput ? tInput.value : "",
-            content: cInput ? cInput.value : "",
-            imgBase64: chapters[i].imgBase64 || ""
+            content: htmlContent
         });
-    }
+    });
     return {
         title: bookTitleInput ? bookTitleInput.value : "",
         author: bookAuthorInput ? bookAuthorInput.value : "",
@@ -209,9 +191,8 @@ function renderApp(jsonData) {
             
             if(data.chapters && data.chapters.length > 0) {
                 data.chapters.forEach(ch => {
-                    // စာမျက်နှာပေါ် ပြန်ဖော်ပြတဲ့အချိန်မှာ HTML tag တွေကို အကုန် ရှင်းထုတ်ပြီးမှ Textarea ထဲ ထည့်ပါတယ်
-                    let cleanContent = stripHtmlToPureText(ch.content);
-                    addChapter(ch.title || "", cleanContent, ch.imgBase64 || "");
+                    // ပါလာသမျှ ပုံတွေ၊ စာလုံးအထူအစောင်း ကုဒ်တွေကို Editor ထဲ တိုက်ရိုက် ထည့်သွင်းပေးပါတယ်
+                    addChapter(ch.title || "", ch.content || "");
                 });
             } else {
                 addChapter();
@@ -223,66 +204,65 @@ function renderApp(jsonData) {
     }
 }
 
-// --- 📝 CHAPTERS MANAGEMENT ---
-function addChapter(title = "", content = "", imgBase64 = "") {
+// --- 📝 CHAPTERS MANAGEMENT (Quill Integration) ---
+function addChapter(title = "", htmlContent = "") {
     if (!chaptersContainer) return;
     const index = chapters.length;
-    chapters.push({ id: index + 1, imgBase64: imgBase64 });
 
     const chBox = document.createElement('div');
     chBox.className = "bg-gray-750 p-4 rounded-lg border border-gray-700 space-y-3 block clear-both mt-3";
     chBox.id = `chBox-${index}`;
     
-    const imgHiddenClass = imgBase64 ? "" : "hidden";
-
     chBox.innerHTML = `
         <div class="flex justify-between items-center">
             <span class="text-xs font-bold text-emerald-500">အခန်း - ${index + 1}</span>
         </div>
         
-        <input type="text" id="chTitle-${index}" placeholder="အခန်းခေါင်းစဉ်" class="w-full p-2 bg-gray-950 rounded text-sm text-white border border-gray-700 focus:outline-emerald-500">
+        <input type="text" id="chTitle-${index}" placeholder="အခန်းခေါင်းစဉ်" class="w-full p-2 bg-gray-950 rounded text-sm text-white border border-gray-700 focus:outline-emerald-500 font-medium">
         
         <div class="space-y-1">
-            <label class="block text-xs font-bold text-gray-400">📷 အခန်းတွင်းထည့်မည့် ဓာတ်ပုံ (Optional)</label>
-            <div class="flex items-center space-x-2 bg-gray-950 p-2 rounded border border-gray-700">
-                <input type="file" id="chImgInput-${index}" accept="image/*" class="text-xs text-gray-400 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:bg-gray-700 file:text-white hover:file:bg-gray-650">
-                <img id="chImgPreview-${index}" src="${imgBase64 || ''}" class="${imgHiddenClass} w-12 h-12 object-cover rounded border border-gray-600">
-            </div>
+            <label class="block text-xs font-bold text-gray-400">📝 အခန်းတွင်းစာသားနှင့် ဓာတ်ပုံများ (Chapter Content)</label>
+            <!-- Quill Editor Container -->
+            <div id="editor-container-${index}" class="w-full"></div>
         </div>
-
-        <textarea id="chContent-${index}" rows="5" placeholder="စာသားများ ရေးသားရန်..." class="w-full p-2 bg-gray-950 rounded text-sm text-white border border-gray-700 focus:outline-emerald-500"></textarea>
     `;
     
     chaptersContainer.appendChild(chBox);
 
+    // Quill Rich Text Editor အား ခေါ်ယူသတ်မှတ်ခြင်း
+    const quill = new Quill(`#editor-container-${index}`, {
+        theme: 'snow',
+        placeholder: 'ဤနေရာတွင် စာသားများနှင့် ဓာတ်ပုံများကို စိတ်ကြိုက် ရေးသားထည့်သွင်းနိုင်ပါသည်...',
+        modules: {
+            toolbar: [
+                ['bold', 'italic', 'underline'],
+                ['image', 'code-block'],
+                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                ['clean']
+            ]
+        }
+    });
+
+    // အခန်းအချက်အလက်ကို Array ထဲ သိမ်းဆည်းခြင်း
+    chapters.push({
+        id: index + 1,
+        editorInstance: quill
+    });
+
+    // ခေါင်းစဉ်ဖြည့်သွင်းခြင်း
     const tIn = document.getElementById(`chTitle-${index}`);
-    const cIn = document.getElementById(`chContent-${index}`);
     if (tIn) tIn.value = title;
-    if (cIn) cIn.value = content;
 
-    const chImgInput = document.getElementById(`chImgInput-${index}`);
-    const chImgPreview = document.getElementById(`chImgPreview-${index}`);
-
-    if (chImgInput) {
-        chImgInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function (evt) {
-                    chapters[index].imgBase64 = evt.target.result;
-                    if (chImgPreview) {
-                        chImgPreview.src = evt.target.result;
-                        chImgPreview.classList.remove('hidden');
-                    }
-                    saveData();
-                };
-                reader.readAsDataURL(file);
-            }
-        });
+    // ပါလာတဲ့ စာသားနဲ့ ပုံတွေကို Editor ထဲသို့ ပုံဖော်ထည့်သွင်းခြင်း
+    if (htmlContent) {
+        quill.root.innerHTML = htmlContent;
     }
 
+    // Event Listeners for Live Auto-Saving
     if (tIn) tIn.addEventListener('input', saveData);
-    if (cIn) cIn.addEventListener('input', saveData);
+    quill.on('text-change', () => {
+        saveData();
+    });
 }
 
 if (bookTitleInput) bookTitleInput.addEventListener('input', saveData);
@@ -379,41 +359,49 @@ if (btnGenerate) {
                 } catch(e) { console.error("cover error", e); }
             }
 
-            data.chapters.forEach((ch, idx) => {
+            let imgCounter = 1;
+
+            // အခန်းတစ်ခန်းစီကို ePub format ပြောင်းလဲခြင်း
+            for (let idx = 0; idx < data.chapters.length; idx++) {
+                const ch = data.chapters[idx];
                 const chFileName = `chapter_${idx + 1}.html`;
-                let chImageTag = ""; 
-
-                if (ch.imgBase64 && ch.imgBase64.includes("data:image/")) {
-                    try {
-                        const imgParts = ch.imgBase64.split(',');
-                        const imgBase64Content = imgParts[1];
-                        const imgMimeType = imgParts[0].split(';')[0].split(':')[1];
-                        const imgExt = imgMimeType.split('/')[1] || 'jpg';
-                        const imgFileName = `ch_img_${idx + 1}.${imgExt}`;
-
-                        oebps.file(imgFileName, imgBase64Content, { base64: true });
-                        manifestItems += `    <item id="ch-img-${idx + 1}" href="${imgFileName}" media-type="${imgMimeType}"/>\n`;
-                        chImageTag = `<div style="text-align:center; margin:1em 0;"><img src="${imgFileName}" style="max-width:100%; max-height:300px; border-radius:6px;" alt="Chapter Image"/></div>`;
-                    } catch(e) { console.error("ch img error", e); }
+                
+                // Rich Text ထဲမှာ ပါဝင်နေတဲ့ Base64 ဓာတ်ပုံတွေကို ePub ထဲ သီးသန့်ဖိုင်အဖြစ် ဆွဲထုတ်သိမ်းဆည်းပေးခြင်း
+                let contentHtml = ch.content || "<div></div>";
+                const imgRegex = /<img[^>]+src="data:(image\/[^;]+);base64,([^"]+)"[^>]*>/gi;
+                let match;
+                
+                while ((match = imgRegex.exec(ch.content)) !== null) {
+                    const mimeType = match[1];
+                    const base64Data = match[2];
+                    const ext = mimeType.split('/')[1] || 'jpg';
+                    const filename = `img_${imgCounter}.${ext}`;
+                    
+                    // Zip ထဲသို့ ပုံထည့်ခြင်း
+                    oebps.file(filename, base64Data, { base64: true });
+                    manifestItems += `    <item id="rich-img-${imgCounter}" href="${filename}" media-type="${mimeType}"/>\n`;
+                    
+                    // HTML ထဲက Base64 link ကို ePub အတွက် ပုံမှန် relative link အဖြစ် ပြောင်းလဲပစ်ခြင်း
+                    contentHtml = contentHtml.replace(match[0], `<div style="text-align:center; margin:1em 0;"><img src="${filename}" style="max-width:100%;" alt="inline-image"/></div>`);
+                    imgCounter++;
                 }
-
-                // ePub ထုတ်တဲ့အခါ စာသားထဲက HTML ကုဒ်တွေကို လုံးဝပြောင်စင်အောင် ရှင်းထုတ်ပြီးမှ စာပိုဒ် တည်ဆောက်ပါတယ်
-                const cleanText = stripHtmlToPureText(ch.content);
-                const paragraphsHtml = cleanText
-                    .split('\n')
-                    .map(p => p.trim() ? `<p style="text-indent:1.5em; margin:0.5em 0; line-height:1.6;">${p.trim()}</p>` : '')
-                    .join('');
 
                 const chHtmlContent = `<?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
     <title>${ch.title || `Chapter ${idx + 1}`}</title>
+    <style>
+        body { font-family: sans-serif; padding: 10px; line-height: 1.6; }
+        h2 { text-align: center; margin-top: 1em; margin-bottom: 1em; }
+        p { margin: 0.5em 0; text-indent: 1.5em; }
+    </style>
 </head>
 <body>
-    <h2 style="text-align:center; margin-top:1em; margin-bottom:1em;">${ch.title || `Chapter ${idx + 1}`}</h2>
-    ${chImageTag}
-    ${paragraphsHtml || "<p></p>"}
+    <h2>${ch.title || `Chapter ${idx + 1}`}</h2>
+    <div class="content">
+        ${contentHtml}
+    </div>
 </body>
 </html>`;
 
@@ -424,7 +412,7 @@ if (btnGenerate) {
             <navLabel><text>${ch.title || `Chapter ${idx + 1}`}</text></navLabel>
             <content src="${chFileName}"/>
         </navPoint>\n`;
-            });
+            }
 
             const contentOpf = `<?xml version="1.0" encoding="UTF-8"?>
 <package xmlns="http://www.idpf.org/2007/opf" unique-identifier="bookid" version="2.0">
@@ -456,7 +444,7 @@ if (btnGenerate) {
         ${tocItems}
     </navMap>
 </ncx>`;
-        if (oebps) oebps.file("toc.ncx", tocNcx);
+            if (oebps) oebps.file("toc.ncx", tocNcx);
 
             const contentBlob = await zip.generateAsync({ type: "blob", mimeType: "application/epub+zip" });
             const url = URL.createObjectURL(contentBlob);
@@ -468,7 +456,7 @@ if (btnGenerate) {
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
             
-            alert("🎉 ePub Сာအုပ်ကို အောင်မြင်စွာ ထုတ်လုပ်ပြီးပါပြီဗျာ!");
+            alert("🎉 ePub စာအုပ်ကို Rich Text ပုံစံအတိုင်း အောင်မြင်စွာ ထုတ်လုပ်ပြီးပါပြီဗျာ!");
         } catch (err) {
             console.error(err);
             alert("အမှားဖြစ်သွားပါသည်: " + err.message);
