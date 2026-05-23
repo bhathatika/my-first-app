@@ -1,4 +1,4 @@
-// APP VERSION: 4.5.2 (Fixed First-Load Overwrite & Quill Sync Bug)
+// APP VERSION: 4.5.3 (Fixed HTML Content Generator Bug)
 const firebaseConfig = {
   apiKey: "AIzaSyByguLw2U9d1nEIOUiPNHcOkYkBaMhR_Qk",
   authDomain: "epub-creator-pro.firebaseapp.com",
@@ -23,7 +23,7 @@ let currentUser = null;
 let coverBase64 = "";
 let isLightMode = false;
 let globalQuill = null;
-let isSettingEditorContent = false; // Prevent auto-save loop during program loading
+let isSettingEditorContent = false; 
 
 // DOM Elements
 const bodyTag = document.getElementById('bodyTag');
@@ -49,7 +49,7 @@ const userInfoStatus = document.getElementById('userInfoStatus');
 const userEmailDisplay = document.getElementById('userEmailDisplay');
 const btnGenerate = document.getElementById('btnGenerate');
 
-// Initialize Global Quill Editor Securely
+// Initialize Global Quill Editor
 function initGlobalEditor() {
     if (globalQuill) return;
     globalQuill = new Quill('#global-quill-editor', {
@@ -65,9 +65,9 @@ function initGlobalEditor() {
         }
     });
 
-    // Editor Content Auto Save with Guard Flag
+    // Editor Content Auto Save
     globalQuill.on('text-change', () => {
-        if (isSettingEditorContent) return; // Skip save if the program is just setting up data
+        if (isSettingEditorContent) return; 
         if (selectedChapterIndex !== null && chaptersData[selectedChapterIndex]) {
             chaptersData[selectedChapterIndex].content = globalQuill.root.innerHTML;
             saveData();
@@ -291,10 +291,8 @@ window.selectChapter = function(index) {
     if (index === null || index < 0 || index >= chaptersData.length) return;
     selectedChapterIndex = index;
     
-    // 1. Ensure Editor is Initialized first
     initGlobalEditor();
 
-    // 2. Visual highlight updates
     chaptersData.forEach((_, idx) => {
         const item = document.getElementById(`ch-item-${idx}`);
         if (item) {
@@ -306,20 +304,19 @@ window.selectChapter = function(index) {
         }
     });
 
-    // 3. Set content securely using Guard Flag to prevent auto-wipeout
     if (activeEditorSection) activeEditorSection.classList.remove('hidden');
     if (activeChTitle) activeChTitle.value = chaptersData[index].title.includes("အခန်းခေါင်းစဉ်မရှိ") ? "" : chaptersData[index].title;
     
     if (globalQuill) {
-        isSettingEditorContent = true; // Turn flag ON
+        isSettingEditorContent = true; 
         globalQuill.root.innerHTML = chaptersData[index].content || "<div></div>";
-        setTimeout(() => { isSettingEditorContent = false; }, 100); // Turn flag OFF safely
+        setTimeout(() => { isSettingEditorContent = false; }, 100); 
     }
 };
 
 window.deleteChapter = function(event, index) {
     event.stopPropagation();
-    if (confirm("ဤအခန်းကို ဖျက်ပစ်ရန် သေချက်ပါသလား။")) {
+    if (confirm("ဤအခန်းကို ဖျက်ပစ်ရန် သေချာပါသလား။")) {
         chaptersData.splice(index, 1);
         renderChaptersList();
         if (chaptersData.length > 0) {
@@ -340,7 +337,6 @@ if (bookAuthorInput) bookAuthorInput.addEventListener('input', saveData);
 const btnBackup = document.getElementById('btnBackup');
 if (btnBackup) {
     btnBackup.addEventListener('click', () => {
-        // Sync current editor before export
         if (selectedChapterIndex !== null && globalQuill) {
             chaptersData[selectedChapterIndex].content = globalQuill.root.innerHTML;
         }
@@ -368,7 +364,7 @@ if (btnLoadBackup && fileInput) {
 const btnReset = document.getElementById('btnReset');
 if (btnReset) {
     btnReset.addEventListener('click', () => {
-        if(confirm("အစက ပြန်စမှာ သေချက်ပါသလား။")) {
+        if(confirm("အစက ပြန်စမှာ သေချာပါသလား။")) {
             localStorage.removeItem('epub_creator_data');
             if (bookTitleInput) bookTitleInput.value = ""; 
             if (bookAuthorInput) bookAuthorInput.value = ""; 
@@ -384,10 +380,9 @@ if (btnReset) {
     });
 }
 
-// --- 📥 NATIVE EPUB GENERATION SYSTEM ---
+// --- 📥 NATIVE EPUB GENERATION SYSTEM (FIXED CONTENT PARSING) ---
 if (btnGenerate) {
     btnGenerate.addEventListener('click', async () => {
-        // CRITICAL SYNC: Ensure current editing chapter is saved into data structure before export
         if (selectedChapterIndex !== null && globalQuill) {
             chaptersData[selectedChapterIndex].content = globalQuill.root.innerHTML;
             saveData();
@@ -439,21 +434,30 @@ if (btnGenerate) {
                 const ch = data.chapters[idx];
                 const chFileName = `chapter_${idx + 1}.html`;
                 
-                let contentHtml = ch.content || "<div></div>";
-                const imgRegex = /<img[^>]+src="data:(image\/[^;]+);base64,([^"]+)"[^>]*>/gi;
-                let match;
+                // Securely pass content (Never allow blank if data exists)
+                let contentHtml = ch.content && ch.content.trim() !== "" ? ch.content : "<div></div>";
                 
-                while ((match = imgRegex.exec(ch.content)) !== null) {
-                    const mimeType = match[1];
-                    const base64Data = match[2];
-                    const ext = mimeType.split('/')[1] || 'jpg';
-                    const filename = `img_${imgCounter}.${ext}`;
+                // Safe Image Parsing System
+                try {
+                    const imgRegex = /<img[^>]+src="data:(image\/[^;]+);base64,([^"]+)"[^>]*>/gi;
+                    let match;
+                    let modifiedContent = contentHtml;
                     
-                    oebps.file(filename, base64Data, { base64: true });
-                    manifestItems += `    <item id="rich-img-${imgCounter}" href="${filename}" media-type="${mimeType}"/>\n`;
-                    
-                    contentHtml = contentHtml.replace(match[0], `<div style="text-align:center; margin:1em 0;"><img src="${filename}" style="max-width:100%;" alt="inline-image"/></div>`);
-                    imgCounter++;
+                    while ((match = imgRegex.exec(contentHtml)) !== null) {
+                        const mimeType = match[1];
+                        const base64Data = match[2];
+                        const ext = mimeType.split('/')[1] || 'jpg';
+                        const filename = `img_${imgCounter}.${ext}`;
+                        
+                        oebps.file(filename, base64Data, { base64: true });
+                        manifestItems += `    <item id="rich-img-${imgCounter}" href="${filename}" media-type="${mimeType}"/>\n`;
+                        
+                        modifiedContent = modifiedContent.replace(match[0], `<div style="text-align:center; margin:1em 0;"><img src="${filename}" style="max-width:100%;" alt="inline-image"/></div>`);
+                        imgCounter++;
+                    }
+                    contentHtml = modifiedContent;
+                } catch(err) {
+                    console.error("Image regex error, skipping to raw text injection", err);
                 }
 
                 const chHtmlContent = `<?xml version="1.0" encoding="utf-8"?>
@@ -465,6 +469,7 @@ if (btnGenerate) {
         body { font-family: sans-serif; padding: 15px; line-height: 1.7; color: #111; }
         h2 { text-align: center; margin-top: 1em; margin-bottom: 1em; color: #000; }
         p { margin: 0.6em 0; text-indent: 1.5em; text-align: justify; }
+        div.content { font-size: 1em; }
     </style>
 </head>
 <body>
@@ -526,7 +531,7 @@ if (btnGenerate) {
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
             
-            alert("🎉 ePub စာအုပ်ကို စနစ်သစ်အတိုင်း (စာသားများအပြည့်အစုံဖြင့်) အောင်မြင်စွာ ထုတ်လုပ်ပြီးပါပြီဗျာ!");
+            alert("🎉 ePub စာအုပ်ကို စာသားများအပြည့်အစုံဖြင့် အောင်မြင်စွာ ထုတ်လုပ်ပြီးပါပြီဗျာ!");
         } catch (err) {
             console.error(err);
             alert("အမှားဖြစ်သွားပါသည်: " + err.message);
