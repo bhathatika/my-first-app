@@ -1,4 +1,4 @@
-// APP VERSION: 4.5.0 (Advanced Split UI & Live Synchronization System)
+// APP VERSION: 4.5.1 (Fixed Syntax Error - Split UI System)
 const firebaseConfig = {
   apiKey: "AIzaSyByguLw2U9d1nEIOUiPNHcOkYkBaMhR_Qk",
   authDomain: "epub-creator-pro.firebaseapp.com",
@@ -64,7 +64,7 @@ function initGlobalEditor() {
         }
     });
 
-    // Editor ထဲမှာ စာရေးလိုက်ရင် လက်ရှိရွေးထားတဲ့ အခန်းထဲကို စာတွေ တိုက်ရိုက်သိမ်းသွားမယ့်စနစ်
+    // Editor Content Auto Save
     globalQuill.on('text-change', () => {
         if (selectedChapterIndex !== null && chaptersData[selectedChapterIndex]) {
             chaptersData[selectedChapterIndex].content = globalQuill.root.innerHTML;
@@ -73,22 +73,21 @@ function initGlobalEditor() {
     });
 }
 
-// Active Editor ခေါင်းစဉ် ပြောင်းလဲမှုအား စောင့်ကြည့်သိမ်းဆည်းခြင်း
+// Watch Chapter Title Input
 if (activeChTitle) {
     activeChTitle.addEventListener('input', () => {
         if (selectedChapterIndex !== null && chaptersData[selectedChapterIndex]) {
             chaptersData[selectedChapterIndex].title = activeChTitle.value;
-            // List ဘက်က စာသားကိုပါ Live ပြောင်းပေးခြင်း
             const listBtnText = document.getElementById(`ch-text-${selectedChapterIndex}`);
             if (listBtnText) {
-                listBtnText.innerText = activeChTitle.value || `\"အခန်းခေါင်းစဉ်မရှိ\"`;
+                listBtnText.innerText = activeChTitle.value || `"အခန်းခေါင်းစဉ်မရှိ"`;
             }
             saveData();
         }
     });
 }
 
-// Clear All Content ခလုတ်
+// Clear Content Button
 if (btnClearContent) {
     btnClearContent.addEventListener('click', () => {
         if (selectedChapterIndex !== null && confirm("ဤအခန်းတွင်းရှိ စာသားအားလုံးကို ဖျက်ရန် သေချာပါသလား။")) {
@@ -233,7 +232,6 @@ function renderApp(jsonData) {
         chaptersData = data.chapters || [];
         renderChaptersList();
         
-        // Render ပြီးရင် ပထမဆုံးအခန်းကို အလိုအလျောက် ရွေးချယ်ပြသပေးခြင်း
         if (chaptersData.length > 0) {
             selectChapter(0);
         } else {
@@ -245,7 +243,7 @@ function renderApp(jsonData) {
     }
 }
 
-// --- 📋 CHAPTER LIST GENERATOR (UI Accordion Style) ---
+// --- 📋 CHAPTER LIST GENERATOR ---
 function renderChaptersList() {
     if (!chaptersListContainer) return;
     chaptersListContainer.innerHTML = "";
@@ -256,7 +254,7 @@ function renderChaptersList() {
         item.id = `ch-item-${idx}`;
         item.setAttribute('onclick', `selectChapter(${idx})`);
 
-        const displayTitle = ch.title ? ch.title : `\"အခန်းခေါင်းစဉ်မရှိ\"`;
+        const displayTitle = ch.title ? ch.title : `"အခန်းခေါင်းစဉ်မရှိ"`;
         
         item.innerHTML = `
             <div class="flex items-center space-x-2 text-sm font-medium overflow-hidden truncate">
@@ -269,11 +267,10 @@ function renderChaptersList() {
     });
 }
 
-// အခန်းသစ်တစ်ခု တိုးခြင်း
 function createNewChapter() {
     const newIdx = chaptersData.length;
     chaptersData.push({
-        title: `\"အခန်းခေါင်းစဉ်မရှိ\"`,
+        title: `"အခန်းခေါင်းစဉ်မရှိ"`,
         content: ""
     });
     renderChaptersList();
@@ -286,13 +283,11 @@ if (btnAddChapter) {
     btnAddChapter.addEventListener('click', createNewChapter);
 }
 
-// အခန်းတစ်ခုအား ရွေးချယ်ပြီး Editor ထဲ ထည့်သွင်းပုံဖော်ခြင်း
 window.selectChapter = function(index) {
     if (index === null || index < 0 || index >= chaptersData.length) return;
     selectedChapterIndex = index;
     initGlobalEditor();
 
-    // UI Highlight လိုက်ပြောင်းခြင်း
     chaptersData.forEach((_, idx) => {
         const item = document.getElementById(`ch-item-${idx}`);
         if (item) {
@@ -304,7 +299,6 @@ window.selectChapter = function(index) {
         }
     });
 
-    // Editor Section အား ဖွင့်ပြပြီး ဒေတာထည့်သွင်းခြင်း
     if (activeEditorSection) activeEditorSection.classList.remove('hidden');
     if (activeChTitle) activeChTitle.value = chaptersData[index].title.includes("အခန်းခေါင်းစဉ်မရှိ") ? "" : chaptersData[index].title;
     if (globalQuill) {
@@ -312,9 +306,8 @@ window.selectChapter = function(index) {
     }
 };
 
-// အခန်းဖျက်ခြင်း စနစ်
 window.deleteChapter = function(event, index) {
-    event.stopPropagation(); // List ကလစ်နှိပ်ခြင်း အလုပ်မလုပ်အောင် တားဆီးရန်
+    event.stopPropagation();
     if (confirm("ဤအခန်းကို ဖျက်ပစ်ရန် သေချာပါသလား။")) {
         chaptersData.splice(index, 1);
         renderChaptersList();
@@ -512,11 +505,11 @@ if (btnGenerate) {
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
             
-            alert("🎉 ePub စာအုပ်ကို ခေတ်မီ Split UI စနစ်သစ်အတိုင်း အောင်မြင်စွာ ထုတ်လုပ်ပြီးပါပြီဗျာ!");
+            alert("🎉 ePub စာအုပ်ကို စနစ်သစ်အတိုင်း အောင်မြင်စွာ ထုတ်လုပ်ပြီးပါပြီဗျာ!");
         } catch (err) {
             console.error(err);
             alert("အမှားဖြစ်သွားပါသည်: " + err.message);
-        } finaly {
+        } finally {
             btnGenerate.innerText = "💾 ePub ဖိုင် ထုတ်ယူမည်";
             btnGenerate.disabled = false;
         }
