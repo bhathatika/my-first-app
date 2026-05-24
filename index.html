@@ -18,7 +18,7 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Padauk:wght@400;700&display=swap');
         body { font-family: 'Padauk', sans-serif; }
-        .tox-tinymce { border-radius: 0.5rem !important; border: 1px solid #e2e8f0 !important; }
+        .tox-tinymce { border-radius: 0.5rem !important; border: 1px solid #334155 !important; }
     </style>
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen pb-12">
@@ -119,15 +119,13 @@
     </div>
 
     <!-- ========================================================================= -->
-    <!-- 🧠 CORE JAVASCRIPT LOGIC (INDEXEDDB & EPUB GENERATOR) -->
+    <!-- 🧠 CORE JAVASCRIPT LOGIC (INDEXEDDB & FILE UPLOAD FIXED) -->
     <!-- ========================================================================= -->
     <script>
-        // Global States
         let bookChapters = [];
         let currentChapterIndex = 0;
         let coverBase64 = "";
 
-        // IndexedDB Configuration
         const DB_NAME = 'WebEpubCreatorDB';
         const DB_VERSION = 1;
         const STORE_NAME = 'bookState';
@@ -146,19 +144,41 @@
             });
         }
 
-        // TinyMCE Editor Initializing
+        // 🖼️ TINYMCE INITIALIZATION WITH LOCAL IMAGE UPLOAD FUNCTION
         tinymce.init({
             selector: '#editor',
-            height: 320,
+            height: 350,
             menubar: false,
             skin: 'oxide-dark',
             content_css: 'dark',
-            plugins: 'image lists link charmap',
+            plugins: 'image lists link charmap base64image',
             toolbar: 'bold italic underline | numlist bullist | image link | removeformat',
-            images_upload_handler: function (blobInfo, success, failure) {
-                const reader = new FileReader();
-                reader.onload = function(e) { success(e.target.result); };
-                reader.readAsDataURL(blobInfo.blob());
+            
+            // 💡 ဖုန်းထဲက ပုံကို ရွေးချယ်ပြီး Editor ထဲ တိုက်ရိုက်ထည့်သွင်းနိုင်စေမည့် စနစ်
+            image_title: true,
+            automatic_uploads: true,
+            file_picker_types: 'image',
+            file_picker_callback: function (cb, value, meta) {
+                const input = document.createElement('input');
+                input.setAttribute('type', 'file');
+                input.setAttribute('accept', 'image/*');
+
+                input.onchange = function () {
+                    const file = this.files[0];
+                    const reader = new FileReader();
+                    reader.onload = function () {
+                        const id = 'blobid' + (new Date()).getTime();
+                        const blobCache =  tinymce.activeEditor.editorUpload.blobCache;
+                        const base64 = reader.result.split(',')[1];
+                        const blobInfo = blobCache.create(id, file, base64);
+                        blobCache.add(blobInfo);
+
+                        cb(blobInfo.blobUri(), { title: file.name });
+                    };
+                    reader.readAsDataURL(file);
+                };
+
+                input.click();
             },
             setup: function(editor) {
                 editor.on('NodeChange keyup change', function() {
@@ -204,7 +224,7 @@
             }
         });
 
-        // Auto Save to IndexedDB
+        // Auto Save
         async function saveCurrentBookState() {
             try {
                 const db = await initDB();
@@ -321,7 +341,7 @@
             saveCurrentBookState();
         }
 
-        // Reset Data Function
+        // Reset Data
         async function resetAllData() {
             if (!confirm("⚠️ သတိပေးချက်: စာအုပ်ဒေတာအားလုံးကို ဖျက်ပစ်ပြီး အစက ပြန်စမှာ သေချာပါသလား?")) return;
             try {
@@ -336,7 +356,7 @@
             }
         }
 
-        // Export Backup JSON File
+        // Export Backup JSON
         async function exportToBackupFile() {
             try {
                 await saveCurrentBookState();
@@ -372,7 +392,7 @@
             }
         }
 
-        // Load Backup JSON File
+        // Load Backup JSON
         function loadFromBackupFile(e) {
             const file = e.target.files[0];
             if (!file) return;
@@ -395,15 +415,24 @@
             reader.readAsText(file);
         }
 
-        // Base64 to Blob Security Parser
+        // Base64 to Blob Parser
         function base64ToBlob(base64Str) {
             if (!base64Str || typeof base64Str !== 'string') return null;
-            if (!base64Str.includes(';base64,')) return null;
+            
+            // tinyMCE blob uri သို့မဟုတ် base64 စာသားအစစ်ဖြစ်ကြောင်း စစ်ဆေးခြင်း
+            let contentType = "image/jpeg";
+            let rawData = base64Str;
+
+            if (base64Str.startsWith('data:image')) {
+                const parts = base64Str.split(';base64,');
+                contentType = parts[0].split(':')[1];
+                rawData = parts[1];
+            } else {
+                return null;
+            }
 
             try {
-                const parts = base64Str.split(';base64,');
-                const contentType = parts[0].split(':')[1];
-                const raw = window.atob(parts[1]);
+                const raw = window.atob(rawData);
                 const rawLength = raw.length;
                 const uInt8Array = new Uint8Array(rawLength);
 
@@ -412,7 +441,7 @@
                 }
                 return new Blob([uInt8Array], { type: contentType });
             } catch (e) {
-                console.error("ဓာတ်ပုံ ပြောင်းလဲမှုကျော်သွားပါသည်:", e);
+                console.error("ဓာတ်ပုံ ပြောင်းလဲမှု ကျော်သွားပါသည်:", e);
                 return null; 
             }
         }
@@ -444,7 +473,8 @@
             let spineItems = "";
             let imageCounter = 1;
 
-            bookChapters.forEach((chap, index) => {
+            for (let index = 0; index < bookChapters.length; index++) {
+                let chap = bookChapters[index];
                 let htmlString = chap.content || "";
                 htmlString = htmlString.replace(/&nbsp;/g, '&#160;');
 
@@ -462,16 +492,33 @@
 
                 // Images inside Chapter Handler
                 const imgs = container.querySelectorAll('img');
-                imgs.forEach(img => {
+                for (let img of imgs) {
                     const src = img.getAttribute('src');
-                    if (src && src.startsWith('data:image')) {
+                    
+                    // TinyMCE Blob URL ဖြစ်နေပါက Base64 သို့ ပြန်ပြောင်းရန်
+                    let finalSrc = src;
+                    if (src && src.startsWith('blob:')) {
+                        try {
+                            const response = await fetch(src);
+                            const blobData = await response.blob();
+                            finalSrc = await new Promise((resolve) => {
+                                const reader = new FileReader();
+                                reader.onloadend = () => resolve(reader.result);
+                                reader.readAsDataURL(blobData);
+                            });
+                        } catch (err) {
+                            console.error("Blob Fetch Error:", err);
+                        }
+                    }
+
+                    if (finalSrc && finalSrc.startsWith('data:image')) {
                         let ext = "jpg";
                         let mediaType = "image/jpeg";
-                        if (src.includes("image/png")) { ext = "png"; mediaType = "image/png"; }
-                        else if (src.includes("image/gif")) { ext = "gif"; mediaType = "image/gif"; }
+                        if (finalSrc.includes("image/png")) { ext = "png"; mediaType = "image/png"; }
+                        else if (finalSrc.includes("image/gif")) { ext = "gif"; mediaType = "image/gif"; }
 
                         const filename = `image_${imageCounter}.${ext}`;
-                        const imgBlob = base64ToBlob(src);
+                        const imgBlob = base64ToBlob(finalSrc);
                         
                         if (imgBlob) {
                             zip.file(`OEBPS/images/${filename}`, imgBlob);
@@ -483,7 +530,7 @@
                             img.remove();
                         }
                     }
-                });
+                }
 
                 const serializer = new XMLSerializer();
                 let finalizedXhtmlContent = serializer.serializeToString(container);
@@ -510,7 +557,7 @@
                 zip.file(`OEBPS/chapter_${index + 1}.xhtml`, chapHtml);
                 manifestItems += `<item id="chap_${index + 1}" href="chapter_${index + 1}.xhtml" media-type="application/xhtml+xml"/>\n`;
                 spineItems += `<itemref idref="chap_${index + 1}"/>\n`;
-            });
+            }
 
             // Cover Image Embedded
             if (coverBase64) {
