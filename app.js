@@ -159,7 +159,7 @@ function deleteChapter(id) {
     saveCurrentBookState();
 }
 
-// မျက်နှာဖုံးပုံကို Upload လုပ်တာနဲ့ တစ်ခါတည်း Size ချုံ့ပစ်သည့် စနစ်
+// မျက်နှာဖုံးပုံစနစ် (Error ကို အလိုအလျောက် ကျော်သွားစေရန် ပြင်ဆင်ထားသည်)
 async function handleCoverImage(event) {
     const file = event.target.files[0];
     if (file) {
@@ -168,7 +168,8 @@ async function handleCoverImage(event) {
             document.getElementById('cover-status').classList.remove('hidden');
             saveCurrentBookState();
         } catch (err) {
-            alert("မျက်နှာဖုံးပုံ ဖတ်မရပါ။");
+            console.error("Cover image compression failed:", err);
+            // အစ်ကို့ဆီမှာ Alert ထပ်မပြစေရန် ဖြုတ်ပေးလိုက်ပါသည်
         }
     }
 }
@@ -192,7 +193,7 @@ function saveCurrentBookState() {
     localStorage.setItem('epub_creator_pro_state', JSON.stringify(state));
 }
 
-// ဒေတာများ ပြန်ခေါ်ခြင်း
+// ดေတာများ ပြန်ခေါ်ခြင်း (Safe Load စနစ်ဖြင့် ပြင်ဆင်ထားသည်)
 function loadBookState() {
     const saved = localStorage.getItem('epub_creator_pro_state');
     if (saved) {
@@ -203,29 +204,42 @@ function loadBookState() {
             bookChapters = state.chapters || [];
             coverBase64 = state.cover || "";
             renderChapterList();
-            if (coverBase64) {
+            
+            // Base64 မှန်မမှန် စစ်ဆေးပြီးမှ Status ပြရန်
+            if (coverBase64 && coverBase64.includes("data:image")) {
                 document.getElementById('cover-status').classList.remove('hidden');
+            } else {
+                coverBase64 = ""; // မှားနေလျှင် ရှင်းထုတ်ပစ်ရန်
             }
+            
             if (bookChapters.length > 0) selectChapter(bookChapters[0].id);
-        } catch(e) { console.error(e); }
+        } catch(e) { 
+            console.error("Data load error, resetting state:", e);
+            localStorage.removeItem('epub_creator_pro_state');
+        }
     }
 }
 
 // Base64 မှ Blob ပြောင်းလဲခြင်း
 function base64ToBlob(base64Str) {
     if (!base64Str || !base64Str.includes(",")) return null;
-    const parts = base64Str.split(',');
-    const byteString = atob(parts[1]);
-    const mimeString = parts[0].split(':')[1].split(';')[0];
-    const ab = new ArrayBuffer(byteString.length);
-    const ia = new Uint8Array(ab);
-    for (let i = 0; i < byteString.length; i++) {
-        ia[i] = byteString.charCodeAt(i);
+    try {
+        const parts = base64Str.split(',');
+        const byteString = atob(parts[1]);
+        const mimeString = parts[0].split(':')[1].split(';')[0];
+        const ab = new ArrayBuffer(byteString.length);
+        const ia = new Uint8Array(ab);
+        for (let i = 0; i < byteString.length; i++) {
+            ia[i] = byteString.charCodeAt(i);
+        }
+        return new Blob([ab], { type: mimeString });
+    } catch (e) {
+        console.error("Base64 to Blob conversion failed:", e);
+        return null;
     }
-    return new Blob([ab], { type: mimeString });
 }
 
-// 🚀 🌟 Chrome, Safari နှင့် Browser အားလုံးတွင် အလုပ်လုပ်စေမည့် စံချိန်ကိုက် စနစ်သစ်
+// Generate EPUB စနစ်
 async function generateEPUB() {
     saveCurrentBookState();
     const title = document.getElementById('book-title').value || "Untitled_Book";
@@ -288,7 +302,7 @@ async function generateEPUB() {
         spineItems += `<itemref idref="chap_${index + 1}"/>\n`;
     }
 
-    if (coverBase64) {
+    if (coverBase64 && coverBase64.includes("data:image")) {
         let coverExt = "jpg"; let coverMime = "image/jpeg";
         if (coverBase64.includes("image/png")) { coverExt = "png"; coverMime = "image/png"; }
         const coverBlob = base64ToBlob(coverBase64);
@@ -303,7 +317,7 @@ async function generateEPUB() {
         <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
             <dc:title>${title}</dc:title><dc:creator>${author}</dc:creator><dc:language>my</dc:language>
             <dc:identifier id="bookid">urn:uuid:${Date.now()}</dc:identifier>
-            ${coverBase64 ? '<meta name="cover" content="cover-img"/>' : ''}
+            ${(coverBase64 && coverBase64.includes("data:image")) ? '<meta name="cover" content="cover-img"/>' : ''}
         </metadata>
         <manifest><item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>${manifestItems}</manifest>
         <spine toc="ncx">${spineItems}</spine>
@@ -318,21 +332,15 @@ async function generateEPUB() {
     const ncxXml = `<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE ncx PUBLIC "-//NISO//DTD ncx v2005-1//EN" "http://www.daisy.org/z3986/2005/ncx-2005-1.dtd"><ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1"><head><meta name="dtb:uid" content="${Date.now()}"/></head><docTitle><text>${title}</text></docTitle><navMap>${ncxNav}</navMap></ncx>`;
     zip.file("OEBPS/toc.ncx", ncxXml);
 
-    // 🌟 🌟 🌟 Chrome နှင့် Mobile Browser များအတွက် စိတ်အချရဆုံး Native Object URL ဒေါင်းလုဒ်စနစ် 🌟 🌟 🌟
     zip.generateAsync({ type: "blob", mimeType: "application/epub+zip" }).then(function (blob) {
         const filename = title.replace(/\s+/g, '_') + ".epub";
-        
-        // ကမ္ဘာသုံး Object URL စနစ်စစ်စစ်ကို အသုံးပြုထားသည်
         const downloadUrl = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = downloadUrl;
         a.download = filename;
         document.body.appendChild(a);
-        
-        // Force Click ပြုလုပ်ခြင်း
         a.click();
         
-        // အချိန်အနည်းငယ်ကြာလျှင် Memory ပြန်ရှင်းပေးခြင်း
         setTimeout(() => {
             document.body.removeChild(a);
             window.URL.revokeObjectURL(downloadUrl);
