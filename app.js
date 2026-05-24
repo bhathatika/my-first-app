@@ -1,14 +1,53 @@
-// --- 🌟 INDUSTRIAL GRADE MULTI-IMAGE EPUB ENGINE (WITH SAFETY CHECK) 🌟 ---
+// ==========================================
+// ၁။ SAVE BOOK STATE FUNCTION (အဆင့်မြှင့်တင်ပြီး)
+// ==========================================
+function saveCurrentBookState() {
+    const editorContent = tinymce.activeEditor ? tinymce.activeEditor.getContent() : "";
+    
+    // ရွေးချယ်ထားသော အခန်းမရှိပါက ပထမဆုံးအခန်းထဲသို့ အလိုအလျောက် သိမ်းဆည်းပေးရန်
+    if (currentChapterIndex === null || currentChapterIndex === undefined) {
+        if (bookChapters && bookChapters.length > 0) {
+            currentChapterIndex = 0;
+        }
+    }
+
+    if (currentChapterIndex !== null && bookChapters[currentChapterIndex]) {
+        bookChapters[currentChapterIndex].content = editorContent;
+    }
+    
+    localStorage.setItem('saved_book_title', document.getElementById('book-title').value);
+    localStorage.setItem('saved_book_author', document.getElementById('author').value);
+    localStorage.setItem('saved_book_chapters', JSON.stringify(bookChapters));
+    if (coverBase64) {
+        localStorage.setItem('saved_book_cover', coverBase64);
+    }
+}
+
+// ==========================================
+// ၂။ GENERATE EPUB FUNCTION (အဆင့်မြှင့်တင်ပြီး)
+// ==========================================
 function generateEPUB() {
-    saveCurrentBookState();
+    saveCurrentBookState(); // လက်ရှိစာကို အရင်သိမ်းမယ်
     
     const title = document.getElementById('book-title').value || "Untitled Book";
     const author = document.getElementById('author').value || "Unknown Author";
     
-    // အခန်း လုံးဝမရှိဘဲ ခလုတ်နှိပ်မိပါက Warning ပြပြီး တားဆီးပေးမည့် စနစ်
+    // အခန်း လုံးဝမရှိလျှင် တားဆီးရန်
     if(!bookChapters || bookChapters.length === 0) {
-        alert("⚠️ သတိပေးချက်: အခန်း (Chapter) မရှိသေးပါ။ ကျေးဇူးပြု၍ အပေါ်က '+ အခန်းတိုးမည် (Add Chapter)' ခလုတ်ကို အရင်နှိပ်ပြီးမှ စာအုပ်ထုတ်ပေးပါဗျာ။");
+        alert("⚠️ သတိပေးချက်: အခန်း (Chapter) မရှိသေးပါ။ ကျေးဇူးပြု၍ '+ အခန်းတိုးမည်' ခလုတ်ကို အရင်နှိပ်ပေးပါဗျာ။");
         return;
+    }
+
+    // အခန်းရှိသော်လည်း စာသားများ အခန်းထဲသို့ မရောက်ရှိသေးပါက အလိုအလျောက် ပထမဆုံးအခန်းထဲ ထည့်ပေးရန်
+    let hasContent = bookChapters.some(chap => chap.content && chap.content.trim() !== "");
+    if (!hasContent) {
+        const editorContent = tinymce.activeEditor ? tinymce.activeEditor.getContent() : "";
+        if (editorContent.trim() !== "") {
+            bookChapters[0].content = editorContent;
+        } else {
+            alert("⚠️ သတိပေးချက်: အခန်းထဲတွင် မည်သည့်စာသား သို့မဟုတ် ဓာတ်ပုံမျှ မရှိသေးပါ။ စာအရင်ရိုက်ပေးပါဗျာ။");
+            return;
+        }
     }
 
     if (typeof JSZip === 'undefined') {
@@ -142,12 +181,19 @@ function generateEPUB() {
     zip.file("OEBPS/toc.ncx", ncxXml);
 
     zip.generateAsync({ type: "blob", mimeType: "application/epub+zip" }).then(function (blob) {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = title.replace(/\s+/g, '_') + ".epub";
-        a.click();
-        setTimeout(() => URL.revokeObjectURL(url), 2000);
+        const filename = title.replace(/\s+/g, '_') + ".epub";
+        
+        // iOS Safari Flow အတွက်FileReader ဖြင့် ပြောင်းလဲဒေါင်းလုဒ်ဆွဲခြင်း
+        const reader = new FileReader();
+        reader.onloadend = function() {
+            const a = document.createElement('a');
+            a.href = reader.result;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => { document.body.removeChild(a); }, 500);
+        };
+        reader.readAsDataURL(blob);
     }).catch(function (err) {
         alert("ePub Generation Error: " + err.message);
     });
