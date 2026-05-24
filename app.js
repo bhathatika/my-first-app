@@ -225,7 +225,7 @@ function base64ToBlob(base64Str) {
     return new Blob([ab], { type: mimeString });
 }
 
-// 🚀 Browser ပေါင်းစုံ (Chrome, Facebook App, စသည်) တွင် ရာနှုန်းပြည့် ဒေါင်းလုဒ်ရစေမည့် Universal Export စနစ်
+// 🚀 🌟 Chrome, Safari နှင့် Browser အားလုံးတွင် အလုပ်လုပ်စေမည့် စံချိန်ကိုက် စနစ်သစ်
 async function generateEPUB() {
     saveCurrentBookState();
     const title = document.getElementById('book-title').value || "Untitled_Book";
@@ -318,25 +318,25 @@ async function generateEPUB() {
     const ncxXml = `<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE ncx PUBLIC "-//NISO//DTD ncx v2005-1//EN" "http://www.daisy.org/z3986/2005/ncx-2005-1.dtd"><ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1"><head><meta name="dtb:uid" content="${Date.now()}"/></head><docTitle><text>${title}</text></docTitle><navMap>${ncxNav}</navMap></ncx>`;
     zip.file("OEBPS/toc.ncx", ncxXml);
 
-    // 🌟 Browser အားလုံး (Chrome, In-App Browser များပါမကျန်) အလုပ်လုပ်စေမည့် ဒေါင်းလုဒ်နည်းလမ်းသစ်
+    // 🌟 🌟 🌟 Chrome နှင့် Mobile Browser များအတွက် စိတ်အချရဆုံး Native Object URL ဒေါင်းလုဒ်စနစ် 🌟 🌟 🌟
     zip.generateAsync({ type: "blob", mimeType: "application/epub+zip" }).then(function (blob) {
         const filename = title.replace(/\s+/g, '_') + ".epub";
         
-        // FileReader သုံးပြီး Hybrid ဒေါင်းလုဒ် ပြုလုပ်ခြင်း
-        const fileReader = new FileReader();
-        fileReader.onload = function(event) {
-            const a = document.createElement('a');
-            a.href = event.target.result;
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
-            
-            // ခေတ်မီ ဖုန်းများနှင့် Chrome အတွက် Double Trigger စနစ်ထည့်သွင်းခြင်း
-            setTimeout(() => {
-                document.body.removeChild(a);
-            }, 500);
-        };
-        fileReader.readAsDataURL(blob);
+        // ကမ္ဘာသုံး Object URL စနစ်စစ်စစ်ကို အသုံးပြုထားသည်
+        const downloadUrl = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = downloadUrl;
+        a.download = filename;
+        document.body.appendChild(a);
+        
+        // Force Click ပြုလုပ်ခြင်း
+        a.click();
+        
+        // အချိန်အနည်းငယ်ကြာလျှင် Memory ပြန်ရှင်းပေးခြင်း
+        setTimeout(() => {
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(downloadUrl);
+        }, 1000);
     }).catch(function(err) {
         alert("ဒေါင်းလုဒ်ဆွဲရာတွင် အမှားအယွင်းရှိနေပါသည်။");
     });
@@ -348,14 +348,12 @@ function exportToBackupFile() {
     if (!saved) return alert("⚠️ သိမ်းဆည်းရန် ဒေတာမရှိပါ။");
     const blob = new Blob([saved], { type: "application/json" });
     
-    const fileReader = new FileReader();
-    fileReader.onload = function(event) {
-        const a = document.createElement('a');
-        a.href = event.target.result;
-        a.download = "epub_book_backup.json";
-        a.click();
-    };
-    fileReader.readAsDataURL(blob);
+    const downloadUrl = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = downloadUrl;
+    a.download = "epub_book_backup.json";
+    a.click();
+    setTimeout(() => window.URL.revokeObjectURL(downloadUrl), 1000);
 }
 
 function importFromBackupFile(event) {
