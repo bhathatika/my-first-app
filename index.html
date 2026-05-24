@@ -4,651 +4,582 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Web ePub Creator Pro</title>
-    <!-- Icons -->
+    
+    <!-- Tailwind CSS & FontAwesome Icons -->
+    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Standard JSZip Library -->
+    
+    <!-- TinyMCE Editor (စာရိုက်သည့်နေရာ) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tinymce/6.7.0/tinymce.min.js"></script>
+    
+    <!-- JSZip (ePub ထုတ်လုပ်ပေးမည့် Library) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
     <style>
-        :root {
-            --bg-color: #121824;
-            --card-bg: #1e2640;
-            --text-color: #ffffff;
-            --text-muted: #94a3b8;
-            --primary-blue: #3b82f6;
-            --btn-gray: #334155;
-            --btn-red: #ef4444;
-            --btn-green: #10b981;
-            --border-color: #334155;
-            --input-bg: #0f172a;
-        }
-
-        .light-mode {
-            --bg-color: #f8fafc;
-            --card-bg: #ffffff;
-            --text-color: #0f172a;
-            --text-muted: #64748b;
-            --primary-blue: #2563eb;
-            --btn-gray: #e2e8f0;
-            --btn-red: #dc2626;
-            --btn-green: #16a34a;
-            --border-color: #cbd5e1;
-            --input-bg: #f1f5f9;
-        }
-
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Arial, sans-serif; }
-        body { background-color: var(--bg-color); color: var(--text-color); padding: 20px; display: flex; justify-content: center; transition: background 0.3s; }
-        
-        .app-container { width: 100%; max-width: 520px; background-color: var(--card-bg); border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); overflow: hidden; border: 1px solid var(--border-color); }
-        
-        /* Auth Screen */
-        #auth-screen { padding: 40px 20px; display: flex; flex-direction: column; gap: 15px; }
-        .auth-toggle { display: flex; justify-content: center; gap: 20px; margin-bottom: 10px; font-weight: bold; }
-        .auth-toggle span { cursor: pointer; color: var(--text-muted); padding-bottom: 5px; }
-        .auth-toggle span.active { color: var(--primary-blue); border-bottom: 2px solid var(--primary-blue); }
-
-        /* Header */
-        .header { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; border-bottom: 1px solid var(--border-color); }
-        .brand { display: flex; align-items: center; gap: 8px; font-size: 1rem; font-weight: bold; }
-        .brand span.premium { background-color: #22c55e; color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 20px; }
-        .header-btns { display: flex; gap: 8px; }
-        .mode-btn, .lang-btn, .logout-btn { border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 0.8rem; }
-        .mode-btn { background-color: #f59e0b; color: white; }
-        .lang-btn { background-color: var(--btn-gray); color: var(--text-color); }
-        .logout-btn { background-color: var(--btn-red); color: white; }
-
-        /* Content */
-        .content { padding: 20px; display: flex; flex-direction: column; gap: 18px; }
-        .panel { border: 1px solid var(--border-color); border-radius: 8px; padding: 15px; background-color: rgba(0, 0, 0, 0.15); }
-        .panel-title { text-align: center; font-size: 0.9rem; margin-bottom: 12px; display: flex; justify-content: center; align-items: center; gap: 6px; font-weight: bold; }
-        
-        .form-group { display: flex; flex-direction: column; gap: 6px; }
-        label { font-weight: bold; font-size: 0.9rem; }
-        input[type="text"], input[type="password"] { width: 100%; padding: 10px; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-color); outline: none; }
-        
-        /* Buttons */
-        .btn { width: 100%; padding: 11px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px; color: white; font-size: 0.9rem; }
-        .btn-gray { background-color: var(--btn-gray); color: var(--text-color); }
-        .btn-blue { background-color: var(--primary-blue); }
-        .btn-red { background-color: var(--btn-red); }
-        .btn-green { background-color: var(--btn-green); }
-
-        /* Chapter Management List */
-        .chapter-list-box { display: flex; flex-direction: column; gap: 5px; max-height: 150px; overflow-y: auto; background: var(--input-bg); padding: 8px; border-radius: 6px; border: 1px solid var(--border-color); margin-top: 5px; }
-        .chapter-item { display: flex; justify-content: space-between; align-items: center; padding: 8px; background: rgba(255,255,255,0.05); border-radius: 4px; cursor: pointer; font-size: 0.85rem; }
-        .chapter-item.active { background: var(--primary-blue); color: white; }
-        .chapter-item i { cursor: pointer; color: var(--btn-red); }
-
-        /* Rich Editor */
-        .editor-container { background-color: white; border-radius: 6px; overflow: hidden; border: 1px solid var(--border-color); margin-top: 5px; }
-        .toolbar { background-color: #f1f5f9; padding: 8px; display: flex; gap: 12px; border-bottom: 1px solid #cbd5e1; }
-        .toolbar button { background: none; border: none; cursor: pointer; color: #334155; font-size: 0.95rem; }
-        .toolbar button:hover { color: var(--primary-blue); }
-        .editor-area { min-height: 220px; max-height: 400px; padding: 12px; color: #000000; background-color: #ffffff; outline: none; overflow-y: auto; font-size: 0.95rem; line-height: 1.5; }
-        .editor-area img { max-width: 100%; border-radius: 6px; margin: 8px 0; display: block; }
-
-        .pdf-box { background-color: rgba(16, 185, 129, 0.08); border: 1px dashed var(--btn-green); border-radius: 8px; padding: 12px; }
-        .hidden { display: none !important; }
+        @import url('https://fonts.googleapis.com/css2?family=Padauk:wght@400;700&display=swap');
+        body { font-family: 'Padauk', sans-serif; }
+        .tox-tinymce { border-radius: 0.5rem !important; border: 1px solid #e2e8f0 !important; }
     </style>
 </head>
-<body>
+<body class="bg-slate-900 text-slate-100 min-h-screen pb-12">
 
-<div class="app-container">
-
-    <!-- SIGN IN / SIGN UP SCREEN -->
-    <div id="auth-screen">
-        <div class="auth-toggle">
-            <span id="tab-login" class="active" onclick="switchAuthTab('login')">Sign In</span>
-            <span id="tab-register" onclick="switchAuthTab('register')">Sign Up</span>
-        </div>
-        <div class="form-group">
-            <label id="lbl-email">အီးမေးလ် (Email)</label>
-            <input type="text" id="auth-email" placeholder="example@gmail.com" value="user@epub.com">
-        </div>
-        <div class="form-group">
-            <label id="lbl-pass">လျှို့ဝှက်နံပါတ် (Password)</label>
-            <input type="password" id="auth-password" placeholder="******" value="123456">
-        </div>
-        <button class="btn btn-blue" id="btn-auth" onclick="handleAuth()">Sign In</button>
-    </div>
-
-    <!-- MAIN APP SCREEN -->
-    <div id="main-app" class="hidden">
-        <div class="header">
-            <div class="brand">
-                <i class="fa-solid fa-globe"></i> Web ePub Creator Pro <span class="premium">Premium</span>
-            </div>
-            <div class="header-btns">
-                <button class="lang-btn" onclick="toggleLanguage()">EN</button>
-                <button class="mode-btn" onclick="toggleDarkMode()">Light Mode</button>
-                <button class="logout-btn" onclick="handleLogout()"><i class="fa-solid fa-right-from-bracket"></i></button>
-            </div>
+    <!-- 🌐 Main Container -->
+    <div class="max-w-xl mx-auto px-4 pt-6">
+        
+        <!-- 🎯 Header Title -->
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-2xl font-bold text-amber-400 flex items-center gap-2">
+                <i class="fa-solid fa-book-open"></i> Web ePub Creator Pro
+            </h1>
+            <span class="bg-amber-500/20 text-amber-300 text-xs px-2.5 py-1 rounded-full border border-amber-500/30 font-medium">Premium</span>
         </div>
 
-        <div class="content">
-            <!-- Backup Management -->
-            <div class="panel">
-                <div class="panel-title" id="lbl-backup-title"><i class="fa-solid fa-floppy-disk"></i> စာအုပ် BACKUP စီမံခန့်ခွဲမှု</div>
-                <button class="btn btn-gray" onclick="exportBackup()" style="margin-bottom:8px;"><i class="fa-solid fa-floppy-disk"></i> <span id="lbl-btn-backup">လက်ရှိစာအုပ်ကို ဖိုင်သိမ်းဆည်းမည် (Backup)</span></button>
+        <!-- 📦 BACKUP & RESET SECTION -->
+        <div class="bg-slate-800 rounded-xl p-4 border border-slate-700/60 shadow-xl mb-6">
+            <h2 class="text-sm font-semibold text-slate-400 mb-3 flex items-center gap-1.5">
+                <i class="fa-solid fa-database text-amber-400"></i> စာအုပ် BACKUP စီမံခန့်ခွဲမှု
+            </h2>
+            <div class="grid grid-cols-1 gap-2.5">
+                <!-- Backup Button -->
+                <button onclick="exportToBackupFile()" class="w-full bg-slate-700 hover:bg-slate-600 text-slate-200 py-3 px-4 rounded-lg flex items-center justify-center gap-2 font-medium transition active:scale-95 border border-slate-600">
+                    <i class="fa-solid fa-file-export text-emerald-400"></i> လက်ရှိစာအုပ်ကို ဖိုင်သိမ်းဆည်းမည် (Backup)
+                </button>
                 
-                <input type="file" id="import-file" class="hidden" onchange="importBackup(event)" accept=".json">
-                <button class="btn btn-blue" onclick="document.getElementById('import-file').click()" style="margin-bottom:8px;"><i class="fa-solid fa-box-open"></i> <span id="lbl-btn-load">စာအုပ်ဟောင်း ပြန်တင်မည် (Load Backup)</span></button>
+                <!-- Load Backup Button -->
+                <label class="w-full bg-slate-700 hover:bg-slate-600 text-slate-200 py-3 px-4 rounded-lg flex items-center justify-center gap-2 font-medium transition active:scale-95 border border-slate-600 cursor-pointer text-center">
+                    <i class="fa-solid fa-file-import text-sky-400"></i> စာအုပ်ဖောင်း ပြန်တင်မည် (Load Backup)
+                    <input type="file" id="backup-upload" accept=".json" onchange="loadFromBackupFile(event)" class="hidden">
+                </label>
                 
-                <button class="btn btn-red" onclick="resetForm()"><i class="fa-solid fa-paintbrush"></i> <span id="lbl-btn-reset">စာအုပ်အသစ်အတွက် အစကပြန်စမည် (Reset)</span></button>
+                <!-- Reset Button -->
+                <button onclick="resetAllData()" class="w-full bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 py-3 px-4 rounded-lg flex items-center justify-center gap-2 font-medium transition active:scale-95 border border-rose-800/50">
+                    <i class="fa-solid fa-trash-can text-rose-400"></i> စာအုပ်အသစ်အတွက် အစကပြန်စမည် (Reset)
+                </button>
             </div>
+        </div>
 
-            <!-- Meta Data -->
-            <div class="form-group">
-                <label id="lbl-book-title">စာအုပ်အမည် (Book Title)</label>
-                <input type="text" id="book-title" placeholder="My Novel" oninput="saveCurrentBookState()">
+        <!-- 📝 BOOK META INPUTS -->
+        <div class="space-y-4 mb-6">
+            <div>
+                <label class="block text-sm font-medium text-slate-400 mb-1.5">စာအုပ်အမည် (Book Title)</label>
+                <input type="text" id="book-title" oninput="saveCurrentBookState()" placeholder="သူမ... ဖြစ်တည်မှု အပိုင်းအစများ" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3.5 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500 transition shadow-inner">
             </div>
-
-            <div class="form-group">
-                <label id="lbl-author">စာရေးဆရာ (Author)</label>
-                <input type="text" id="author" placeholder="Unknown Author" oninput="saveCurrentBookState()">
+            <div>
+                <label class="block text-sm font-medium text-slate-400 mb-1.5">စာရေးဆရာ (Author)</label>
+                <input type="text" id="author" oninput="saveCurrentBookState()" placeholder="သဘောတရား ဆရာလေးတစ်ရွာ" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3.5 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500 transition shadow-inner">
             </div>
-
-            <div class="form-group">
-                <label id="lbl-cover">မျက်နှာဖုံးပုံ (Cover Image)</label>
-                <input type="file" id="cover-image" accept="image/*" onchange="handleCoverUpload(event)">
-                <small id="cover-status" style="color: var(--btn-green); font-weight:bold; margin-top:2px;"></small>
-            </div>
-
-            <!-- Chapters Management -->
-            <div class="form-group">
-                <label id="lbl-chapters">အခန်းများ (Chapters)</label>
-                <button class="btn btn-blue" onclick="addNewChapter()"><i class="fa-solid fa-plus"></i> <span id="lbl-btn-addchapter">အခန်းတိုးမည် (Add Chapter)</span></button>
-                <div class="chapter-list-box" id="chapter-list"></div>
-            </div>
-
-            <!-- PDF Optional -->
-            <div class="pdf-box">
-                <div style="color: #10b981; font-weight: bold; font-size: 0.85rem; margin-bottom: 8px;">
-                    <i class="fa-solid fa-file-pdf"></i> <span id="lbl-pdf-title">PDF မှ စာသားထုတ်ယူရန် (Optional)</span>
+            
+            <!-- 🖼️ COVER IMAGE UPLOAD -->
+            <div>
+                <label class="block text-sm font-medium text-slate-400 mb-1.5">မျက်နှာဖုံးပုံ (Cover Image)</label>
+                <div class="flex items-center gap-3 bg-slate-800 border border-slate-700 rounded-lg p-2">
+                    <label class="bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-md cursor-pointer text-sm font-medium border border-slate-600 transition active:scale-95">
+                        Choose File
+                        <input type="file" id="cover-upload" accept="image/*" onchange="handleCoverUpload(event)" class="hidden">
+                    </label>
+                    <span id="cover-status" class="text-sm text-slate-400 truncate">No file selected</span>
                 </div>
-                <input type="file" accept=".pdf" style="margin-bottom: 8px; font-size:0.8rem;">
-                <button class="btn btn-green" style="padding:8px; font-size:0.85rem;"><i class="fa-solid fa-bolt"></i> <span id="lbl-btn-pdfextract">PDF မှ စာသားများကို ဆွဲထုတ်မည်</span></button>
-            </div>
-
-            <!-- Chapter Editor Section -->
-            <div class="form-group">
-                <label id="lbl-chap-title">အခန်းခေါင်းစဉ် (Chapter Title)</label>
-                <input type="text" id="chapter-title" placeholder="Chapter Title" oninput="updateActiveChapterTitle(this.value)">
-            </div>
-
-            <button class="btn btn-red" onclick="clearContent()"><i class="fa-solid fa-broom"></i> <span id="lbl-btn-clear">စာသားအားလုံးဖျက်ရန် (Clear All Content)</span></button>
-
-            <!-- Text & Multiple Image Editor -->
-            <div class="form-group">
-                <label id="lbl-chap-content">အခန်းတွင်းစာသား (Chapter Content)</label>
-                <div class="editor-container">
-                    <div class="toolbar">
-                        <button onclick="formatDoc('bold')"><i class="fa-solid fa-bold"></i></button>
-                        <button onclick="formatDoc('italic')"><i class="fa-solid fa-italic"></i></button>
-                        <button onclick="formatDoc('underline')"><i class="fa-solid fa-underline"></i></button>
-                        <button onclick="formatDoc('insertUnorderedList')"><i class="fa-solid fa-list-ul"></i></button>
-                        
-                        <button onclick="document.getElementById('editor-multiple-imgs').click()"><i class="fa-solid fa-images"></i></button>
-                        <input type="file" id="editor-multiple-imgs" class="hidden" accept="image/*" multiple onchange="insertMultipleImages(event)">
-                        
-                        <button onclick="formatDoc('removeFormat')"><i class="fa-solid fa-text-slash"></i></button>
-                    </div>
-                    <div class="editor-area" id="editor" contenteditable="true" oninput="updateActiveChapterContent()"></div>
+                <!-- Preview Cover Panel -->
+                <div id="cover-preview-box" class="mt-2 hidden">
+                    <img id="cover-preview" src="" class="w-24 h-auto rounded border border-slate-600 shadow-md">
                 </div>
             </div>
+        </div>
 
-            <!-- Export ePub Button -->
-            <button class="btn btn-green" onclick="generateEPUB()">
-                <i class="fa-solid fa-box"></i> <span id="lbl-btn-export">ePub ဖိုင် ထုတ်ယူမည်</span>
+        <!-- 📑 CHAPTERS MANAGEMENT -->
+        <div class="bg-slate-800/60 border border-slate-700/60 rounded-xl p-4 mb-6">
+            <label class="block text-sm font-medium text-slate-400 mb-3">အခန်းများ (Chapters)</label>
+            <button onclick="addNewChapter()" class="w-full bg-sky-600 hover:bg-sky-500 text-white py-3 rounded-lg font-medium flex items-center justify-center gap-1.5 transition active:scale-95 mb-3 shadow-lg shadow-sky-950/20">
+                <i class="fa-solid fa-plus"></i> အခန်းတိုးမည် (Add Chapter)
+            </button>
+            <div id="chapters-list" class="space-y-2 max-h-48 overflow-y-auto pr-1">
+                <!-- Chapters items will inject here dynamically -->
+            </div>
+        </div>
+
+        <!-- ✍️ EDITOR SECTION -->
+        <div id="editor-section" class="space-y-4 hidden">
+            <div>
+                <label class="block text-sm font-medium text-slate-400 mb-1.5">အခန်းခေါင်းစဉ် (Chapter Title)</label>
+                <input type="text" id="chapter-title" oninput="updateChapterTitle()" placeholder="အခန်းခေါင်းစဉ် ရိုက်ပါ..." class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3.5 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500 transition shadow-inner">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-400 mb-1.5">အခန်းတွင်းစာသား (Chapter Content)</label>
+                <textarea id="editor"></textarea>
+            </div>
+        </div>
+
+        <!-- 🚀 DOWNLOAD BUTTON -->
+        <div class="mt-6">
+            <button onclick="generateEPUB()" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-4 rounded-xl flex items-center justify-center gap-2 text-lg shadow-lg shadow-amber-950/30 transition active:scale-98">
+                <i class="fa-solid fa-download text-xl"></i> ePub ဖိုင် ထုတ်ယူမည်
             </button>
         </div>
+
     </div>
-</div>
 
-<script>
-    let currentLang = 'my';
-    let bookChapters = []; 
-    let activeChapterId = null;
-    let coverBase64 = "";
+    <!-- ========================================================================= -->
+    <!-- 🧠 CORE JAVASCRIPT LOGIC (INDEXEDDB & EPUB GENERATOR) -->
+    <!-- ========================================================================= -->
+    <script>
+        // Global States
+        let bookChapters = [];
+        let currentChapterIndex = 0;
+        let coverBase64 = "";
 
-    const langData = {
-        my: {
-            email: "အီးမေးလ် (Email)", pass: "လျှို့ဝှက်နံပါတ် (Password)",
-            backupTitle: "စာအုပ် BACKUP စီမံခန့်ခွဲမှု", btnBackup: "လက်ရှိစာအုပ်ကို ဖိုင်သိမ်းဆည်းမည် (Backup)",
-            btnLoad: "စာအုပ်ဟောင်း ပြန်တင်မည် (Load Backup)", btnReset: "စာအုပ်အသစ်အတွက် အစကပြန်စမည် (Reset)",
-            bookTitle: "စာအုပ်အမည် (Book Title)", author: "စာရေးဆရာ (Author)", cover: "မျက်နှာဖုံးပုံ (Cover Image)",
-            chapters: "အခန်းများ (Chapters)", btnAddChap: "အခန်းတိုးမည် (Add Chapter)", pdfTitle: "PDF မှ စာသားထုတ်ယူရန် (Optional)",
-            btnPdf: "PDF မှ စာသားများကို ဆွဲထုတ်မည်", chapTitle: "အခန်းခေါင်းစဉ် (Chapter Title)",
-            btnClear: "စာသားအားလုံးဖျက်ရန် (Clear All Content)", chapContent: "အခန်းတွင်းစာသား (Chapter Content)",
-            btnExport: "ePub ဖိုင် ထုတ်ယူမည်"
-        },
-        en: {
-            email: "Email Address", pass: "Password",
-            backupTitle: "Book BACKUP Management", btnBackup: "Save Current Book (Backup)",
-            btnLoad: "Load Old Book (Load Backup)", btnReset: "Reset for New Book",
-            bookTitle: "Book Title", author: "Author", cover: "Cover Image",
-            chapters: "Chapters", btnAddChap: "Add Chapter", pdfTitle: "Extract Text from PDF (Optional)",
-            btnPdf: "Extract Text from PDF", chapTitle: "Chapter Title",
-            btnClear: "Clear All Content", chapContent: "Chapter Content",
-            btnExport: "Export ePub File"
+        // IndexedDB Configuration
+        const DB_NAME = 'WebEpubCreatorDB';
+        const DB_VERSION = 1;
+        const STORE_NAME = 'bookState';
+
+        function initDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
+                request.onupgradeneeded = (e) => {
+                    const db = e.target.result;
+                    if (!db.objectStoreNames.contains(STORE_NAME)) {
+                        db.createObjectStore(STORE_NAME);
+                    }
+                };
+                request.onsuccess = (e) => resolve(e.target.result);
+                request.onerror = (e) => reject(e.target.error);
+            });
         }
-    };
 
-    window.onload = function() {
-        if (localStorage.getItem('epub_logged_in') === 'true') {
-            showMainApp();
-        }
-    };
-
-    function switchAuthTab(tab) {
-        document.getElementById('tab-login').classList.toggle('active', tab === 'login');
-        document.getElementById('tab-register').classList.toggle('active', tab === 'register');
-        document.getElementById('btn-auth').innerText = tab === 'login' ? 'Sign In' : 'Sign Up';
-    }
-
-    function handleAuth() {
-        localStorage.setItem('epub_logged_in', 'true');
-        showMainApp();
-    }
-
-    function handleLogout() {
-        localStorage.removeItem('epub_logged_in');
-        document.getElementById('main-app').classList.add('hidden');
-        document.getElementById('auth-screen').classList.remove('hidden');
-    }
-
-    function showMainApp() {
-        document.getElementById('auth-screen').classList.add('hidden');
-        document.getElementById('main-app').classList.remove('hidden');
-        loadBookState(); 
-    }
-
-    function addNewChapter() {
-        const id = Date.now();
-        const num = bookChapters.length + 1;
-        const newChap = { id: id, title: "Chapter " + num, content: "စာသားများနှင့် ပုံများထည့်ပါ။" };
-        bookChapters.push(newChap);
-        activeChapterId = id;
-        renderChapterList();
-        loadActiveChapter();
-        saveCurrentBookState();
-    }
-
-    function renderChapterList() {
-        const listContainer = document.getElementById('chapter-list');
-        listContainer.innerHTML = "";
-        bookChapters.forEach((chap) => {
-            const div = document.createElement('div');
-            div.className = `chapter-item ${chap.id === activeChapterId ? 'active' : ''}`;
-            div.setAttribute('onclick', `selectChapter(${chap.id})`);
-            div.innerHTML = `<span><i class="fa-solid fa-book-open" style="margin-right:5px;"></i> ${chap.title}</span> 
-                             <i class="fa-solid fa-trash" onclick="deleteChapter(event, ${chap.id})"></i>`;
-            listContainer.appendChild(div);
+        // TinyMCE Editor Initializing
+        tinymce.init({
+            selector: '#editor',
+            height: 320,
+            menubar: false,
+            skin: 'oxide-dark',
+            content_css: 'dark',
+            plugins: 'image lists link charmap',
+            toolbar: 'bold italic underline | numlist bullist | image link | removeformat',
+            images_upload_handler: function (blobInfo, success, failure) {
+                const reader = new FileReader();
+                reader.onload = function(e) { success(e.target.result); };
+                reader.readAsDataURL(blobInfo.blob());
+            },
+            setup: function(editor) {
+                editor.on('NodeChange keyup change', function() {
+                    if (bookChapters[currentChapterIndex]) {
+                        bookChapters[currentChapterIndex].content = editor.getContent();
+                        saveCurrentBookState();
+                    }
+                });
+            }
         });
-    }
 
-    function selectChapter(id) {
-        activeChapterId = id;
-        renderChapterList();
-        loadActiveChapter();
-    }
+        // App Initial Load
+        window.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const db = await initDB();
+                const transaction = db.transaction([STORE_NAME], 'readonly');
+                const store = transaction.objectStore(STORE_NAME);
+                const getRequest = store.get('currentBook');
 
-    function loadActiveChapter() {
-        const chap = bookChapters.find(c => c.id === activeChapterId);
-        if(chap) {
-            document.getElementById('chapter-title').value = chap.title;
-            document.getElementById('editor').innerHTML = chap.content;
-        } else {
-            document.getElementById('chapter-title').value = "";
-            document.getElementById('editor').innerHTML = "";
+                getRequest.onsuccess = function() {
+                    const savedData = getRequest.result;
+                    if (savedData) {
+                        document.getElementById('book-title').value = savedData.title || "";
+                        document.getElementById('author').value = savedData.author || "";
+                        bookChapters = savedData.chapters || [];
+                        currentChapterIndex = savedData.currentIndex || 0;
+                        coverBase64 = savedData.cover || "";
+
+                        if (coverBase64) {
+                            document.getElementById('cover-status').innerText = "Cover Loaded ✓";
+                            document.getElementById('cover-preview').src = coverBase64;
+                            document.getElementById('cover-preview-box').classList.remove('hidden');
+                        }
+                        
+                        renderChaptersList();
+                        if (bookChapters.length > 0) {
+                            selectChapter(currentChapterIndex);
+                        }
+                    }
+                };
+            } catch (err) {
+                console.error("DB Load Error:", err);
+            }
+        });
+
+        // Auto Save to IndexedDB
+        async function saveCurrentBookState() {
+            try {
+                const db = await initDB();
+                const transaction = db.transaction([STORE_NAME], 'readwrite');
+                const store = transaction.objectStore(STORE_NAME);
+
+                if (bookChapters[currentChapterIndex] && tinymce.activeEditor) {
+                    bookChapters[currentChapterIndex].content = tinymce.activeEditor.getContent();
+                }
+
+                const state = {
+                    title: document.getElementById('book-title').value,
+                    author: document.getElementById('author').value,
+                    cover: coverBase64,
+                    chapters: bookChapters,
+                    currentIndex: currentChapterIndex
+                };
+
+                store.put(state, 'currentBook');
+            } catch (error) {
+                console.error("Auto-save failed:", error);
+            }
         }
-    }
 
-    function updateActiveChapterTitle(val) {
-        const chap = bookChapters.find(c => c.id === activeChapterId);
-        if(chap) {
-            chap.title = val;
-            renderChapterList();
-            saveCurrentBookState();
-        }
-    }
+        // Cover Handler
+        function handleCoverUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
 
-    function updateActiveChapterContent() {
-        const chap = bookChapters.find(c => c.id === activeChapterId);
-        if(chap) {
-            chap.content = document.getElementById('editor').innerHTML;
-            saveCurrentBookState();
-        }
-    }
-
-    function deleteChapter(e, id) {
-        e.stopPropagation();
-        bookChapters = bookChapters.filter(c => c.id !== id);
-        if(activeChapterId === id) activeChapterId = bookChapters.length > 0 ? bookChapters[0].id : null;
-        renderChapterList();
-        loadActiveChapter();
-        saveCurrentBookState();
-    }
-
-    function insertMultipleImages(event) {
-        const files = event.target.files;
-        if (!files.length) return;
-        document.getElementById('editor').focus();
-        
-        Array.from(files).forEach(file => {
             const reader = new FileReader();
-            reader.onload = function(e) {
-                const imgHtml = `<img src="${e.target.result}" /><p><br></p>`;
-                document.execCommand('insertHTML', false, imgHtml);
-                updateActiveChapterContent();
+            reader.onload = function(event) {
+                coverBase64 = event.target.result;
+                document.getElementById('cover-status').innerText = "Cover Loaded ✓";
+                document.getElementById('cover-preview').src = coverBase64;
+                document.getElementById('cover-preview-box').classList.remove('hidden');
+                saveCurrentBookState();
             };
             reader.readAsDataURL(file);
-        });
-        event.target.value = '';
-    }
+        }
 
-    function handleCoverUpload(event) {
-        const file = event.target.files[0];
-        if(file) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                coverBase64 = e.target.result;
-                document.getElementById('cover-status').innerText = "Cover Loaded ✓";
+        // Chapters UI rendering
+        function renderChaptersList() {
+            const listContainer = document.getElementById('chapters-list');
+            listContainer.innerHTML = "";
+
+            bookChapters.forEach((chap, idx) => {
+                const div = document.createElement('div');
+                div.className = `flex justify-between items-center p-2.5 rounded-lg border transition text-sm cursor-pointer ${idx === currentChapterIndex ? 'bg-slate-700 border-sky-500 text-sky-300' : 'bg-slate-800/40 border-slate-700 text-slate-300 hover:bg-slate-700/50'}`;
+                div.setAttribute('onclick', `selectChapter(${idx})`);
+
+                div.innerHTML = `
+                    <span class="truncate font-medium flex items-center gap-2">
+                        <i class="fa-solid fa-file-lines opacity-60"></i> ${chap.title || `Untitled Chapter ${idx+1}`}
+                    </span>
+                    <button onclick="deleteChapter(${idx}, event)" class="text-slate-500 hover:text-rose-400 p-1 transition">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                `;
+                listContainer.appendChild(div);
+            });
+        }
+
+        function addNewChapter() {
+            const newIndex = bookChapters.length + 1;
+            bookChapters.push({
+                title: `အခန်း (${newIndex})`,
+                content: ""
+            });
+            currentChapterIndex = bookChapters.length - 1;
+            renderChaptersList();
+            selectChapter(currentChapterIndex);
+            saveCurrentBookState();
+        }
+
+        function selectChapter(idx) {
+            if (idx < 0 || idx >= bookChapters.length) return;
+            currentChapterIndex = idx;
+            renderChaptersList();
+
+            document.getElementById('editor-section').classList.remove('hidden');
+            document.getElementById('chapter-title').value = bookChapters[idx].title;
+            
+            if (tinymce.activeEditor) {
+                tinymce.activeEditor.setContent(bookChapters[idx].content || "");
+            } else {
+                setTimeout(() => { tinymce.activeEditor.setContent(bookChapters[idx].content || ""); }, 300);
+            }
+        }
+
+        function updateChapterTitle() {
+            const titleVal = document.getElementById('chapter-title').value;
+            if (bookChapters[currentChapterIndex]) {
+                bookChapters[currentChapterIndex].title = titleVal;
+                renderChaptersList();
                 saveCurrentBookState();
             }
-            reader.readAsDataURL(file);
         }
-    }
 
-    function saveCurrentBookState() {
-        const fullData = {
-            title: document.getElementById('book-title').value,
-            author: document.getElementById('author').value,
-            cover: coverBase64,
-            chapters: bookChapters,
-            activeId: activeChapterId
-        };
-        localStorage.setItem('epub_master_data', JSON.stringify(fullData));
-    }
+        function deleteChapter(idx, event) {
+            event.stopPropagation();
+            if (!confirm("ဒီအခန်းကို ဖျက်ပစ်ရန် သေချာပါသလား?")) return;
 
-    function loadBookState() {
-        const stored = localStorage.getItem('epub_master_data');
-        if(stored) {
-            const data = JSON.parse(stored);
-            document.getElementById('book-title').value = data.title || "";
-            document.getElementById('author').value = data.author || "";
-            coverBase64 = data.cover || "";
-            if(coverBase64) document.getElementById('cover-status').innerText = "Cover Restored ✓";
-            
-            bookChapters = data.chapters || [];
-            activeChapterId = data.activeId || (bookChapters.length > 0 ? bookChapters[0].id : null);
-            
-            renderChapterList();
-            loadActiveChapter();
-        }
-    }
-
-    function exportBackup() {
-        saveCurrentBookState();
-        const dataStr = localStorage.getItem('epub_master_data');
-        if(!dataStr) return alert("ဒေတာမရှိသေးပါ!");
-        
-        const blob = new Blob([dataStr], {type: "application/json"});
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = (document.getElementById('book-title').value || 'my_book') + '_backup.json';
-        a.click();
-    }
-
-    function importBackup(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            localStorage.setItem('epub_master_data', e.target.result);
-            loadBookState();
-            alert("ဒေတာများအားလုံး ပြန်တင်ပြီးပါပြီ။");
-        };
-        reader.readAsText(file);
-    }
-
-    // Base64 string ထဲကနေ ePub သိမ်းဆည်းဖို့ သက်ဆိုင်ရာ Binary Byte Data အဖြစ် ပြောင်းပေးတဲ့ helper function
-    function base64ToBlob(base64Data) {
-        const sliceSize = 1024;
-        const byteCharacters = atob(base64Data.split(',')[1]);
-        const byteArrays = [];
-        for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
-            const slice = byteCharacters.slice(offset, offset + sliceSize);
-            const byteNumbers = new Array(slice.length);
-            for (let i = 0; i < slice.length; i++) {
-                byteNumbers[i] = slice.charCodeAt(i);
+            bookChapters.splice(idx, 1);
+            if (currentChapterIndex >= bookChapters.length) {
+                currentChapterIndex = Math.max(0, bookChapters.length - 1);
             }
-            const byteArray = new Uint8Array(byteNumbers);
-            byteArrays.push(byteArray);
-        }
-        return new Blob(byteArrays);
-    }
 
-    // --- 🌟 INDUSTRIAL GRADE MULTI-IMAGE EPUB ENGINE 🌟 ---
-    function generateEPUB() {
-        saveCurrentBookState();
-        
-        const title = document.getElementById('book-title').value || "Untitled Book";
-        const author = document.getElementById('author').value || "Unknown Author";
-        
-        if(bookChapters.length === 0) {
-            alert("ကျေးဇူးပြု၍ အခန်း (Chapter) အနည်းဆုံး တစ်ခု အရင်တိုးပေးပါ။");
-            return;
+            renderChaptersList();
+            if (bookChapters.length > 0) {
+                selectChapter(currentChapterIndex);
+            } else {
+                document.getElementById('editor-section').classList.add('hidden');
+            }
+            saveCurrentBookState();
         }
 
-        if (typeof JSZip === 'undefined') {
-            alert("JSZip Library မတက်သေးပါ၊ ခေတ္တစောင့်ပြီး ပြန်ကြိုးစားပေးပါ။");
-            return;
+        // Reset Data Function
+        async function resetAllData() {
+            if (!confirm("⚠️ သတိပေးချက်: စာအုပ်ဒေတာအားလုံးကို ဖျက်ပစ်ပြီး အစက ပြန်စမှာ သေချာပါသလား?")) return;
+            try {
+                const db = await initDB();
+                const transaction = db.transaction([STORE_NAME], 'readwrite');
+                const store = transaction.objectStore(STORE_NAME);
+                await store.delete('currentBook');
+                alert("🗑️ ဒေတာဟောင်းများအားလုံးကို ရှင်းလင်းပြီးပါပြီ။");
+                location.reload();
+            } catch (err) {
+                alert("Reset ပြုလုပ်ရာတွင် အမှားအယွင်းရှိခဲ့ပါသည်");
+            }
         }
 
-        const zip = new JSZip();
-        
-        // Rule 1: Apple Books Requirement - mimetype MUST be the absolute first file and uncompressed
-        zip.file("mimetype", "application/epub+zip", { compression: "STORE" });
-        
-        // Metadata Structure
-        const containerXml = `<?xml version="1.0" encoding="UTF-8"?>
-        <container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
-            <rootfiles>
-                <rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/>
-            </rootfiles>
-        </container>`;
-        zip.file("META-INF/container.xml", containerXml);
+        // Export Backup JSON File
+        async function exportToBackupFile() {
+            try {
+                await saveCurrentBookState();
+                const db = await initDB();
+                const transaction = db.transaction([STORE_NAME], 'readonly');
+                const store = transaction.objectStore(STORE_NAME);
+                const getRequest = store.get('currentBook');
+                
+                getRequest.onsuccess = function() {
+                    const state = getRequest.result;
+                    if (!state) {
+                        alert("⚠️ သိမ်းဆည်းထားသည့် ဒေတာမရှိသေးပါ။");
+                        return;
+                    }
 
-        let manifestItems = "";
-        let spineItems = "";
-        let imageCounter = 1;
+                    const jsonString = JSON.stringify(state);
+                    const blob = new Blob([jsonString], { type: "application/json" });
+                    const filename = (state.title || "My_Novel").replace(/\s+/g, '_') + "_backup.json";
 
-        // အခန်းများကို တစ်ခန်းချင်းစီ စစ်ဆေးပြီး HTML သန့်စင်ခြင်းနှင့် ပုံများထုတ်ယူခြင်း စတင်မည်
-        bookChapters.forEach((chap, index) => {
-            let htmlString = chap.content || "";
-            
-            // Unescaped space များကို ပြောင်းလဲခြင်း
-            htmlString = htmlString.replace(/&nbsp;/g, '&#160;');
+                    const reader = new FileReader();
+                    reader.onloadend = function() {
+                        const a = document.createElement('a');
+                        a.href = reader.result;
+                        a.download = filename;
+                        document.body.appendChild(a);
+                        a.click();
+                        setTimeout(() => { document.body.removeChild(a); }, 500);
+                    };
+                    reader.readAsDataURL(blob);
+                };
+            } catch (error) {
+                alert("Backup ဖိုင်ထုတ်ယူမှု မအောင်မြင်ပါ: " + error.message);
+            }
+        }
 
-            // HTML parser တည်ဆောက်ခြင်း
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(`<div>${htmlString}</div>`, 'text/html');
-            const container = doc.body.firstChild;
+        // Load Backup JSON File
+        function loadFromBackupFile(e) {
+            const file = e.target.files[0];
+            if (!file) return;
 
-            // <br> တက်ဂ်များကို <p> လွတ်အဖြစ် သန့်ရှင်းစွာ အစားထိုးခြင်း
-            const brs = container.querySelectorAll('br');
-            brs.forEach(br => {
-                const pBr = doc.createElement('p');
-                pBr.innerHTML = '&#160;';
-                br.replaceWith(pBr);
-            });
-
-            // 🌟 ဓာတ်ပုံများကို ဖမ်းယူပြီး ePub Image Resource အဖြစ် ပြောင်းလဲသိုလှောင်ခြင်း စနစ်သစ် 🌟
-            const imgs = container.querySelectorAll('img');
-            imgs.forEach(img => {
-                const src = img.getAttribute('src');
-                if (src && src.startsWith('data:image')) {
-                    // Image Type ရှာဖွေခြင်း (png သို့မဟုတ် jpeg)
-                    let ext = "jpg";
-                    let mediaType = "image/jpeg";
-                    if (src.includes("image/png")) { ext = "png"; mediaType = "image/png"; }
-                    else if (src.includes("image/gif")) { ext = "gif"; mediaType = "image/gif"; }
-
-                    const filename = `image_${imageCounter}.${ext}`;
-                    const imgBlob = base64ToBlob(src);
+            const reader = new FileReader();
+            reader.onload = async function(event) {
+                try {
+                    const state = JSON.parse(event.target.result);
+                    const db = await initDB();
+                    const transaction = db.transaction([STORE_NAME], 'readwrite');
+                    const store = transaction.objectStore(STORE_NAME);
+                    await store.put(state, 'currentBook');
                     
-                    // 1. ePub ထဲသို့ ဓာတ်ပုံဖိုင်ကို သီးသန့် လမ်းကြောင်းဖြင့် ထည့်သွင်းခြင်း
-                    zip.file(`OEBPS/images/${filename}`, imgBlob);
-                    
-                    // 2. content.opf အတွက် Manifest ကြေညာချက် တည်ဆောက်ခြင်း
-                    manifestItems += `<item id="img_${imageCounter}" href="images/${filename}" media-type="${mediaType}"/>\n`;
-
-                    // 3. XHTML ထဲက <img> တက်ဂ်ရဲ့ src လမ်းကြောင်းကို ePub Internal relative path သို့ ပြောင်းလဲခြင်း
-                    img.setAttribute('src', `images/${filename}`);
-                    if (!img.getAttribute('alt')) img.setAttribute('alt', `photo_${imageCounter}`);
-                    
-                    imageCounter++;
+                    alert("🎉 Backup ဒေတာများကို အောင်မြင်စွာ ထည့်သွင်းပြီးပါပြီ။");
+                    location.reload(); 
+                } catch (error) {
+                    alert("⚠️ Backup ဖိုင် ဖတ်၍မရပါ၊ ဖိုင်အမှန်ဖြစ်မဖြစ် ပြန်စစ်ပေးပါဗျာ။");
                 }
+            };
+            reader.readAsText(file);
+        }
+
+        // Base64 to Blob Security Parser
+        function base64ToBlob(base64Str) {
+            if (!base64Str || typeof base64Str !== 'string') return null;
+            if (!base64Str.includes(';base64,')) return null;
+
+            try {
+                const parts = base64Str.split(';base64,');
+                const contentType = parts[0].split(':')[1];
+                const raw = window.atob(parts[1]);
+                const rawLength = raw.length;
+                const uInt8Array = new Uint8Array(rawLength);
+
+                for (let i = 0; i < rawLength; ++i) {
+                    uInt8Array[i] = raw.charCodeAt(i);
+                }
+                return new Blob([uInt8Array], { type: contentType });
+            } catch (e) {
+                console.error("ဓာတ်ပုံ ပြောင်းလဲမှုကျော်သွားပါသည်:", e);
+                return null; 
+            }
+        }
+
+        // 🚀 CORE EPUB GENERATOR
+        async function generateEPUB() {
+            await saveCurrentBookState();
+            
+            const title = document.getElementById('book-title').value || "Untitled Book";
+            const author = document.getElementById('author').value || "Unknown Author";
+            
+            if(!bookChapters || bookChapters.length === 0) {
+                alert("⚠️ သတိပေးချက်: အခန်းမရှိသေးပါ။ '+ အခန်းတိုးမည်' ကို နှိပ်ပေးပါ။");
+                return;
+            }
+
+            const zip = new JSZip();
+            zip.file("mimetype", "application/epub+zip", { compression: "STORE" });
+            
+            const containerXml = `<?xml version="1.0" encoding="UTF-8"?>
+            <container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
+                <rootfiles>
+                    <rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/>
+                </rootfiles>
+            </container>`;
+            zip.file("META-INF/container.xml", containerXml);
+
+            let manifestItems = "";
+            let spineItems = "";
+            let imageCounter = 1;
+
+            bookChapters.forEach((chap, index) => {
+                let htmlString = chap.content || "";
+                htmlString = htmlString.replace(/&nbsp;/g, '&#160;');
+
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(`<div>${htmlString}</div>`, 'text/html');
+                const container = doc.body.firstChild;
+
+                // <br> Tags Fix
+                const brs = container.querySelectorAll('br');
+                brs.forEach(br => {
+                    const pBr = doc.createElement('p');
+                    pBr.innerHTML = '&#160;';
+                    br.replaceWith(pBr);
+                });
+
+                // Images inside Chapter Handler
+                const imgs = container.querySelectorAll('img');
+                imgs.forEach(img => {
+                    const src = img.getAttribute('src');
+                    if (src && src.startsWith('data:image')) {
+                        let ext = "jpg";
+                        let mediaType = "image/jpeg";
+                        if (src.includes("image/png")) { ext = "png"; mediaType = "image/png"; }
+                        else if (src.includes("image/gif")) { ext = "gif"; mediaType = "image/gif"; }
+
+                        const filename = `image_${imageCounter}.${ext}`;
+                        const imgBlob = base64ToBlob(src);
+                        
+                        if (imgBlob) {
+                            zip.file(`OEBPS/images/${filename}`, imgBlob);
+                            manifestItems += `<item id="img_${imageCounter}" href="images/${filename}" media-type="${mediaType}"/>\n`;
+                            img.setAttribute('src', `images/${filename}`);
+                            if (!img.getAttribute('alt')) img.setAttribute('alt', `photo_${imageCounter}`);
+                            imageCounter++;
+                        } else {
+                            img.remove();
+                        }
+                    }
+                });
+
+                const serializer = new XMLSerializer();
+                let finalizedXhtmlContent = serializer.serializeToString(container);
+                finalizedXhtmlContent = finalizedXhtmlContent.replace(/^<div[^>]*>/, '').replace(/<\/div>$/, '');
+
+                const chapHtml = `<?xml version="1.0" encoding="utf-8"?>
+                <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+                <html xmlns="http://www.w3.org/1999/xhtml">
+                <head>
+                    <title>${chap.title}</title>
+                    <style>
+                        body { padding: 20px; font-family: sans-serif; line-height: 1.6; color: #111111; background-color: #ffffff; }
+                        img { max-width: 100%; height: auto; display: block; margin: 15px auto; border-radius: 6px; }
+                        h1 { font-size: 1.5em; text-align: center; margin-bottom: 20px; color: #1e2640; }
+                        p { margin-bottom: 0.8em; text-align: justify; line-height: 1.6; }
+                    </style>
+                </head>
+                <body>
+                    <h1>${chap.title}</h1>
+                    <div>${finalizedXhtmlContent}</div>
+                </body>
+                </html>`;
+                
+                zip.file(`OEBPS/chapter_${index + 1}.xhtml`, chapHtml);
+                manifestItems += `<item id="chap_${index + 1}" href="chapter_${index + 1}.xhtml" media-type="application/xhtml+xml"/>\n`;
+                spineItems += `<itemref idref="chap_${index + 1}"/>\n`;
             });
 
-            // XMLSerializer သုံးပြီး တက်ဂ်များကို ရာနှုန်းပြည့် လုံခြုံစိတ်ချရသော XHTML အဖြစ် ပြန်ပြောင်းခြင်း
-            const serializer = new XMLSerializer();
-            let finalizedXhtmlContent = serializer.serializeToString(container);
-            finalizedXhtmlContent = finalizedXhtmlContent.replace(/^<div[^>]*>/, '').replace(/<\/div>$/, '');
+            // Cover Image Embedded
+            if (coverBase64) {
+                let coverExt = "jpg";
+                let coverMime = "image/jpeg";
+                if (coverBase64.includes("image/png")) { coverExt = "png"; coverMime = "image/png"; }
+                
+                const coverBlob = base64ToBlob(coverBase64);
+                if (coverBlob) {
+                    zip.file(`OEBPS/images/cover.${coverExt}`, coverBlob);
+                    manifestItems += `<item id="cover-img" href="images/cover.${coverExt}" media-type="${coverMime}"/>\n`;
+                }
+            }
 
-            // အခန်းတစ်ခုချင်းစီအတွက် XHTML စာမျက်နှာ တည်ဆောက်ခြင်း
-            const chapHtml = `<?xml version="1.0" encoding="utf-8"?>
-            <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
-            <html xmlns="http://www.w3.org/1999/xhtml">
-            <head>
-                <title>${chap.title}</title>
-                <style>
-                    body { padding: 20px; font-family: sans-serif; line-height: 1.6; color: #111111; background-color: #ffffff; }
-                    img { max-width: 100%; height: auto; display: block; margin: 15px auto; border-radius: 6px; box-shadow: 0 2px 5px rgba(0,0,0,0.15); }
-                    h1 { font-size: 1.5em; text-align: center; margin-bottom: 20px; color: #1e2640; }
-                    p { margin-bottom: 0.8em; text-align: justify; line-height: 1.6; }
-                </style>
-            </head>
-            <body>
-                <h1>${chap.title}</h1>
-                <div>${finalizedXhtmlContent}</div>
-            </body>
-            </html>`;
-            
-            zip.file(`OEBPS/chapter_${index + 1}.xhtml`, chapHtml);
-            manifestItems += `<item id="chap_${index + 1}" href="chapter_${index + 1}.xhtml" media-type="application/xhtml+xml"/>\n`;
-            spineItems += `<itemref idref="chap_${index + 1}"/>\n`;
-        });
+            const opfXml = `<?xml version="1.0" encoding="UTF-8"?>
+            <package xmlns="http://www.idpf.org/2007/opf" unique-identifier="bookid" version="2.0">
+                <metadata xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:opf="http://www.idpf.org/2007/opf">
+                    <dc:title>${title}</dc:title>
+                    <dc:creator opf:role="aut">${author}</dc:creator>
+                    <dc:language>my</dc:language>
+                    <dc:identifier id="bookid">urn:uuid:${Date.now()}</dc:identifier>
+                     ${coverBase64 ? '<meta name="cover" content="cover-img"/>' : ''}
+                </metadata>
+                <manifest>
+                    <item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>
+                    ${manifestItems}
+                </manifest>
+                <spine toc="ncx">
+                    ${spineItems}
+                </spine>
+            </package>`;
+            zip.file("OEBPS/content.opf", opfXml);
 
-        // မျက်နှာဖုံးပုံ (Cover) ရှိခဲ့ရင် ထည့်သွင်းပေးခြင်း
-        if (coverBase64) {
-            let coverExt = "jpg";
-            let coverMime = "image/jpeg";
-            if (coverBase64.includes("image/png")) { coverExt = "png"; coverMime = "image/png"; }
-            
-            const coverBlob = base64ToBlob(coverBase64);
-            zip.file(`OEBPS/images/cover.${coverExt}`, coverBlob);
-            manifestItems += `<item id="cover-img" href="images/cover.${coverExt}" media-type="${coverMime}"/>\n`;
+            let ncxNav = "";
+            bookChapters.forEach((chap, index) => {
+                ncxNav += `<navPoint id="nav_${index + 1}" playOrder="${index + 1}">
+                    <navLabel><text>${chap.title}</text></navLabel>
+                    <content src="chapter_${index + 1}.xhtml"/>
+                </navPoint>\n`;
+            });
+
+            const ncxXml = `<?xml version="1.0" encoding="UTF-8"?>
+            <!DOCTYPE ncx PUBLIC "-//NISO//DTD ncx v2005-1//EN" "http://www.daisy.org/z3986/2005/ncx-2005-1.dtd">
+            <ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1">
+                <head>
+                    <meta name="dtb:uid" content="urn:uuid:${Date.now()}"/>
+                    <meta name="dtb:depth" content="1"/>
+                </head>
+                <docTitle><text>${title}</text></docTitle>
+                <navMap>${ncxNav}</navMap>
+            </ncx>`;
+            zip.file("OEBPS/toc.ncx", ncxXml);
+
+            zip.generateAsync({ type: "blob", mimeType: "application/epub+zip" }).then(function (blob) {
+                const filename = title.replace(/\s+/g, '_') + ".epub";
+                const reader = new FileReader();
+                reader.onloadend = function() {
+                    const a = document.createElement('a');
+                    a.href = reader.result;
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    setTimeout(() => { document.body.removeChild(a); }, 500);
+                };
+                reader.readAsDataURL(blob);
+            }).catch(function (err) {
+                alert("ePub Error: " + err.message);
+            });
         }
-
-        // Content OPF ဖိုင်တည်ဆောက်ခြင်း
-        const opfXml = `<?xml version="1.0" encoding="UTF-8"?>
-        <package xmlns="http://www.idpf.org/2007/opf" unique-identifier="bookid" version="2.0">
-            <metadata xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:opf="http://www.idpf.org/2007/opf">
-                <dc:title>${title}</dc:title>
-                <dc:creator opf:role="aut">${author}</dc:creator>
-                <dc:language>my</dc:language>
-                <dc:identifier id="bookid">urn:uuid:${Date.now()}</dc:identifier>
-                ${coverBase64 ? '<meta name="cover" content="cover-img"/>' : ''}
-            </metadata>
-            <manifest>
-                <item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>
-                ${manifestItems}
-            </manifest>
-            <spine toc="ncx">
-                ${spineItems}
-            </spine>
-        </package>`;
-        zip.file("OEBPS/content.opf", opfXml);
-
-        // NCX Navigation
-        let ncxNav = "";
-        bookChapters.forEach((chap, index) => {
-            ncxNav += `<navPoint id="nav_${index + 1}" playOrder="${index + 1}">
-                <navLabel><text>${chap.title}</text></navLabel>
-                <content src="chapter_${index + 1}.xhtml"/>
-            </navPoint>\n`;
-        });
-
-        const ncxXml = `<?xml version="1.0" encoding="UTF-8"?>
-        <!DOCTYPE ncx PUBLIC "-//NISO//DTD ncx v2005-1//EN" "http://www.daisy.org/z3986/2005/ncx-2005-1.dtd">
-        <ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1">
-            <head>
-                <meta name="dtb:uid" content="urn:uuid:${Date.now()}"/>
-                <meta name="dtb:depth" content="1"/>
-            </head>
-            <docTitle><text>${title}</text></docTitle>
-            <navMap>${ncxNav}</navMap>
-        </ncx>`;
-        zip.file("OEBPS/toc.ncx", ncxXml);
-
-        // ePub ဖိုင် ထုတ်ယူပြီး Download ပြုလုပ်ခြင်း
-        zip.generateAsync({ type: "blob", mimeType: "application/epub+zip" }).then(function (blob) {
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = title.replace(/\s+/g, '_') + ".epub";
-            a.click();
-            setTimeout(() => URL.revokeObjectURL(url), 2000);
-        }).catch(function (err) {
-            alert("ePub Generation Error: " + err.message);
-        });
-    }
-
-    function formatDoc(cmd) { document.execCommand(cmd, false, null); }
-    function clearContent() { document.getElementById('editor').innerHTML = ""; updateActiveChapterContent(); }
-    
-    function resetForm() {
-        if(confirm("အစက ပြန်စမှာ သေချာပါသလား။")) {
-            localStorage.removeItem('epub_master_data');
-            bookChapters = []; activeChapterId = null; coverBase64 = "";
-            document.getElementById('book-title').value = "";
-            document.getElementById('author').value = "";
-            document.getElementById('cover-status').innerText = "";
-            renderChapterList(); loadActiveChapter();
-        }
-    }
-
-    function toggleDarkMode() {
-        document.body.classList.toggle('light-mode');
-        const isLight = document.body.classList.contains('light-mode');
-        document.querySelector('.mode-btn').innerText = isLight ? "Dark Mode" : "Light Mode";
-    }
-
-    function toggleLanguage() {
-        currentLang = currentLang === 'my' ? 'en' : 'my';
-        document.querySelector('.lang-btn').innerText = currentLang === 'my' ? 'EN' : 'MY';
-        const data = langData[currentLang];
-        document.getElementById('lbl-email').innerText = data.email;
-        document.getElementById('lbl-pass').innerText = data.pass;
-        document.getElementById('lbl-backup-title').innerHTML = `<i class="fa-solid fa-floppy-disk"></i> ${data.backupTitle}`;
-        document.getElementById('lbl-btn-backup').innerText = data.btnBackup;
-        document.getElementById('lbl-btn-load').innerText = data.btnLoad;
-        document.getElementById('lbl-btn-reset').innerText = data.btnReset;
-        document.getElementById('lbl-book-title').innerText = data.bookTitle;
-        document.getElementById('author').innerText = data.author;
-        document.getElementById('lbl-cover').innerText = data.cover;
-        document.getElementById('lbl-chapters').innerText = data.chapters;
-        document.getElementById('lbl-btn-addchapter').innerText = data.btnAddChap;
-        document.getElementById('lbl-pdf-title').innerText = data.pdfTitle;
-        document.getElementById('lbl-btn-pdfextract').innerText = data.btnPdf;
-        document.getElementById('lbl-chap-title').innerText = data.chapTitle;
-        document.getElementById('lbl-btn-clear').innerText = data.btnClear;
-        document.getElementById('lbl-chap-content').innerText = data.chapContent;
-        document.getElementById('lbl-btn-export').innerText = data.btnExport;
-    }
-</script>
+    </script>
 </body>
 </html>
