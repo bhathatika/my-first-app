@@ -1,7 +1,27 @@
 // ==========================================
-// ၁။ SAVE BOOK STATE FUNCTION (ဓာတ်ပုံဒေတာ ချန်လှပ်၍ Size Error ကင်းဝေးစေရန် ပြင်ဆင်ပြီး)
+// 🌟 INDEXEDDB STORAGE SYSTEM (ဓာတ်ပုံအမြောက်အမြား သိမ်းဆည်းရန် စနစ်သစ်)
 // ==========================================
-function saveCurrentBookState() {
+const dbName = "WebEPubCreatorProDB";
+const storeName = "BookBackupStore";
+
+function openDatabase() {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open(dbName, 1);
+        request.onupgradeneeded = function(e) {
+            const db = e.target.result;
+            if (!db.objectStoreNames.contains(storeName)) {
+                db.createObjectStore(storeName);
+            }
+        };
+        request.onsuccess = function(e) { resolve(e.target.result); };
+        request.onerror = function(e) { reject(e.target.error); };
+    });
+}
+
+// ==========================================
+// ၁။ SAVE BOOK STATE FUNCTION (ဓာတ်ပုံကြီးများပါ စိတ်ကြိုက် သိမ်းဆည်းနိုင်ပြီ)
+// ==========================================
+async function saveCurrentBookState() {
     const editorContent = tinymce.activeEditor ? tinymce.activeEditor.getContent() : "";
     
     if (currentChapterIndex === null || currentChapterIndex === undefined) {
@@ -14,57 +34,89 @@ function saveCurrentBookState() {
         bookChapters[currentChapterIndex].content = editorContent;
     }
     
-    // ⚠️ LOCALSTORAGE QUOTA ERROR မတက်စေရန်အတွက် 
-    // ဓာတ်ပုံ Base64 ဒေတာများမပါဘဲ စာသားသီးသန့်ကိုသာ Backup သိမ်းဆည်းမည့်စနစ်
-    const safeChapters = bookChapters.map(chap => {
-        let cleanContent = chap.content || "";
-        // ဓာတ်ပုံများ၏ Base64 src နေရာတွင် ဒေတာပမာဏ လျော့ကျစေရန် ခေတ္တ အစားထိုးခြင်း
-        cleanContent = cleanContent.replace(/src="data:image\/[^"]+"/g, 'src="" data-skip-backup="true"');
-        return {
-            title: chap.title,
-            content: cleanContent
-        };
-    });
+    const bookTitle = document.getElementById('book-title').value;
+    const bookAuthor = document.getElementById('author').value;
 
     try {
-        localStorage.setItem('saved_book_title', document.getElementById('book-title').value);
-        localStorage.setItem('saved_book_author', document.getElementById('author').value);
-        localStorage.setItem('saved_book_chapters', JSON.stringify(safeChapters)); // စာသားသီးသန့်တင်မို့ Size အရမ်းသေးသွားပါပြီ
-        
-        // မျက်နှာဖုံးပုံသည်လည်း ကြီးမားနိုင်သဖြင့် try-catch ဖြင့် သီးသန့်ကာကွယ်သိမ်းဆည်းခြင်း
-        if (coverBase64 && coverBase64.length < 2000000) { // 2MB အောက်မှသာ သိမ်းမည်
-            localStorage.setItem('saved_book_cover', coverBase64);
+        const db = await openDatabase();
+        const tx = db.transaction(storeName, "readwrite");
+        const store = tx.objectStore(storeName);
+
+        // ဒေတာအားလုံးကို IndexedDB ထဲသို့ Unlimited အနေဖြင့် စိတ်ချရစွာ သိမ်းဆည်းခြင်း
+        store.put(bookTitle, 'saved_book_title');
+        store.put(bookAuthor, 'saved_book_author');
+        store.put(bookChapters, 'saved_book_chapters');
+        if (coverBase64) {
+            store.put(coverBase64, 'saved_book_cover');
         }
-    } catch (e) {
-        console.log("Local Storage Backup Skipped due to size, but allowed to generate EPUB.");
+
+        console.log("💾 Book details and all heavy images saved safely to IndexedDB!");
+    } catch (error) {
+        console.error("IndexedDB Backup Error: ", error);
     }
 }
 
 // ==========================================
-// ၂။ GENERATE EPUB FUNCTION (ချွတ်ယွင်းချက်မရှိ အလုပ်လုပ်မည့် စနစ်သစ်)
+// ၂။ LOAD BACKUP FUNCTION (အစ်ကို့အတွက် Backup ပြန်ခေါ်တဲ့ စနစ်သစ်)
 // ==========================================
-function generateEPUB() {
-    // လက်ရှိစာကို အရင်သိမ်းမည် (အပေါ်က စနစ်သစ်ကြောင့် Error တက်ပြီး ကုဒ်ရပ်သွားခြင်း မရှိတော့ပါ)
-    saveCurrentBookState(); 
+async function loadSavedBookState() {
+    try {
+        const db = await openDatabase();
+        const tx = db.transaction(storeName, "readonly");
+        const store = tx.objectStore(storeName);
+
+        const titleReq = store.get('saved_book_title');
+        const authorReq = store.get('saved_book_author');
+        const chaptersReq = store.get('saved_book_chapters');
+        const coverReq = store.get('saved_book_cover');
+
+        tx.oncomplete = function() {
+            if (titleReq.result) document.getElementById('book-title').value = titleReq.result;
+            if (authorReq.result) document.getElementById('author').value = authorReq.result;
+            
+            if (chaptersReq.result) {
+                bookChapters = chaptersReq.result;
+                updateChapterList(); // အခန်းစာရင်းကို ပြန် Update လုပ်ရန်
+                
+                // ပထမဆုံး အခန်းရှိလျှင် Editor ထဲသို့ ပြန်ပြပေးရန်
+                if (bookChapters.length > 0) {
+                    currentChapterIndex = 0;
+                    if (tinymce.activeEditor) {
+                        tinymce.activeEditor.setContent(bookChapters[0].content || "");
+                    }
+                }
+            }
+            
+            if (coverReq.result) {
+                coverBase64 = coverReq.result;
+                const preview = document.getElementById('cover-preview');
+                if (preview) {
+                    preview.src = coverBase64;
+                    preview.style.display = 'block';
+                }
+                const status = document.getElementById('cover-status');
+                if (status) status.innerText = "Cover Loaded ✓";
+            }
+            alert("✅ စာအုပ်နှင့် ဓာတ်ပုံများအားလုံးကို Backup မှ အောင်မြင်စွာ ပြန်လည်ခေါ်ယူပြီးပါပြီ အစ်ကို!");
+        };
+    } catch (error) {
+        alert("Backup ပြန်ခေါ်ရာတွင် အမှားအယွင်းရှိပါသည်။");
+    }
+}
+
+// ==========================================
+// ၃။ GENERATE EPUB FUNCTION (ဓာတ်ပုံရာချီပါစေ ချွတ်ယွင်းချက်မရှိ ထုတ်ပေးမည့်စနစ်)
+// ==========================================
+async function generateEPUB() {
+    // ဓာတ်ပုံအကြီးကြီးတွေပါ စိတ်ချလက်ချ အရင်သိမ်းမည်
+    await saveCurrentBookState(); 
     
     const title = document.getElementById('book-title').value || "Untitled Book";
     const author = document.getElementById('author').value || "Unknown Author";
     
     if(!bookChapters || bookChapters.length === 0) {
-        alert("⚠️ သတိပေးချက်: အခန်း (Chapter) မရှိသေးပါ။ နှိပ်၍ အခန်းအရင်တိုးပေးပါဗျာ။");
+        alert("⚠️ သတိပေးချက်: အခန်း (Chapter) မရှိသေးပါ။ ကျေးဇူးပြု၍ '+ အခန်းတိုးမည်' ခလုတ်ကို အရင်နှိပ်ပေးပါဗျာ။");
         return;
-    }
-
-    // စာသားများ အခန်းထဲသို့ ရောက်ရှိစေရန်
-    let hasContent = bookChapters.some(chap => chap.content && chap.content.trim() !== "");
-    if (!hasContent) {
-        const editorContent = tinymce.activeEditor ? tinymce.activeEditor.getContent() : "";
-        if (editorContent.trim() !== "") {
-            bookChapters[0].content = editorContent;
-        } else {
-            alert("⚠️ သတိပေးချက်: အခန်းထဲတွင် မည်သည့်စာသား သို့မဟုတ် ဓာတ်ပုံမျှ မရှိသေးပါ။");
-            return;
-        }
     }
 
     if (typeof JSZip === 'undefined') {
@@ -87,7 +139,7 @@ function generateEPUB() {
     let spineItems = "";
     let imageCounter = 1;
 
-    // အမှန်တကယ် ePub ထုတ်လုပ်ရာတွင် တည်းဖြတ်မှုပြုလုပ်ရန်အတွက် Editor မှ တိုက်ရိုက် Data ယူခြင်း
+    // တည်းဖြတ်ဆဲ အခန်းဒေတာကို Editor ထဲမှ တိုက်ရိုက် ရယူခြင်း
     const actualChapters = JSON.parse(JSON.stringify(bookChapters));
     if (actualChapters[currentChapterIndex] && tinymce.activeEditor) {
         actualChapters[currentChapterIndex].content = tinymce.activeEditor.getContent();
@@ -108,7 +160,7 @@ function generateEPUB() {
             br.replaceWith(pBr);
         });
 
-        // ဓာတ်ပုံများကို ePub ဖိုင်ထဲသို့ ပေါင်းထည့်ခြင်း (Size ကြီးသော်လည်း zip ထဲသို့ တိုက်ရိုက်ထည့်သဖြင့် အောင်မြင်ပါမည်)
+        // ဓာတ်ပုံများကို ePub ထဲသို့ ပေါင်းထည့်ခြင်း
         const imgs = container.querySelectorAll('img');
         imgs.forEach(img => {
             const src = img.getAttribute('src');
@@ -207,7 +259,7 @@ function generateEPUB() {
     zip.generateAsync({ type: "blob", mimeType: "application/epub+zip" }).then(function (blob) {
         const filename = title.replace(/\s+/g, '_') + ".epub";
         
-        // Safari Flow ဒေါင်းလုဒ်ဆွဲခြင်းစနစ်
+        // iOS Safari တွင် Heavy File များ ဒေါင်းလုဒ်ဆွဲရန် အကောင်းဆုံး Flow
         const reader = new FileReader();
         reader.onloadend = function() {
             const a = document.createElement('a');
