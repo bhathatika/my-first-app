@@ -14,20 +14,14 @@
     </button>
 </div>
 
-<!-- 🌙 Night Mode အတွက် သီးသန့် Style (!important ခံထားသဖြင့် မူလစတိုင်လ်များကို မပျက်စေပါ) -->
+<!-- 🌙 Night Mode အတွက် စတိုင်လ်အသစ် (မူလ UI Layout များ လုံးဝ မပျောက်စေရန် ပြင်ဆင်ပြီး) -->
 <style>
 body.dark-mode {
     background-color: #121212 !important;
     color: #e0e0e0 !important;
 }
-body.dark-mode div:not(.editor-container), 
-body.dark-mode section, 
-body.dark-mode header, 
-body.dark-mode aside, 
-body.dark-mode main {
-    background-color: #1e1e1e !important;
-    color: #e0e0e0 !important;
-}
+
+/* စာသားရိုက်သည့်နေရာနှင့် Input များကိုသာ အရောင်ပြောင်းခြင်း */
 body.dark-mode input, 
 body.dark-mode textarea, 
 body.dark-mode select {
@@ -35,24 +29,26 @@ body.dark-mode select {
     color: #ffffff !important;
     border: 1px solid #444444 !important;
 }
-body.dark-mode button {
+
+/* ခလုတ်များကိုသာ အရောင်ပြောင်းခြင်း */
+body.dark-mode button, 
+body.dark-mode .btn {
     background-color: #333333 !important;
     color: #ffffff !important;
     border: 1px solid #555555 !important;
 }
+
 body.dark-mode #theme-toggle {
     background-color: #444444 !important;
     color: #ffffff !important;
 }
 </style>
 
-<!-- 🧠 Night Mode နှင့် Language အတွက် သီးသန့် JavaScript Core (app.js နှင့် လုံးဝမရောပါ) -->
+<!-- 🧠 Night Mode နှင့် Language အတွက် သီးသန့် JavaScript (app.js ကို လုံးဝမထိခိုက်စေပါ) -->
 <script>
-// 🌙 ၁။ Night Mode စနစ်
 function toggleAppTheme() {
     const body = document.body;
     const btn = document.getElementById('theme-toggle');
-    
     body.classList.toggle('dark-mode');
     
     if (body.classList.contains('dark-mode')) {
@@ -64,16 +60,12 @@ function toggleAppTheme() {
     }
 }
 
-// 🌐 ၂။ Language စနစ် (UI ထဲက ID တွေအလိုက် စာသားလိုက်ပြောင်းပေးခြင်း)
 function changeAppLanguage() {
     const lang = document.getElementById('lang-select').value;
     localStorage.setItem('app_lang', lang);
     
-    // အစ်ကို့ App ထဲမှာ ရှိနိုင်မယ့် Input/Button ID များကို လိုက်ရှာပြီး စာသားပြောင်းခြင်း
     const bookTitleInput = document.getElementById('book-title');
     const authorInput = document.getElementById('author');
-    
-    // HTML ထဲက ခလုတ်တွေမှာ ID ထည့်မထားရင် ရှာရလွယ်အောင် စာသားပါဝင်မှုဖြင့် ရှာဖွေခြင်း
     const allButtons = document.querySelectorAll('button');
     
     if (lang === 'en') {
@@ -97,16 +89,13 @@ function changeAppLanguage() {
     }
 }
 
-// 🚀 ၃။ App စဖွင့်ချိန်တွင် ရွေးချယ်မှုများ အလိုအလျောက် သတ်မှတ်ပေးရန်
 window.addEventListener('load', () => {
-    // ယခင်ရွေးထားသော Theme ပြန်ပွင့်ရန်
     if (localStorage.getItem('app_theme') === 'dark') {
         document.body.classList.add('dark-mode');
         const btn = document.getElementById('theme-toggle');
         if (btn) btn.innerText = "☀️ Light Mode";
     }
     
-    // ယခင်ရွေးထားသော ဘာသာစကား ပြန်ပွင့်ရန်
     const savedLang = localStorage.getItem('app_lang');
     const langSelect = document.getElementById('lang-select');
     if (savedLang && langSelect) {
