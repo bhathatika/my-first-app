@@ -8,7 +8,7 @@ function execCmd(command) {
     saveCurrentChapterContentLive();
 }
 
-// 🌟 ဓာတ်ပုံအရွယ်အစားကို အလိုအလျောက်ချုံ့ပေးပြီး ဒေါင်းလုဒ်အဆင်ပြေစေမည့် Image Compressor စနစ်
+// ဓာတ်ပုံအရွယ်အစားကို အလိုအလျောက်ချုံ့ပေးပြီး ဒေါင်းလုဒ်အဆင်ပြေစေမည့် Image Compressor စနစ်
 function compressImage(file, maxWidth, maxHeight, quality) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -40,7 +40,7 @@ function compressImage(file, maxWidth, maxHeight, quality) {
     });
 }
 
-// 🌟 တစ်ခါတည်းနဲ့ ဓာတ်ပုံ အများကြီး (Multiple) အလိုအလျောက် ချုံ့ပြီး စာအကွက်ထဲ စီထည့်ပေးမည့် စနစ်
+// တစ်ခါတည်းနဲ့ ဓာတ်ပုံ အများကြီး (Multiple) အလိုအလျောက် ချုံ့ပြီး စာအကွက်ထဲ စီထည့်ပေးမည့် စနစ်
 async function insertImagesToEditor(event) {
     const files = event.target.files;
     if (!files || files.length === 0) return;
@@ -50,7 +50,6 @@ async function insertImagesToEditor(event) {
 
     for (let i = 0; i < files.length; i++) {
         try {
-            // ပုံတစ်ပုံချင်းစီကို Size ချုံ့သည် (Width အများဆုံး 800px ထားပြီး ချုံ့သည်)
             const compressedBase64 = await compressImage(files[i], 800, 800, 0.75);
             
             const selection = window.getSelection();
@@ -71,7 +70,6 @@ async function insertImagesToEditor(event) {
                     continue;
                 }
             }
-            // ကာဆာမရှိရင် အောက်ဆုံးမှာ သွားစီပေးမည်
             editor.innerHTML += `<div><img src="${compressedBase64}" alt="inserted_image"/></div>`;
         } catch (err) {
             console.error("Image loading error:", err);
@@ -79,7 +77,7 @@ async function insertImagesToEditor(event) {
     }
     
     saveCurrentChapterContentLive();
-    event.target.value = ""; // Reset Input
+    event.target.value = ""; 
 }
 
 // အခန်းခေါင်းစဉ် Live ပြောင်းလဲခြင်း
@@ -161,12 +159,11 @@ function deleteChapter(id) {
     saveCurrentBookState();
 }
 
-// 🌟 မျက်နှာဖုံးပုံကို Upload လုပ်တာနဲ့ တစ်ခါတည်း Size ချုံ့ပစ်သည့် စနစ်
+// မျက်နှာဖုံးပုံကို Upload လုပ်တာနဲ့ တစ်ခါတည်း Size ချုံ့ပစ်သည့် စနစ်
 async function handleCoverImage(event) {
     const file = event.target.files[0];
     if (file) {
         try {
-            // Cover Image Size အား အကောင်းဆုံးဖြစ်အောင် 600x900 အချိုးဖြင့် ချုံ့ပစ်သည်
             coverBase64 = await compressImage(file, 600, 900, 0.8);
             document.getElementById('cover-status').classList.remove('hidden');
             saveCurrentBookState();
@@ -228,7 +225,7 @@ function base64ToBlob(base64Str) {
     return new Blob([ab], { type: mimeString });
 }
 
-// ePub ထုတ်ယူ၍ ဒေါင်းလုဒ်ဆွဲသည့် စနစ်
+// 🚀 Browser ပေါင်းစုံ (Chrome, Facebook App, စသည်) တွင် ရာနှုန်းပြည့် ဒေါင်းလုဒ်ရစေမည့် Universal Export စနစ်
 async function generateEPUB() {
     saveCurrentBookState();
     const title = document.getElementById('book-title').value || "Untitled_Book";
@@ -321,18 +318,27 @@ async function generateEPUB() {
     const ncxXml = `<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE ncx PUBLIC "-//NISO//DTD ncx v2005-1//EN" "http://www.daisy.org/z3986/2005/ncx-2005-1.dtd"><ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1"><head><meta name="dtb:uid" content="${Date.now()}"/></head><docTitle><text>${title}</text></docTitle><navMap>${ncxNav}</navMap></ncx>`;
     zip.file("OEBPS/toc.ncx", ncxXml);
 
-    // iOS/Android High-Performance Direct Download
+    // 🌟 Browser အားလုံး (Chrome, In-App Browser များပါမကျန်) အလုပ်လုပ်စေမည့် ဒေါင်းလုဒ်နည်းလမ်းသစ်
     zip.generateAsync({ type: "blob", mimeType: "application/epub+zip" }).then(function (blob) {
         const filename = title.replace(/\s+/g, '_') + ".epub";
-        const a = document.createElement('a');
-        a.href = window.URL.createObjectURL(blob);
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        setTimeout(() => {
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(a.href);
-        }, 500);
+        
+        // FileReader သုံးပြီး Hybrid ဒေါင်းလုဒ် ပြုလုပ်ခြင်း
+        const fileReader = new FileReader();
+        fileReader.onload = function(event) {
+            const a = document.createElement('a');
+            a.href = event.target.result;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            
+            // ခေတ်မီ ဖုန်းများနှင့် Chrome အတွက် Double Trigger စနစ်ထည့်သွင်းခြင်း
+            setTimeout(() => {
+                document.body.removeChild(a);
+            }, 500);
+        };
+        fileReader.readAsDataURL(blob);
+    }).catch(function(err) {
+        alert("ဒေါင်းလုဒ်ဆွဲရာတွင် အမှားအယွင်းရှိနေပါသည်။");
     });
 }
 
@@ -341,10 +347,15 @@ function exportToBackupFile() {
     const saved = localStorage.getItem('epub_creator_pro_state');
     if (!saved) return alert("⚠️ သိမ်းဆည်းရန် ဒေတာမရှိပါ။");
     const blob = new Blob([saved], { type: "application/json" });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = "epub_book_backup.json";
-    a.click();
+    
+    const fileReader = new FileReader();
+    fileReader.onload = function(event) {
+        const a = document.createElement('a');
+        a.href = event.target.result;
+        a.download = "epub_book_backup.json";
+        a.click();
+    };
+    fileReader.readAsDataURL(blob);
 }
 
 function importFromBackupFile(event) {
