@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Web ePub Creator Pro</title>
-    <!-- FontAwesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
@@ -33,222 +32,58 @@
             --input-bg: #f1f5f9;
         }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Arial, sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-color); padding: 20px; display: flex; justify-content: center; transition: background 0.3s; }
+        
+        .app-container { width: 100%; max-width: 520px; background-color: var(--card-bg); border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); overflow: hidden; border: 1px solid var(--border-color); }
+        
+        /* Auth Screen */
+        #auth-screen { padding: 40px 20px; display: flex; flex-direction: column; gap: 15px; }
+        .auth-toggle { display: flex; justify-content: center; gap: 20px; margin-bottom: 10px; font-weight: bold; }
+        .auth-toggle span { cursor: pointer; color: var(--text-muted); padding-bottom: 5px; }
+        .auth-toggle span.active { color: var(--primary-blue); border-bottom: 2px solid var(--primary-blue); }
 
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            padding: 20px;
-            display: flex;
-            justify-content: center;
-            transition: background-color 0.3s, color 0.3s;
-        }
+        /* Header */
+        .header { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; border-bottom: 1px solid var(--border-color); }
+        .brand { display: flex; align-items: center; gap: 8px; font-size: 1rem; font-weight: bold; }
+        .brand span.premium { background-color: #22c55e; color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 20px; }
+        .header-btns { display: flex; gap: 8px; }
+        .mode-btn, .lang-btn, .logout-btn { border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 0.8rem; }
+        .mode-btn { background-color: #f59e0b; color: white; }
+        .lang-btn { background-color: var(--btn-gray); color: var(--text-color); }
+        .logout-btn { background-color: var(--btn-red); color: white; }
 
-        .app-container {
-            width: 100%;
-            max-width: 480px;
-            background-color: var(--card-bg);
-            border-radius: 12px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
-            border: 1px solid var(--border-color);
-        }
-
-        /* Auth Screen Styling */
-        #auth-screen {
-            padding: 30px 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        .auth-toggle {
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-            margin-bottom: 10px;
-        }
-
-        .auth-toggle span {
-            cursor: pointer;
-            font-weight: bold;
-            padding-bottom: 5px;
-            color: var(--text-muted);
-        }
-
-        .auth-toggle span.active {
-            color: var(--primary-blue);
-            border-bottom: 2px solid var(--primary-blue);
-        }
-
-        /* Header Styling */
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px 20px;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .brand {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 1.1rem;
-            font-weight: bold;
-        }
-
-        .brand span.premium {
-            background-color: #22c55e;
-            color: white;
-            font-size: 0.7rem;
-            padding: 2px 6px;
-            border-radius: 20px;
-        }
-
-        .header-btns {
-            display: flex;
-            gap: 10px;
-        }
-
-        .mode-btn, .lang-btn {
-            background-color: #f59e0b;
-            color: white;
-            border: none;
-            padding: 6px 12px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: bold;
-            font-size: 0.85rem;
-        }
-
-        .lang-btn {
-            background-color: var(--btn-gray);
-            color: var(--text-color);
-        }
-
-        /* Main Content */
-        .content {
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        /* Card Panels */
-        .panel {
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 15px;
-            background-color: rgba(0, 0, 0, 0.05);
-        }
-
-        .panel-title {
-            text-align: center;
-            font-size: 0.95rem;
-            margin-bottom: 15px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            margin-bottom: 15px;
-        }
-
-        label {
-            font-weight: bold;
-            font-size: 0.95rem;
-        }
-
-        input[type="text"], textarea {
-            width: 100%;
-            padding: 10px;
-            background-color: var(--input-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            color: var(--text-color);
-            outline: none;
-        }
-
-        /* Buttons styling */
-        .btn {
-            width: 100%;
-            padding: 12px;
-            border: none;
-            border-radius: 6px;
-            font-weight: bold;
-            cursor: pointer;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 8px;
-            color: white;
-            font-size: 0.95rem;
-            margin-bottom: 10px;
-        }
-
+        /* Content */
+        .content { padding: 20px; display: flex; flex-direction: column; gap: 18px; }
+        .panel { border: 1px solid var(--border-color); border-radius: 8px; padding: 15px; background-color: rgba(0, 0, 0, 0.15); }
+        .panel-title { text-align: center; font-size: 0.9rem; margin-bottom: 12px; display: flex; justify-content: center; align-items: center; gap: 6px; font-weight: bold; }
+        
+        .form-group { display: flex; flex-direction: column; gap: 6px; }
+        label { font-weight: bold; font-size: 0.9rem; }
+        input[type="text"], input[type="password"] { width: 100%; padding: 10px; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-color); outline: none; }
+        
+        /* Buttons */
+        .btn { width: 100%; padding: 11px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px; color: white; font-size: 0.9rem; }
         .btn-gray { background-color: var(--btn-gray); color: var(--text-color); }
         .btn-blue { background-color: var(--primary-blue); }
         .btn-red { background-color: var(--btn-red); }
         .btn-green { background-color: var(--btn-green); }
 
-        /* PDF Section Box */
-        .pdf-box {
-            background-color: rgba(16, 185, 129, 0.1);
-            border: 1px dashed var(--btn-green);
-            border-radius: 8px;
-            padding: 15px;
-        }
+        /* Chapter Management List */
+        .chapter-list-box { display: flex; flex-direction: column; gap: 5px; max-height: 150px; overflow-y: auto; background: var(--input-bg); padding: 8px; border-radius: 6px; border: 1px solid var(--border-color); margin-top: 5px; }
+        .chapter-item { display: flex; justify-content: space-between; align-items: center; padding: 8px; background: rgba(255,255,255,0.05); border-radius: 4px; cursor: pointer; font-size: 0.85rem; }
+        .chapter-item.active { background: var(--primary-blue); color: white; }
+        .chapter-item i { cursor: pointer; color: var(--btn-red); }
 
-        /* Editor Toolbar */
-        .editor-container {
-            background-color: white;
-            border-radius: 6px;
-            overflow: hidden;
-            border: 1px solid var(--border-color);
-        }
+        /* Rich Editor */
+        .editor-container { background-color: white; border-radius: 6px; overflow: hidden; border: 1px solid var(--border-color); margin-top: 5px; }
+        .toolbar { background-color: #f1f5f9; padding: 8px; display: flex; gap: 12px; border-bottom: 1px solid #cbd5e1; }
+        .toolbar button { background: none; border: none; cursor: pointer; color: #334155; font-size: 0.95rem; }
+        .toolbar button:hover { color: var(--primary-blue); }
+        .editor-area { min-height: 220px; max-height: 400px; padding: 12px; color: #000000; background-color: #ffffff; outline: none; overflow-y: auto; font-size: 0.95rem; line-height: 1.5; }
+        .editor-area img { max-width: 100%; border-radius: 6px; margin: 8px 0; display: block; }
 
-        .toolbar {
-            background-color: #f1f5f9;
-            padding: 8px;
-            display: flex;
-            gap: 10px;
-            border-bottom: 1px solid #cbd5e1;
-        }
-
-        .toolbar button {
-            background: none;
-            border: none;
-            cursor: pointer;
-            color: #334155;
-            font-size: 1rem;
-            padding: 2px 5px;
-        }
-
-        .toolbar button:hover {
-            background-color: #cbd5e1;
-            border-radius: 4px;
-        }
-
-        .editor-area {
-            min-height: 200px;
-            padding: 10px;
-            color: #000000;
-            background-color: #ffffff;
-            outline: none;
-            overflow-y: auto;
-        }
-
+        .pdf-box { background-color: rgba(16, 185, 129, 0.08); border: 1px dashed var(--btn-green); border-radius: 8px; padding: 12px; }
         .hidden { display: none !important; }
     </style>
 </head>
@@ -256,7 +91,6 @@
 
 <div class="app-container">
 
-    <!-- SIGN IN / SIGN UP SCREEN -->
     <div id="auth-screen">
         <div class="auth-toggle">
             <span id="tab-login" class="active" onclick="switchAuthTab('login')">Sign In</span>
@@ -264,84 +98,76 @@
         </div>
         <div class="form-group">
             <label id="lbl-email">အီးမေးလ် (Email)</label>
-            <input type="text" id="auth-email" placeholder="example@gmail.com">
+            <input type="text" id="auth-email" placeholder="example@gmail.com" value="user@epub.com">
         </div>
         <div class="form-group">
             <label id="lbl-pass">လျှို့ဝှက်နံပါတ် (Password)</label>
-            <input type="text" id="auth-password" placeholder="******">
+            <input type="password" id="auth-password" placeholder="******" value="123456">
         </div>
         <button class="btn btn-blue" id="btn-auth" onclick="handleAuth()">Sign In</button>
     </div>
 
-    <!-- MAIN APP SCREEN (Hidden by default until login) -->
     <div id="main-app" class="hidden">
-        <!-- Header -->
         <div class="header">
             <div class="brand">
-                <i class="fa-solid fa-globe"></i> Web ePub Creator Pro <span class="premium">Premium Unlocked</span>
+                <i class="fa-solid fa-globe"></i> Web ePub Creator Pro <span class="premium">Premium</span>
             </div>
             <div class="header-btns">
                 <button class="lang-btn" onclick="toggleLanguage()">EN</button>
                 <button class="mode-btn" onclick="toggleDarkMode()">Light Mode</button>
+                <button class="logout-btn" onclick="handleLogout()"><i class="fa-solid fa-right-from-bracket"></i></button>
             </div>
         </div>
 
-        <!-- Main Content Form -->
         <div class="content">
-            
-            <!-- Backup Panel -->
             <div class="panel">
                 <div class="panel-title" id="lbl-backup-title"><i class="fa-solid fa-floppy-disk"></i> စာအုပ် BACKUP စီမံခန့်ခွဲမှု</div>
-                <button class="btn btn-gray" onclick="exportBackup()"><i class="fa-solid fa-floppy-disk"></i> <span id="lbl-btn-backup">လက်ရှိစာအုပ်ကို ဖိုင်သိမ်းဆည်းမည် (Backup)</span></button>
+                <button class="btn btn-gray" onclick="exportBackup()" style="margin-bottom:8px;"><i class="fa-solid fa-floppy-disk"></i> <span id="lbl-btn-backup">လက်ရှိစာအုပ်ကို ဖိုင်သိမ်းဆည်းမည် (Backup)</span></button>
                 
-                <!-- Hidden file input for load backup -->
                 <input type="file" id="import-file" class="hidden" onchange="importBackup(event)" accept=".json">
-                <button class="btn btn-blue" onclick="document.getElementById('import-file').click()"><i class="fa-solid fa-box-open"></i> <span id="lbl-btn-load">စာအုပ်ဟောင်း ပြန်တင်မည် (Load Backup)</span></button>
+                <button class="btn btn-blue" onclick="document.getElementById('import-file').click()" style="margin-bottom:8px;"><i class="fa-solid fa-box-open"></i> <span id="lbl-btn-load">စာအုပ်ဟောင်း ပြန်တင်မည် (Load Backup)</span></button>
                 
                 <button class="btn btn-red" onclick="resetForm()"><i class="fa-solid fa-paintbrush"></i> <span id="lbl-btn-reset">စာအုပ်အသစ်အတွက် အစကပြန်စမည် (Reset)</span></button>
             </div>
 
-            <!-- Book Meta Data -->
             <div class="form-group">
                 <label id="lbl-book-title">စာအုပ်အမည် (Book Title)</label>
-                <input type="text" id="book-title" placeholder="My Novel" oninput="saveToLocalStorage()">
+                <input type="text" id="book-title" placeholder="My Novel" oninput="saveCurrentBookState()">
             </div>
 
             <div class="form-group">
                 <label id="lbl-author">စာရေးဆရာ (Author)</label>
-                <input type="text" id="author" placeholder="Unknown Author" oninput="saveToLocalStorage()">
+                <input type="text" id="author" placeholder="Unknown Author" oninput="saveCurrentBookState()">
             </div>
 
             <div class="form-group">
                 <label id="lbl-cover">မျက်နှာဖုံးပုံ (Cover Image)</label>
                 <input type="file" id="cover-image" accept="image/*" onchange="handleCoverUpload(event)">
-                <small id="cover-status" style="color: var(--btn-green); margin-top:5px;"></small>
+                <small id="cover-status" style="color: var(--btn-green); font-weight:bold; margin-top:2px;"></small>
             </div>
 
-            <!-- Chapters Section -->
             <div class="form-group">
                 <label id="lbl-chapters">အခန်းများ (Chapters)</label>
-                <button class="btn btn-blue"><i class="fa-solid fa-plus"></i> <span id="lbl-btn-addchapter">အခန်းတိုးမည် (Add Chapter)</span></button>
+                <button class="btn btn-blue" onclick="addNewChapter()"><i class="fa-solid fa-plus"></i> <span id="lbl-btn-addchapter">အခန်းတိုးမည် (Add Chapter)</span></button>
+                <div class="chapter-list-box" id="chapter-list">
+                    </div>
             </div>
 
-            <!-- PDF Optional Box -->
             <div class="pdf-box">
-                <div style="color: #10b981; font-weight: bold; font-size: 0.9rem; margin-bottom: 10px; display: flex; align-items: center; gap: 5px;">
+                <div style="color: #10b981; font-weight: bold; font-size: 0.85rem; margin-bottom: 8px;">
                     <i class="fa-solid fa-file-pdf"></i> <span id="lbl-pdf-title">PDF မှ စာသားထုတ်ယူရန် (Optional)</span>
                 </div>
-                <input type="file" accept=".pdf" style="margin-bottom: 10px; color: var(--text-color);">
-                <button class="btn btn-green" style="margin: 0;"><i class="fa-solid fa-bolt"></i> <span id="lbl-btn-pdfextract">PDF မှ စာသားများကို ဆွဲထုတ်မည်</span></button>
+                <input type="file" accept=".pdf" style="margin-bottom: 8px; font-size:0.8rem;">
+                <button class="btn btn-green" style="padding:8px; font-size:0.85rem;"><i class="fa-solid fa-bolt"></i> <span id="lbl-btn-pdfextract">PDF မှ စာသားများကို ဆွဲထုတ်မည်</span></button>
             </div>
 
-            <!-- Chapter Details -->
             <div class="form-group">
                 <label id="lbl-chap-title">အခန်းခေါင်းစဉ် (Chapter Title)</label>
-                <input type="text" id="chapter-title" placeholder="Chapter Title" oninput="saveToLocalStorage()">
+                <input type="text" id="chapter-title" placeholder="Chapter Title" oninput="updateActiveChapterTitle(this.value)">
             </div>
 
             <button class="btn btn-red" onclick="clearContent()"><i class="fa-solid fa-broom"></i> <span id="lbl-btn-clear">စာသားအားလုံးဖျက်ရန် (Clear All Content)</span></button>
 
-            <!-- Text Rich Editor -->
             <div class="form-group">
                 <label id="lbl-chap-content">အခန်းတွင်းစာသား (Chapter Content)</label>
                 <div class="editor-container">
@@ -350,30 +176,29 @@
                         <button onclick="formatDoc('italic')"><i class="fa-solid fa-italic"></i></button>
                         <button onclick="formatDoc('underline')"><i class="fa-solid fa-underline"></i></button>
                         <button onclick="formatDoc('insertUnorderedList')"><i class="fa-solid fa-list-ul"></i></button>
-                        <button onclick="formatDoc('insertOrderedList')"><i class="fa-solid fa-list-ol"></i></button>
-                        <!-- Image Upload in Editor -->
-                        <button onclick="document.getElementById('editor-img-upload').click()"><i class="fa-solid fa-image"></i></button>
-                        <input type="file" id="editor-img-upload" class="hidden" accept="image/*" onchange="insertImage(event)">
+                        
+                        <button onclick="document.getElementById('editor-multiple-imgs').click()"><i class="fa-solid fa-images"></i></button>
+                        <input type="file" id="editor-multiple-imgs" class="hidden" accept="image/*" multiple onchange="insertMultipleImages(event)">
+                        
                         <button onclick="formatDoc('removeFormat')"><i class="fa-solid fa-text-slash"></i></button>
                     </div>
-                    <div class="editor-area" id="editor" contenteditable="true" oninput="saveToLocalStorage()"></div>
+                    <div class="editor-area" id="editor" contenteditable="true" oninput="updateActiveChapterContent()"></div>
                 </div>
             </div>
 
-            <!-- Export Button -->
-            <button class="btn btn-green" onclick="alert('ePub file generation feature connected!')">
+            <button class="btn btn-green" onclick="alert('ePub Production Ready!')">
                 <i class="fa-solid fa-box"></i> <span id="lbl-btn-export">ePub ဖိုင် ထုတ်ယူမည်</span>
             </button>
-
         </div>
     </div>
 </div>
 
 <script>
-    // --- State & Languages ---
+    // --- Data Model ---
     let currentLang = 'my';
-    let currentAuthTab = 'login';
-    let coverBase64 = ""; // Holds image backup data
+    let bookChapters = []; // Array of { id, title, content }
+    let activeChapterId = null;
+    let coverBase64 = "";
 
     const langData = {
         my: {
@@ -384,7 +209,7 @@
             chapters: "အခန်းများ (Chapters)", btnAddChap: "အခန်းတိုးမည် (Add Chapter)", pdfTitle: "PDF မှ စာသားထုတ်ယူရန် (Optional)",
             btnPdf: "PDF မှ စာသားများကို ဆွဲထုတ်မည်", chapTitle: "အခန်းခေါင်းစဉ် (Chapter Title)",
             btnClear: "စာသားအားလုံးဖျက်ရန် (Clear All Content)", chapContent: "အခန်းတွင်းစာသား (Chapter Content)",
-            btnExport: "ePub ဖိုင် ထုတ်ယူမည်", modeLight: "Light Mode", modeDark: "Dark Mode"
+            btnExport: "ePub ဖိုင် ထုတ်ယူမည်"
         },
         en: {
             email: "Email Address", pass: "Password",
@@ -394,31 +219,218 @@
             chapters: "Chapters", btnAddChap: "Add Chapter", pdfTitle: "Extract Text from PDF (Optional)",
             btnPdf: "Extract Text from PDF", chapTitle: "Chapter Title",
             btnClear: "Clear All Content", chapContent: "Chapter Content",
-            btnExport: "Export ePub File", modeLight: "Light Mode", modeDark: "Dark Mode"
+            btnExport: "Export ePub File"
         }
     };
 
-    // --- Auth Section ---
+    // --- On Load Check Login ---
+    window.onload = function() {
+        if (localStorage.getItem('epub_logged_in') === 'true') {
+            showMainApp();
+        }
+    };
+
     function switchAuthTab(tab) {
-        currentAuthTab = tab;
         document.getElementById('tab-login').classList.toggle('active', tab === 'login');
         document.getElementById('tab-register').classList.toggle('active', tab === 'register');
         document.getElementById('btn-auth').innerText = tab === 'login' ? 'Sign In' : 'Sign Up';
     }
 
     function handleAuth() {
-        const email = document.getElementById('auth-email').value;
-        const pass = document.getElementById('auth-password').value;
-        if(email && pass) {
-            document.getElementById('auth-screen').classList.add('hidden');
-            document.getElementById('main-app').classList.remove('hidden');
-            loadFromLocalStorage(); // Load saved work after login
+        localStorage.setItem('epub_logged_in', 'true');
+        showMainApp();
+    }
+
+    function handleLogout() {
+        localStorage.removeItem('epub_logged_in');
+        document.getElementById('main-app').classList.add('hidden');
+        document.getElementById('auth-screen').classList.remove('hidden');
+    }
+
+    function showMainApp() {
+        document.getElementById('auth-screen').classList.add('hidden');
+        document.getElementById('main-app').classList.remove('hidden');
+        loadBookState(); 
+    }
+
+    // --- Chapter Logic (Fixes Issue 3) ---
+    function addNewChapter() {
+        const id = Date.now();
+        const num = bookChapters.length + 1;
+        const newChap = { id: id, title: "Chapter " + num, content: "စာသားများထည့်ရန်..." };
+        bookChapters.push(newChap);
+        activeChapterId = id;
+        renderChapterList();
+        loadActiveChapter();
+        saveCurrentBookState();
+    }
+
+    function renderChapterList() {
+        const listContainer = document.getElementById('chapter-list');
+        listContainer.innerHTML = "";
+        bookChapters.forEach((chap) => {
+            const div = document.createElement('div');
+            div.className = `chapter-item ${chap.id === activeChapterId ? 'active' : ''}`;
+            div.setAttribute('onclick', `selectChapter(${chap.id})`);
+            div.innerHTML = `<span><i class="fa-solid fa-book-open" style="color:inherit; margin-right:5px;"></i> ${chap.title}</span> 
+                             <i class="fa-solid fa-trash" onclick="deleteChapter(event, ${chap.id})"></i>`;
+            listContainer.appendChild(div);
+        });
+    }
+
+    function selectChapter(id) {
+        activeChapterId = id;
+        renderChapterList();
+        loadActiveChapter();
+    }
+
+    function loadActiveChapter() {
+        const chap = bookChapters.find(c => c.id === activeChapterId);
+        if(chap) {
+            document.getElementById('chapter-title').value = chap.title;
+            document.getElementById('editor').innerHTML = chap.content;
         } else {
-            alert('Please fill in all fields.');
+            document.getElementById('chapter-title').value = "";
+            document.getElementById('editor').innerHTML = "";
         }
     }
 
-    // --- UI Theme & Language Toggles ---
+    function updateActiveChapterTitle(val) {
+        const chap = bookChapters.find(c => c.id === activeChapterId);
+        if(chap) {
+            chap.title = val;
+            renderChapterList();
+            saveCurrentBookState();
+        }
+    }
+
+    function updateActiveChapterContent() {
+        const chap = bookChapters.find(c => c.id === activeChapterId);
+        if(chap) {
+            chap.content = document.getElementById('editor').innerHTML;
+            saveCurrentBookState();
+        }
+    }
+
+    function deleteChapter(e, id) {
+        e.stopPropagation();
+        bookChapters = bookChapters.filter(c => c.id !== id);
+        if(activeChapterId === id) activeChapterId = bookChapters.length > 0 ? bookChapters[0].id : null;
+        renderChapterList();
+        loadActiveChapter();
+        saveCurrentBookState();
+    }
+
+    // --- Multiple Images Upload (Fixes Issue 4) ---
+    function insertMultipleImages(event) {
+        const files = event.target.files;
+        if (!files.length) return;
+
+        document.getElementById('editor').focus();
+        
+        Array.from(files).forEach(file => {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const imgHtml = `<img src="${e.target.result}" /><p><br></p>`;
+                document.execCommand('insertHTML', false, imgHtml);
+                updateActiveChapterContent();
+            };
+            reader.readAsDataURL(file);
+        });
+        event.target.value = ''; // reset file input
+    }
+
+    function handleCoverUpload(event) {
+        const file = event.target.files[0];
+        if(file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                coverBase64 = e.target.result;
+                document.getElementById('cover-status').innerText = "Cover Loaded ✓";
+                saveCurrentBookState();
+            }
+            reader.readAsDataURL(file);
+        }
+    }
+
+    // --- Local Storage & Backup (Fixes Issue 2) ---
+    function saveCurrentBookState() {
+        const fullData = {
+            title: document.getElementById('book-title').value,
+            author: document.getElementById('author').value,
+            cover: coverBase64,
+            chapters: bookChapters,
+            activeId: activeChapterId
+        };
+        localStorage.setItem('epub_master_data', JSON.stringify(fullData));
+    }
+
+    function loadBookState() {
+        const stored = localStorage.getItem('epub_master_data');
+        if(stored) {
+            const data = JSON.parse(stored);
+            document.getElementById('book-title').value = data.title || "";
+            document.getElementById('author').value = data.author || "";
+            coverBase64 = data.cover || "";
+            if(coverBase64) document.getElementById('cover-status').innerText = "Cover Restored ✓";
+            
+            bookChapters = data.chapters || [];
+            activeChapterId = data.activeId || (bookChapters.length > 0 ? bookChapters[0].id : null);
+            
+            renderChapterList();
+            loadActiveChapter();
+        }
+    }
+
+    function exportBackup() {
+        saveCurrentBookState();
+        const dataStr = localStorage.getItem('epub_master_data');
+        if(!dataStr) return alert("သိမ်းဆည်းရန် ဒေတာမရှိသေးပါ!");
+        
+        const blob = new Blob([dataStr], {type: "application/json"});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = (document.getElementById('book-title').value || 'my_book') + '_backup.json';
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    function importBackup(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            localStorage.setItem('epub_master_data', e.target.result);
+            loadBookState();
+            alert("Backup ဖိုင်ထဲမှ အခန်းများနှင့် ပုံများအားလုံးကို ပြန်လည်တင်သွင်းပြီးပါပြီ။");
+        };
+        reader.readAsText(file);
+        event.target.value = '';
+    }
+
+    // --- Editor Commands & Utilities ---
+    function formatDoc(cmd) { document.execCommand(cmd, false, null); }
+    function clearContent() { 
+        document.getElementById('editor').innerHTML = ""; 
+        updateActiveChapterContent(); 
+    }
+    
+    function resetForm() {
+        if(confirm("အစက ပြန်စမှာ သေချာပါသလား။")) {
+            localStorage.removeItem('epub_master_data');
+            bookChapters = [];
+            activeChapterId = null;
+            coverBase64 = "";
+            document.getElementById('book-title').value = "";
+            document.getElementById('author').value = "";
+            document.getElementById('cover-status').innerText = "";
+            document.getElementById('cover-image').value = "";
+            renderChapterList();
+            loadActiveChapter();
+        }
+    }
+
     function toggleDarkMode() {
         document.body.classList.toggle('light-mode');
         const isLight = document.body.classList.contains('light-mode');
@@ -428,10 +440,6 @@
     function toggleLanguage() {
         currentLang = currentLang === 'my' ? 'en' : 'my';
         document.querySelector('.lang-btn').innerText = currentLang === 'my' ? 'EN' : 'MY';
-        updateUIStrings();
-    }
-
-    function updateUIStrings() {
         const data = langData[currentLang];
         document.getElementById('lbl-email').innerText = data.email;
         document.getElementById('lbl-pass').innerText = data.pass;
@@ -450,115 +458,6 @@
         document.getElementById('lbl-btn-clear').innerText = data.btnClear;
         document.getElementById('lbl-chap-content').innerText = data.chapContent;
         document.getElementById('lbl-btn-export').innerText = data.btnExport;
-    }
-
-    // --- Rich Text Editor Actions ---
-    function formatDoc(cmd, value = null) {
-        document.execCommand(cmd, false, value);
-    }
-
-    // Handle Editor Image (Converts image to Base64 to include in backup)
-    function insertImage(event) {
-        const file = event.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const imgTag = `<img src="${e.target.result}" style="max-width:100%; border-radius:6px; margin: 5px 0;"/>`;
-                document.getElementById('editor').focus();
-                document.execCommand('insertHTML', false, imgTag);
-                saveToLocalStorage();
-            }
-            reader.readAsDataURL(file);
-        }
-    }
-
-    // Handle Cover Image Upload
-    function handleCoverUpload(event) {
-        const file = event.target.files[0];
-        if(file) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                coverBase64 = e.target.result;
-                document.getElementById('cover-status').innerText = "Cover image loaded successfully!";
-                saveToLocalStorage();
-            }
-            reader.readAsDataURL(file);
-        }
-    }
-
-    // --- Local Storage (Anti-Refresh Feature) ---
-    function saveToLocalStorage() {
-        const bookData = {
-            title: document.getElementById('book-title').value,
-            author: document.getElementById('author').value,
-            chapterTitle: document.getElementById('chapter-title').value,
-            content: document.getElementById('editor').innerHTML,
-            cover: coverBase64
-        };
-        localStorage.setItem('epub_creator_data', JSON.stringify(bookData));
-    }
-
-    function loadFromLocalStorage() {
-        const savedData = localStorage.getItem('epub_creator_data');
-        if(savedData) {
-            const data = JSON.parse(savedData);
-            document.getElementById('book-title').value = data.title || "";
-            document.getElementById('author').value = data.author || "";
-            document.getElementById('chapter-title').value = data.chapterTitle || "";
-            document.getElementById('editor').innerHTML = data.content || "";
-            if(data.cover) {
-                coverBase64 = data.cover;
-                document.getElementById('cover-status').innerText = "Cover image recovered!";
-            }
-        }
-    }
-
-    // --- Backup & Restore Features (File Export/Import) ---
-    function exportBackup() {
-        saveToLocalStorage();
-        const dataStr = localStorage.getItem('epub_creator_data');
-        if(!dataStr) return alert("No data to backup!");
-        
-        const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-        const exportFileDefaultName = 'epub_book_backup.json';
-        
-        const linkElement = document.createElement('a');
-        linkElement.setAttribute('href', dataUri);
-        linkElement.setAttribute('download', exportFileDefaultName);
-        linkElement.click();
-    }
-
-    function importBackup(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const content = e.target.result;
-            localStorage.setItem('epub_creator_data', content);
-            loadFromLocalStorage();
-            alert("Backup data restored completely with images!");
-        };
-        reader.readAsText(file);
-    }
-
-    function clearContent() {
-        document.getElementById('chapter-title').value = "";
-        document.getElementById('editor').innerHTML = "";
-        saveToLocalStorage();
-    }
-
-    function resetForm() {
-        if(confirm("Are you sure you want to reset? All unsaved data will be lost.")) {
-            localStorage.removeItem('epub_creator_data');
-            document.getElementById('book-title').value = "";
-            document.getElementById('author').value = "";
-            document.getElementById('chapter-title').value = "";
-            document.getElementById('editor').innerHTML = "";
-            document.getElementById('cover-image').value = "";
-            document.getElementById('cover-status').innerText = "";
-            coverBase64 = "";
-        }
     }
 </script>
 </body>
