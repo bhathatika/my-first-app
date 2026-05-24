@@ -1,11 +1,19 @@
-// 🚀 ၁။ ePub ဖိုင် ထုတ်ယူမည့် လုပ်ဆောင်ချက် (Cover Image ဒေတာပမာဏကြီးပါက iOS Chrome/Firefox တွင် မပျက်ကျအောင် ပြင်ဆင်ပြီး)
+// =========================================================================
+// 🚀 ၁။ ePub ဖိုင် ထုတ်ယူမည့် လုပ်ဆောင်ချက် (iOS Chrome/Firefox တွင် မပျက်ကျအောင် ပြင်ဆင်ပြီး)
+// =========================================================================
 async function generateEPUB() {
     await saveCurrentBookState();
     const title = document.getElementById('book-title').value || "Untitled Book";
     const author = document.getElementById('author').value || "Unknown Author";
     
     if(!bookChapters || bookChapters.length === 0) {
-        alert("⚠️ သတိပေးချက်: အခန်းမရှိသေးပါ။ '+ အခန်းတိုးမည်' ကို နှိပ်ပေးပါ။");
+        // ဘာသာစကားအလိုက် Alert ပြသခြင်း
+        const currentLang = localStorage.getItem('lang') || 'my';
+        if(currentLang === 'en') {
+            alert("⚠️ Warning: No chapters found. Please click '+ Add Chapter'.");
+        } else {
+            alert("⚠️ သတိပေးချက်: အခန်းမရှိသေးပါ။ '+ အခန်းတိုးမည်' ကို နှိပ်ပေးပါ။");
+        }
         return;
     }
 
@@ -143,7 +151,6 @@ async function generateEPUB() {
         const filename = title.replace(/\s+/g, '_') + ".epub";
         const fileURL = URL.createObjectURL(blob);
         
-        // 🌟 [ပြင်ဆင်ချက်အသစ်] ပုံကြီးလွန်းပါက ပျက်မကျစေရန် URL.createObjectURL သုံးပြီး Tab အသစ်တွင် လမ်းကြောင်းဖွင့်ခြင်း
         if (navigator.userAgent.match('CriOS') || navigator.userAgent.match('FxiOS')) {
             window.open(fileURL, '_blank');
         } else {
@@ -157,7 +164,9 @@ async function generateEPUB() {
     }).catch(function (err) { alert("ePub Error: " + err.message); });
 }
 
-// 📦 ၂။ စာအုပ် BACKUP ဖိုင်ထုတ်ယူမည့် လုပ်ဆောင်ချက် (Cover Image ဒေတာပမာဏကြီးပါက iOS Chrome/Firefox တွင် မပျက်ကျအောင် ပြင်ဆင်ပြီး)
+// =========================================================================
+// 📦 ၂။ စာအုပ် BACKUP ဖိုင်ထုတ်ယူမည့် လုပ်ဆောင်ချက်
+// =========================================================================
 async function exportToBackupFile() {
     try {
         await saveCurrentBookState();
@@ -169,7 +178,8 @@ async function exportToBackupFile() {
         getRequest.onsuccess = function() {
             const state = getRequest.result;
             if (!state) {
-                alert("⚠️ သိမ်းဆည်းထားသည့် ဒေတာမရှိသေးပါ။");
+                const currentLang = localStorage.getItem('lang') || 'my';
+                alert(currentLang === 'en' ? "⚠️ No backup data found." : "⚠️ သိမ်းဆည်းထားသည့် ဒေတာမရှိသေးပါ။");
                 return;
             }
             const jsonString = JSON.stringify(state);
@@ -177,7 +187,6 @@ async function exportToBackupFile() {
             const filename = (state.title || "My_Novel").replace(/\s+/g, '_') + "_backup.json";
             const fileURL = URL.createObjectURL(blob);
 
-            // 🌟 [ပြင်ဆင်ချက်အသစ်] ပုံကြီးလွန်းပါက ပျက်မကျစေရန် URL.createObjectURL သုံးပြီး Tab အသစ်တွင် လမ်းကြောင်းဖွင့်ခြင်း
             if (navigator.userAgent.match('CriOS') || navigator.userAgent.match('FxiOS')) {
                 window.open(fileURL, '_blank');
             } else {
@@ -190,6 +199,123 @@ async function exportToBackupFile() {
             }
         };
     } catch (error) {
-        alert("Backup ဖိုင်ထုတ်ယူမှု မအောင်မြင်ပါ: " + error.message);
+        alert("Backup Error: " + error.message);
     }
 }
+
+// =========================================================================
+// 🌙 ၃။ NIGHT MODE (DARK THEME) လုပ်ဆောင်ချက်
+// =========================================================================
+function toggleTheme() {
+    const body = document.body;
+    const btn = document.getElementById('theme-toggle');
+    body.classList.toggle('dark-mode');
+    
+    // Theme အလိုက် CSS Style များကို သီးသန့်မခွဲဘဲ JavaScript ကနေ တိုက်ရိုက်ထိန်းချုပ်ခြင်း (အန္တရာယ်ကင်းစေရန်)
+    if (body.classList.contains('dark-mode')) {
+        document.documentElement.style.setProperty('--bg-color', '#121212');
+        document.documentElement.style.setProperty('--text-color', '#e0e0e0');
+        btn.innerText = "☀️ Light Mode";
+        localStorage.setItem('theme', 'dark');
+        applyDarkStyles(true);
+    } else {
+        document.documentElement.style.setProperty('--bg-color', '#ffffff');
+        document.documentElement.style.setProperty('--text-color', '#111111');
+        btn.innerText = "🌙 Night Mode";
+        localStorage.setItem('theme', 'light');
+        applyDarkStyles(false);
+    }
+}
+
+function applyDarkStyles(isDark) {
+    // UI Element များကို လိုက်လံအရောင်ပြောင်းပေးခြင်း
+    const container = document.querySelector('.main-container') || document.body;
+    if(isDark) {
+        container.style.backgroundColor = "#121212";
+        container.style.color = "#e0e0e0";
+        document.querySelectorAll('input, textarea, select').forEach(el => {
+            el.style.backgroundColor = "#2d2d2d";
+            el.style.color = "#ffffff";
+            el.style.borderColor = "#444444";
+        });
+    } else {
+        container.style.backgroundColor = "";
+        container.style.color = "";
+        document.querySelectorAll('input, textarea, select').forEach(el => {
+            el.style.backgroundColor = "";
+            el.style.color = "";
+            el.style.borderColor = "";
+        });
+    }
+}
+
+// =========================================================================
+// 🌐 ၄။ LANGUAGE (မြန်မာ / English) ပြောင်းလဲခြင်း လုပ်ဆောင်ချက်
+// =========================================================================
+const translations = {
+    my: {
+        themeLight: "☀️ Light Mode",
+        themeDark: "🌙 Night Mode",
+        bookTitle: "စာအုပ်အမည် (Book Title)",
+        author: "စာရေးဆရာ (Author)",
+        addChapter: "+ အခန်းတိုးမည်",
+        exportEpub: "📩 ePub ဖိုင် ထုတ်ယူမည်",
+        backupBtn: "Backup ဖိုင်သိမ်းမည်"
+    },
+    en: {
+        themeLight: "☀️ Light Mode",
+        themeDark: "🌙 Light Mode",
+        bookTitle: "Book Title",
+        author: "Author Name",
+        addChapter: "+ Add Chapter",
+        exportEpub: "📩 Export ePub",
+        backupBtn: "Save Backup"
+    }
+};
+
+function changeLanguage() {
+    const lang = document.getElementById('lang-select').value;
+    localStorage.setItem('lang', lang);
+    
+    // UI ပေါ်က စာသားများကို လိုက်လံပြောင်းလဲခြင်း
+    const bookTitleInput = document.getElementById('book-title');
+    const authorInput = document.getElementById('author');
+    const addChapterBtn = document.getElementById('add-chapter-btn') || document.querySelector('button[onclick*="addChapter"]');
+    const epubBtn = document.getElementById('export-epub-btn') || document.querySelector('button[onclick*="generateEPUB"]');
+    
+    if (lang === 'en') {
+        if(bookTitleInput) bookTitleInput.placeholder = translations.en.bookTitle;
+        if(authorInput) authorInput.placeholder = translations.en.author;
+        if(addChapterBtn) addChapterBtn.innerText = translations.en.addChapter;
+        if(epubBtn) epubBtn.innerText = translations.en.exportEpub;
+    } else {
+        if(bookTitleInput) bookTitleInput.placeholder = translations.my.bookTitle;
+        if(authorInput) authorInput.placeholder = translations.my.author;
+        if(addChapterBtn) addChapterBtn.innerText = translations.my.addChapter;
+        if(epubBtn) epubBtn.innerText = translations.my.exportEpub;
+    }
+}
+
+// =========================================================================
+// ⚙️ ၅။ APP စဖွင့်ချိန်တွင် အလိုအလျောက် ပတ်ဝန်းကျင် သတ်မှတ်ပေးခြင်း
+// =========================================================================
+function initUserPreferences() {
+    // ယခင်ရွေးချယ်ခဲ့သော Night Mode အခြေအနေကို စစ်ဆေးပြီး ပြန်ဖွင့်ပေးခြင်း
+    if (localStorage.getItem('theme') === 'dark') {
+        document.body.classList.add('dark-mode');
+        const btn = document.getElementById('theme-toggle');
+        if(btn) btn.innerText = "☀️ Light Mode";
+        applyDarkStyles(true);
+    }
+    
+    // ယခင်ရွေးချယ်ခဲ့သော ဘာသာစကားကို ပြန်ဖွင့်ပေးခြင်း
+    const savedLang = localStorage.getItem('lang');
+    const langSelect = document.getElementById('lang-select');
+    if (savedLang && langSelect) {
+        langSelect.value = savedLang;
+        changeLanguage();
+    }
+}
+
+// စာမျက်နှာ Load ဖြစ်ပြီးတာနဲ့ Preferences တွေကို တန်းပြီး run ပေးရန်
+setTimeout(initUserPreferences, 500);
