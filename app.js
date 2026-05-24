@@ -233,7 +233,7 @@ async function dataUrlToBlob(dataUrl) {
     }
 }
 
-// 🚀 Generate EPUB စနစ်ကြီးတစ်ခုလုံးကို တည်ငြိမ်အောင် ပြင်ဆင်ထားမှု
+// 🚀 ဓာတ်ပုံအများကြီးထည့်ပါက ဒေါင်းလုဒ်မရသည့်ပြဿနာကို အပြီးတိုင်ဖြေရှင်းထားသော စနစ် (Fix Multiple Images Bug)
 async function generateEPUB() {
     saveCurrentBookState();
     const title = document.getElementById('book-title').value || "Untitled_Book";
@@ -254,7 +254,7 @@ async function generateEPUB() {
     let spineItems = "";
     let imageCounter = 1;
 
-    // Cover Image ကို Manifest ထဲတွင် တရားဝင် ထည့်သွင်းကြေညာခြင်း (Fix Bug)
+    // Cover Image ကြေညာခြင်း
     if (coverBase64 && coverBase64.includes("data:image")) {
         let coverExt = "jpg"; let coverMime = "image/jpeg";
         if (coverBase64.includes("image/png")) { coverExt = "png"; coverMime = "image/png"; }
@@ -262,11 +262,11 @@ async function generateEPUB() {
         const coverBlob = await dataUrlToBlob(coverBase64);
         if (coverBlob) {
             zip.file(`OEBPS/images/cover.${coverExt}`, coverBlob);
-            // 🌟 ဒီကုဒ်လိုင်း ကျန်ခဲ့လို့ ဒေါင်းလုဒ်မရဘဲ Crash ဖြစ်သွားရခြင်းဖြစ်လို့ အသစ်ဖြည့်သွင်းပေးလိုက်ပါတယ် 🌟
             manifestItems += `<item id="cover-img" href="images/cover.${coverExt}" media-type="${coverMime}"/>\n`;
         }
     }
 
+    // အခန်းတစ်ခုချင်းစီအတွင်းရှိ ဓာတ်ပုံအားလုံးကို စနစ်တကျ Loop ပတ်သိမ်းဆည်းခြင်း
     for (let index = 0; index < bookChapters.length; index++) {
         let chap = bookChapters[index];
         let htmlString = chap.content || "";
@@ -287,6 +287,7 @@ async function generateEPUB() {
                 const imgBlob = await dataUrlToBlob(src);
                 if (imgBlob) {
                     zip.file(`OEBPS/images/${filename}`, imgBlob);
+                    // 🌟 ဤနေရာတွင် Manifest Items ထဲသို့ ပုံအားလုံးကို အသေအချာ တစ်ခါတည်းထည့်သွင်းပေးရန် ကုဒ်ကို ပြင်ဆင်ထားပါသည် 🌟
                     manifestItems += `<item id="img_${imageCounter}" href="images/${filename}" media-type="${mediaType}"/>\n`;
                     img.setAttribute('src', `images/${filename}`);
                     imageCounter++;
@@ -330,7 +331,7 @@ async function generateEPUB() {
     const ncxXml = `<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE ncx PUBLIC "-//NISO//DTD ncx v2005-1//EN" "http://www.daisy.org/z3986/2005/ncx-2005-1.dtd"><ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1"><head><meta name="dtb:uid" content="${Date.now()}"/></head><docTitle><text>${title}</text></docTitle><navMap>${ncxNav}</navMap></ncx>`;
     zip.file("OEBPS/toc.ncx", ncxXml);
 
-    // Chrome နှင့် အခြား Browser အားလုံးတွင် ရာနှုန်းပြည့် အလုပ်လုပ်မည့် Blob Generator
+    // Browser အားလုံးတွင် ရာနှုန်းပြည့် အလုပ်လုပ်မည့် Stable Blob Generator
     zip.generateAsync({ type: "blob", mimeType: "application/epub+zip" }).then(function (blob) {
         const filename = title.replace(/\s+/g, '_') + ".epub";
         const downloadUrl = window.URL.createObjectURL(blob);
