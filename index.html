@@ -1,97 +1,10 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ePub Creator Pro</title>
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-</head>
-<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col font-sans">
-
-    <header class="bg-slate-800 border-b border-slate-700 p-4 shadow-md flex justify-between items-center">
-        <h1 class="text-xl font-extrabold text-indigo-400"><i class="fa-solid fa-book-open mr-2"></i>ePub Creator Pro</h1>
-        <div class="flex gap-2">
-            <button onclick="exportToBackupFile()" class="bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-all shadow-md">
-                <i class="fa-solid fa-cloud-arrow-down mr-1"></i>Backup
-            </button>
-            <label class="bg-teal-600 hover:bg-teal-700 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-all shadow-md cursor-pointer">
-                <i class="fa-solid fa-cloud-arrow-up mr-1"></i>Restore
-                <input type="file" accept=".json" onchange="importFromBackupFile(event)" class="hidden">
-            </label>
-            <button onclick="resetCurrentBookState()" class="bg-rose-600 hover:bg-rose-700 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-all shadow-md">
-                <i class="fa-solid fa-rotate-left mr-1"></i>Reset
-            </button>
-        </div>
-    </header>
-
-    <div class="flex-1 flex flex-col md:flex-row overflow-hidden">
-        
-        <aside class="w-full md:w-80 bg-slate-800 p-4 flex flex-col gap-4 border-r border-slate-700 overflow-y-auto">
-            <div>
-                <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Book Title</label>
-                <input type="text" id="book-title" oninput="saveCurrentBookState()" placeholder="စာအုပ်ခေါင်းစဉ်" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-indigo-500">
-            </div>
-            <div>
-                <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Author Name</label>
-                <input type="text" id="author" oninput="saveCurrentBookState()" placeholder="စာရေးဆရာအမည်" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-indigo-500">
-            </div>
-            
-            <div class="border-2 border-dashed border-slate-700 hover:border-indigo-500 rounded-xl p-4 text-center cursor-pointer transition-all relative">
-                <label class="cursor-pointer block">
-                    <i class="fa-solid fa-image text-slate-500 text-2xl mb-1 block"></i>
-                    <span class="text-xs text-slate-400">Upload Cover Image</span>
-                    <input type="file" accept="image/*" onchange="handleCoverImage(event)" class="hidden">
-                </label>
-                <div id="cover-status" class="hidden absolute top-2 right-2 text-emerald-400 text-xs font-bold bg-slate-900 px-2 py-0.5 rounded border border-emerald-500 shadow animate-pulse">
-                    <i class="fa-solid fa-check-circle mr-1"></i>Loaded
-                </div>
-            </div>
-
-            <hr class="border-slate-700">
-
-            <div class="flex justify-between items-center">
-                <h2 class="text-sm font-bold text-slate-300 uppercase tracking-wider">Chapters</h2>
-                <button onclick="addChapter()" class="bg-indigo-600 hover:bg-indigo-700 text-white w-8 h-8 rounded-full flex items-center justify-center transition-all shadow shadow-indigo-600/50">
-                    <i class="fa-solid fa-plus"></i>
-                </button>
-            </div>
-            
-            <ul id="chapter-list" class="flex-1 flex flex-col gap-2 overflow-y-auto pr-1 max-h-[250px] md:max-h-none">
-                </ul>
-
-            <button onclick="generateEPUB()" class="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold py-3 rounded-xl shadow-lg shadow-emerald-900/40 transition-all uppercase tracking-wider mt-auto flex items-center justify-center gap-2">
-                <i class="fa-solid fa-file-arrow-down text-lg"></i> Download ePUB
-            </button>
-        </aside>
-
-        <main class="flex-1 flex flex-col p-4 bg-slate-900 overflow-hidden">
-            <div class="mb-3">
-                <input type="text" id="current-chapter-title" oninput="updateChapterTitleLive()" placeholder="အခန်းခေါင်းစဉ် ရေးရန်..." class="w-full bg-transparent text-2xl font-bold border-b border-slate-800 focus:border-indigo-500 focus:outline-none pb-2 text-indigo-300">
-            </div>
-
-            <div class="bg-slate-800 border border-slate-700 rounded-t-xl p-2 flex flex-wrap gap-1 items-center shadow-sm">
-                <button onclick="execCmd('bold')" class="w-9 h-9 rounded bg-slate-700 hover:bg-slate-600 text-white flex items-center justify-center transition-all font-bold" title="Bold"><i class="fa-solid fa-bold"></i></button>
-                <button onclick="execCmd('italic')" class="w-9 h-9 rounded bg-slate-700 hover:bg-slate-600 text-white flex items-center justify-center transition-all italic" title="Italic"><i class="fa-solid fa-italic"></i></button>
-                <button onclick="execCmd('underline')" class="w-9 h-9 rounded bg-slate-700 hover:bg-slate-600 text-white flex items-center justify-center transition-all underline" title="Underline"><i class="fa-solid fa-underline"></i></button>
-                <div class="h-6 w-[1px] bg-slate-600 mx-1"></div>
-                <button onclick="execCmd('justifyLeft')" class="w-9 h-9 rounded bg-slate-700 hover:bg-slate-600 text-white flex items-center justify-center transition-all" title="Align Left"><i class="fa-solid fa-align-left"></i></button>
-                <button onclick="execCmd('justifyCenter')" class="w-9 h-9 rounded bg-slate-700 hover:bg-slate-600 text-white flex items-center justify-center transition-all" title="Align Center"><i class="fa-solid fa-align-center"></i></button>
-                <button onclick="execCmd('justifyRight')" class="w-9 h-9 rounded bg-slate-700 hover:bg-slate-600 text-white flex items-center justify-center transition-all" title="Align Right"><i class="fa-solid fa-align-right"></i></button>
-                <div class="h-6 w-[1px] bg-slate-600 mx-1"></div>
-                
-                <label class="w-9 h-9 rounded bg-indigo-600 hover:bg-indigo-700 text-white flex items-center justify-center transition-all cursor-pointer shadow shadow-indigo-600/30" title="Insert Multi Images">
-                    <i class="fa-solid fa-images"></i>
-                    <input type="file" id="image-uploader" accept="image/*" multiple onchange="insertImagesToEditor(event)" class="hidden">
-                </label>
-                <button onclick="clearAllContent()" class="w-9 h-9 rounded bg-rose-600/80 hover:bg-rose-700 text-white flex items-center justify-center transition-all ml-auto" title="Clear Editor Text"><i class="fa-solid fa-eraser"></i></button>
-            </div>
-
-            <div id="editor" contenteditable="true" oninput="saveCurrentChapterContentLive()" class="flex-1 bg-slate-950 border-x border-b border-slate-700 rounded-b-xl p-4 overflow-y-auto text-slate-200 focus:outline-none prose prose-invert max-w-none leading-relaxed text-lg min-h-[300px]"></div>
-        </main>
-    </div>
-
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script>
+        // လုံခြုံရေးအရ Tailwind နှင့် JSZip မထိခိုက်အောင် ခွဲထုတ်ပေးခြင်း
+        window.addEventListener('load', function() {
+            console.log("System Loaded Successfully");
+        });
+    </script>
     <script src="app.js"></script>
 </body>
 </html>
