@@ -6,7 +6,7 @@
     <title>Web ePub Creator Pro</title>
     <!-- Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- 🌟 Standard JSZip Library for bulletproof ePub creation 🌟 -->
+    <!-- Standard JSZip Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
     <style>
@@ -413,7 +413,36 @@
         reader.readAsText(file);
     }
 
-    // --- 🌟 INDUSTRIAL GRADE BULLETPROOF EPUB ENGINE (USING JSZIP) 🌟 ---
+    // --- 🌟 XHTML CONTENT SANITIZER & CLEANER ENGINE 🌟 ---
+    function cleanHTMLForXHTML(htmlContent) {
+        if (!htmlContent) return "";
+        
+        let clean = htmlContent;
+
+        // 1. &nbsp; အမှားများကို XHTML နားလည်သော Space Byte ကုဒ်အဖြစ် အစားထိုးခြင်း
+        clean = clean.replace(/&nbsp;/g, '&#160;');
+
+        // 2. ပိတ်ရန်ကျန်ခဲ့သော HTML တက်ဂ်များကို သန့်စင်ရန် ယာယီ DOM Parser သုံးခြင်း
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(`<div>${clean}</div>`, 'text/html');
+        
+        // 3. Apple Books တွင် အမှားတက်စေသော <br> တက်ဂ်များကို XHTML စံနှုန်းဖြစ်သည့် <br /> ပြောင်းလဲခြင်း
+        const brs = doc.querySelectorAll('br');
+        brs.forEach(br => {
+            const xbr = doc.createElement('br');
+            br.replaceWith(xbr);
+        });
+
+        // 4. ပုံ (img) တက်ဂ်များကိုလည်း XHTML စံနှုန်းအတိုင်း အလိုအလျောက် ပိတ်ပေးခြင်း (<img />)
+        const imgs = doc.querySelectorAll('img');
+        imgs.forEach(img => {
+            img.setAttribute('alt', 'image');
+        });
+
+        return doc.body.firstChild.innerHTML;
+    }
+
+    // --- 🌟 INDUSTRIAL GRADE BULLETPROOF EPUB ENGINE 🌟 ---
     function generateEPUB() {
         saveCurrentBookState();
         
@@ -449,19 +478,24 @@
 
         // Build chapters
         bookChapters.forEach((chap, index) => {
+            // စာသားများကို သန့်စင်ပြီးမှ ePub ထဲ ထည့်သွင်းခြင်း
+            const finalizedContent = cleanHTMLForXHTML(chap.content);
+
             const chapHtml = `<?xml version="1.0" encoding="utf-8"?>
-            <!DOCTYPE html>
+            <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
             <html xmlns="http://www.w3.org/1999/xhtml">
             <head>
                 <title>${chap.title}</title>
                 <style>
                     body { padding: 20px; font-family: sans-serif; line-height: 1.6; color: #111111; background-color: #ffffff; }
                     img { max-width: 100%; height: auto; display: block; margin: 10px 0; border-radius: 4px; }
+                    h1 { font-size: 1.5em; text-align: center; margin-bottom: 20px; }
+                    p { margin-bottom: 1em; text-align: justify; }
                 </style>
             </head>
             <body>
                 <h1>${chap.title}</h1>
-                <div>${chap.content}</div>
+                <div>${finalizedContent}</div>
             </body>
             </html>`;
             
@@ -527,7 +561,7 @@
     function clearContent() { document.getElementById('editor').innerHTML = ""; updateActiveChapterContent(); }
     
     function resetForm() {
-        if(confirm("အစက ပြန်စမှာ သေချာပါသလား။")) {
+        if(confirm("အစက ပြန်စမှာ သေချက်ပါသလား။")) {
             localStorage.removeItem('epub_master_data');
             bookChapters = []; activeChapterId = null; coverBase64 = "";
             document.getElementById('book-title').value = "";
