@@ -6,6 +6,8 @@
     <title>Web ePub Creator Pro</title>
     <!-- Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- 🌟 Standard JSZip Library for bulletproof ePub creation 🌟 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
     <style>
         :root {
@@ -411,7 +413,7 @@
         reader.readAsText(file);
     }
 
-    // --- 🌟 APPLE BOOKS COMPLIANT STANDARD EPUB ENGINE 🌟 ---
+    // --- 🌟 INDUSTRIAL GRADE BULLETPROOF EPUB ENGINE (USING JSZIP) 🌟 ---
     function generateEPUB() {
         saveCurrentBookState();
         
@@ -423,176 +425,102 @@
             return;
         }
 
-        try {
-            // CRC32 Generator for Standard Zip Verification
-            function makeCRCTable(){
-                let c;
-                let crcTable = [];
-                for(let n =0; n < 256; n++){
-                    c = n;
-                    for(let k =0; k < 8; k++){
-                        c = ((c&1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1));
-                    }
-                    crcTable[n] = c;
-                }
-                return crcTable;
-            }
-            const crcTable = makeCRCTable();
-            function calculateCRC32(str) {
-                let crc = 0 ^ (-1);
-                for (let i = 0; i < str.length; i++ ) {
-                    crc = (crc >>> 8) ^ crcTable[(crc ^ str.charCodeAt(i)) & 0xFF];
-                }
-                return (crc ^ (-1)) >>> 0;
-            }
+        if (typeof JSZip === 'undefined') {
+            alert("JSZip Library မတက်သေးပါ၊ ခေတ္တစောင့်ပြီး ပြန်ကြိုးစားပေးပါ။");
+            return;
+        }
 
-            // UTF-8 Custom Encoder for Perfect Binary Generation
-            const textEncoder = new TextEncoder();
+        const zip = new JSZip();
+        
+        // Rule 1: Apple Books Requirement - mimetype MUST be the absolute first file and uncompressed
+        zip.file("mimetype", "application/epub+zip", { compression: "STORE" });
+        
+        // Metadata structure
+        const containerXml = `<?xml version="1.0" encoding="UTF-8"?>
+        <container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
+            <rootfiles>
+                <rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/>
+            </rootfiles>
+        </container>`;
+        zip.file("META-INF/container.xml", containerXml);
 
-            const files = [];
+        let manifestItems = "";
+        let spineItems = "";
+
+        // Build chapters
+        bookChapters.forEach((chap, index) => {
+            const chapHtml = `<?xml version="1.0" encoding="utf-8"?>
+            <!DOCTYPE html>
+            <html xmlns="http://www.w3.org/1999/xhtml">
+            <head>
+                <title>${chap.title}</title>
+                <style>
+                    body { padding: 20px; font-family: sans-serif; line-height: 1.6; color: #111111; background-color: #ffffff; }
+                    img { max-width: 100%; height: auto; display: block; margin: 10px 0; border-radius: 4px; }
+                </style>
+            </head>
+            <body>
+                <h1>${chap.title}</h1>
+                <div>${chap.content}</div>
+            </body>
+            </html>`;
             
-            // 🌟 Rule 1: mimetype file MUST NOT have any extra newline or space characters.
-            files.push({ name: "mimetype", content: "application/epub+zip", method: 0 });
-            
-            files.push({
-                name: "META-INF/container.xml",
-                content: `<?xml version="1.0" encoding="UTF-8"?><container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container"><rootfiles><rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/></rootfiles></container>`,
-                method: 0
-            });
+            zip.file(`OEBPS/chapter_${index + 1}.xhtml`, chapHtml);
+            manifestItems += `<item id="chap_${index + 1}" href="chapter_${index + 1}.xhtml" media-type="application/xhtml+xml"/>\n`;
+            spineItems += `<itemref idref="chap_${index + 1}"/>\n`;
+        });
 
-            let manifestItems = "";
-            let spineItems = "";
+        // Content OPF
+        const opfXml = `<?xml version="1.0" encoding="UTF-8"?>
+        <package xmlns="http://www.idpf.org/2007/opf" unique-identifier="bookid" version="2.0">
+            <metadata xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:opf="http://www.idpf.org/2007/opf">
+                <dc:title>${title}</dc:title>
+                <dc:creator opf:role="aut">${author}</dc:creator>
+                <dc:language>my</dc:language>
+                <dc:identifier id="bookid">urn:uuid:${Date.now()}</dc:identifier>
+            </metadata>
+            <manifest>
+                <item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>
+                ${manifestItems}
+            </manifest>
+            <spine toc="ncx">
+                ${spineItems}
+            </spine>
+        </package>`;
+        zip.file("OEBPS/content.opf", opfXml);
 
-            bookChapters.forEach((chap, index) => {
-                const fileName = `OEBPS/chapter_${index + 1}.xhtml`;
-                const chapHtml = `<?xml version="1.0" encoding="utf-8"?><!DOCTYPE html><html xmlns="http://www.w3.org/1999/xhtml"><head><title>${chap.title}</title><style>body{padding:20px;font-family:sans-serif;line-height:1.6;color:#111111;background-color:#ffffff;}img{max-width:100%;height:auto;display:block;margin:10px 0;}</style></head><body><h1>${chap.title}</h1><div>${chap.content}</div></body></html>`;
-                
-                files.push({ name: fileName, content: chapHtml, method: 0 });
-                manifestItems += `<item id="chap_${index+1}" href="chapter_${index+1}.xhtml" media-type="application/xhtml+xml"/>\n`;
-                spineItems += `<itemref idref="chap_${index+1}"/>\n`;
-            });
+        // NCX Navigation
+        let ncxNav = "";
+        bookChapters.forEach((chap, index) => {
+            ncxNav += `<navPoint id="nav_${index + 1}" playOrder="${index + 1}">
+                <navLabel><text>${chap.title}</text></navLabel>
+                <content src="chapter_${index + 1}.xhtml"/>
+            </navPoint>\n`;
+        });
 
-            const opfXml = `<?xml version="1.0" encoding="UTF-8"?>
-            <package xmlns="http://www.idpf.org/2007/opf" unique-identifier="bookid" version="2.0">
-                <metadata xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:opf="http://www.idpf.org/2007/opf">
-                    <dc:title>${title}</dc:title>
-                    <dc:creator opf:role="aut">${author}</dc:creator>
-                    <dc:language>my</dc:language>
-                    <dc:identifier id="bookid">urn:uuid:${Date.now()}</dc:identifier>
-                </metadata>
-                <manifest>
-                    <item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>
-                    ${manifestItems}
-                </manifest>
-                <spine toc="ncx">
-                    ${spineItems}
-                </spine>
-            </package>`;
-            files.push({ name: "OEBPS/content.opf", content: opfXml, method: 0 });
+        const ncxXml = `<?xml version="1.0" encoding="UTF-8"?>
+        <!DOCTYPE ncx PUBLIC "-//NISO//DTD ncx v2005-1//EN" "http://www.daisy.org/z3986/2005/ncx-2005-1.dtd">
+        <ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1">
+            <head>
+                <meta name="dtb:uid" content="urn:uuid:${Date.now()}"/>
+                <meta name="dtb:depth" content="1"/>
+            </head>
+            <docTitle><text>${title}</text></docTitle>
+            <navMap>${ncxNav}</navMap>
+        </ncx>`;
+        zip.file("OEBPS/toc.ncx", ncxXml);
 
-            let ncxNav = "";
-            bookChapters.forEach((chap, index) => {
-                ncxNav += `<navPoint id="nav_${index+1}" playOrder="${index+1}">
-                    <navLabel><text>${chap.title}</text></navLabel>
-                    <content src="chapter_${index+1}.xhtml"/>
-                </navPoint>\n`;
-            });
-
-            const ncxXml = `<?xml version="1.0" encoding="UTF-8"?>
-            <!DOCTYPE ncx PUBLIC "-//NISO//DTD ncx v2005-1//EN" "http://www.daisy.org/z3986/2005/ncx-2005-1.dtd">
-            <ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1">
-                <head><meta name="dtb:uid" content="urn:uuid:12345"/><meta name="dtb:depth" content="1"/></head>
-                <docTitle><text>${title}</text></docTitle>
-                <navMap>${ncxNav}</navMap>
-            </ncx>`;
-            files.push({ name: "OEBPS/toc.ncx", content: ncxXml, method: 0 });
-
-            // 🌟 Strict Binary Structuring for Apple Validation 🌟
-            let totalBytesNeeded = 0;
-            const preparedFiles = files.map(file => {
-                const nameBytes = textEncoder.encode(file.name);
-                const contentBytes = textEncoder.encode(file.content);
-                const crc = calculateCRC32(file.content);
-                totalBytesNeeded += 30 + nameBytes.length + contentBytes.length + 46 + nameBytes.length + 30;
-                return { nameBytes, contentBytes, crc, name: file.name };
-            });
-
-            const buffer = new ArrayBuffer(totalBytesNeeded + 2048);
-            const view = new DataView(buffer);
-            let offset = 0;
-            const headers = [];
-
-            // 1. Local File Headers
-            preparedFiles.forEach(file => {
-                const localOffset = offset;
-                view.setUint32(offset, 0x04034b50, true); offset += 4; // signature
-                view.setUint16(offset, 10, true); offset += 2;        // version
-                view.setUint16(offset, 0, true); offset += 2;         // flags
-                view.setUint16(offset, 0, true); offset += 2;         // compression method (0 = STORE)
-                view.setUint16(offset, 0x5421, true); offset += 2;    // mod time
-                view.setUint16(offset, 0x5421, true); offset += 2;    // mod date
-                view.setUint32(offset, file.crc, true); offset += 4;   // crc32
-                view.setUint32(offset, file.contentBytes.length, true); offset += 4; // compressed size
-                view.setUint32(offset, file.contentBytes.length, true); offset += 4; // uncompressed size
-                view.setUint16(offset, file.nameBytes.length, true); offset += 2;    // name length
-                view.setUint16(offset, 0, true); offset += 2;        // extra field length
-                
-                file.nameBytes.forEach(b => view.setUint8(offset++, b));
-                file.contentBytes.forEach(b => view.setUint8(offset++, b));
-
-                headers.push({ offset: localOffset, file });
-            });
-
-            const centralDirOffset = offset;
-
-            // 2. Central Directory Record
-            headers.forEach(h => {
-                view.setUint32(offset, 0x02014b50, true); offset += 4; // signature
-                view.setUint16(offset, 10, true); offset += 2;        // version made by
-                view.setUint16(offset, 10, true); offset += 2;        // version needed
-                view.setUint16(offset, 0, true); offset += 2;         // flags
-                view.setUint16(offset, 0, true); offset += 2;         // compression method
-                view.setUint16(offset, 0x5421, true); offset += 2;    // mod time
-                view.setUint16(offset, 0x5421, true); offset += 2;    // mod date
-                view.setUint32(offset, h.file.crc, true); offset += 4; // crc32
-                view.setUint32(offset, h.file.contentBytes.length, true); offset += 4;
-                view.setUint32(offset, h.file.contentBytes.length, true); offset += 4;
-                view.setUint16(offset, h.file.nameBytes.length, true); offset += 2;
-                view.setUint16(offset, 0, true); offset += 2; // extra
-                view.setUint16(offset, 0, true); offset += 2; // comment
-                view.setUint16(offset, 0, true); offset += 2; // disk start
-                view.setUint16(offset, 0, true); offset += 2; // internal attr
-                view.setUint32(offset, 0, true); offset += 4; // external attr
-                view.setUint32(offset, h.offset, true); offset += 4; // local header offset
-                
-                h.file.nameBytes.forEach(b => view.setUint8(offset++, b));
-            });
-
-            const centralDirSize = offset - centralDirOffset;
-
-            // 3. End of Central Directory
-            view.setUint32(offset, 0x06054b50, true); offset += 4;
-            view.setUint16(offset, 0, true); offset += 2;
-            view.setUint16(offset, 0, true); offset += 2;
-            view.setUint16(offset, headers.length, true); offset += 2;
-            view.setUint16(offset, headers.length, true); offset += 2;
-            view.setUint32(offset, centralDirSize, true); offset += 4;
-            view.setUint32(offset, centralDirOffset, true); offset += 4;
-            view.setUint16(offset, 0, true); offset += 2;
-
-            // Build blob and trigger download
-            const finalBlob = new Blob([buffer.slice(0, offset)], { type: "application/epub+zip" });
-            const url = URL.createObjectURL(finalBlob);
+        // Generate and download
+        zip.generateAsync({ type: "blob", mimeType: "application/epub+zip" }).then(function (blob) {
+            const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
             a.download = title.replace(/\s+/g, '_') + ".epub";
             a.click();
-            
             setTimeout(() => URL.revokeObjectURL(url), 2000);
-
-        } catch(err) {
-            alert("ePub တည်ဆောက်မှု မအောင်မြင်ပါ- " + err.message);
-        }
+        }).catch(function (err) {
+            alert("ePub Generation Error: " + err.message);
+        });
     }
 
     function formatDoc(cmd) { document.execCommand(cmd, false, null); }
@@ -626,7 +554,7 @@
         document.getElementById('lbl-btn-load').innerText = data.btnLoad;
         document.getElementById('lbl-btn-reset').innerText = data.btnReset;
         document.getElementById('lbl-book-title').innerText = data.bookTitle;
-        document.getElementById('lbl-author').innerText = data.author;
+        document.getElementById('author').innerText = data.author;
         document.getElementById('lbl-cover').innerText = data.cover;
         document.getElementById('lbl-chapters').innerText = data.chapters;
         document.getElementById('lbl-btn-addchapter').innerText = data.btnAddChap;
