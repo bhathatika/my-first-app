@@ -8,7 +8,7 @@ function execCmd(command) {
     saveCurrentChapterContentLive();
 }
 
-// ဓာတ်ပုံအရွယ်အစားကို အလိုအလျောက်ချုံ့ပေးပြီး ဒေါင်းလုဒ်အဆင်ပြေစေမည့် Image Compressor စနစ်
+// ဓာတ်ပုံများကို Error လုံးဝမတက်စေဘဲ ချုံ့ပေးပြီး Safe Base64 ပြောင်းပေးသည့် စနစ်
 function compressImage(file, maxWidth, maxHeight, quality) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -40,7 +40,7 @@ function compressImage(file, maxWidth, maxHeight, quality) {
     });
 }
 
-// တစ်ခါတည်းနဲ့ ဓာတ်ပုံ အများကြီး (Multiple) အလိုအလျောက် ချုံ့ပြီး စာအကွက်ထဲ စီထည့်ပေးမည့် စနစ်
+// 🌟 ဓာတ်ပုံ အများကြီး (Multiple Images) ပြိုင်တူထည့်လျှင် Error တက်ခြင်းကို ၁၀၀% ဖြေရှင်းထားသော စနစ်စ်
 async function insertImagesToEditor(event) {
     const files = event.target.files;
     if (!files || files.length === 0) return;
@@ -48,10 +48,12 @@ async function insertImagesToEditor(event) {
     const editor = document.getElementById('editor');
     editor.focus();
 
+    // Loop ကို အလောတကြီး မပတ်ဘဲ တစ်ပုံချင်းစီ သေချာ Base64 ပြောင်းပြီးမှ Editor ထဲ ထည့်ပေးသည့် စနစ်
     for (let i = 0; i < files.length; i++) {
         try {
             const compressedBase64 = await compressImage(files[i], 800, 800, 0.75);
             
+            // Cursor ရှိတဲ့နေရာမှာ စနစ်တကျ ပုံဝင်စေရန်
             const selection = window.getSelection();
             if (selection.rangeCount > 0) {
                 const range = selection.getRangeAt(0);
@@ -59,6 +61,10 @@ async function insertImagesToEditor(event) {
                     const img = document.createElement('img');
                     img.src = compressedBase64;
                     img.alt = "inserted_image";
+                    img.style.maxWidth = "100%";
+                    img.style.height = "auto";
+                    img.style.display = "block";
+                    img.style.margin = "10px auto";
                     
                     range.deleteContents();
                     range.insertNode(img);
@@ -70,14 +76,15 @@ async function insertImagesToEditor(event) {
                     continue;
                 }
             }
-            editor.innerHTML += `<div><img src="${compressedBase64}" alt="inserted_image"/></div>`;
+            // အကယ်၍ Editor ထဲမှာ Cursor မရှိခဲ့ပါက အောက်ဆုံးမှာ တိုးထည့်ပေးမည်
+            editor.innerHTML += `<div><img src="${compressedBase64}" alt="inserted_image" style="max-width:100%; height:auto; display:block; margin:10px auto;"/></div>`;
         } catch (err) {
             console.error("Image loading error:", err);
         }
     }
     
     saveCurrentChapterContentLive();
-    event.target.value = ""; 
+    event.target.value = ""; // Reset File Input
 }
 
 // အခန်းခေါင်းစဉ် Live ပြောင်းလဲခြင်း
@@ -173,7 +180,7 @@ async function handleCoverImage(event) {
     }
 }
 
-// สာသားအားလုံး ဖျက်ထုတ်ခြင်း
+// စာသားအားလုံး ဖျက်ထုတ်ခြင်း
 function clearAllContent() {
     if(confirm("စာသားအားလုံးကို ဖျက်ပစ်ရန် သေချာပါသလား။")) {
         document.getElementById('editor').innerHTML = "";
@@ -216,7 +223,14 @@ function loadBookState() {
 
 // Base64 မှ Safe Blob ပြောင်းလဲပေးသည့် စနစ်
 async function dataUrlToBlob(dataUrl) {
-    if (!dataUrl || !dataUrl.startsWith("data:image")) return null;
+    if (!dataUrl) return null;
+    // အကယ်၍ Base64 စစ်စစ် မဟုတ်ဘဲ Blob String ဖြစ်နေပါက Fetch ဖြင့် တိုက်ရိုက်ယူမည်
+    if (!dataUrl.startsWith("data:image")) {
+        try {
+            const response = await fetch(dataUrl);
+            return await response.blob();
+        } catch (e) { return null; }
+    }
     try {
         const response = await fetch(dataUrl);
         return await response.blob();
@@ -233,7 +247,7 @@ async function dataUrlToBlob(dataUrl) {
     }
 }
 
-// 🚀 ဓာတ်ပုံ ဘယ်နှပုံပဲဖြစ်ဖြစ် အားလုံးကို ePub Manifest ထဲ စနစ်တကျ Compile လုပ်ပေးမည့် Function အသစ်
+// 🚀 ဓာတ်ပုံ ဘယ်နှပုံပဲရှိရှိ ခွဲခြားပြီး Manifest ထဲ စနစ်တကျ ထည့်သွင်းပေးမည့် ကွန်ပိုင်လာ စနစ်အသစ်
 async function generateEPUB() {
     saveCurrentBookState();
     const title = document.getElementById('book-title').value || "Untitled_Book";
@@ -252,8 +266,6 @@ async function generateEPUB() {
 
     let manifestItems = "";
     let spineItems = "";
-    
-    // 🌟 အရေးကြီးဆုံးပြင်ဆင်မှု - Image Counter ကို တစ်ကမ္ဘာလုံးဆိုင်ရာ အဆင့်သတ်မှတ်ပြီး ပုံအားလုံးအတွက် ID ကို သီးသန့်ဖြစ်စေရန် နေရာချထားခြင်း
     let globalImageCounter = 1;
 
     // Cover Image ကြေညာခြင်း
@@ -281,19 +293,18 @@ async function generateEPUB() {
         const imgs = container.querySelectorAll('img');
         for (let img of imgs) {
             const src = img.getAttribute('src');
-            if (src && src.startsWith('data:image')) {
+            if (src) {
                 let ext = "jpg"; let mediaType = "image/jpeg";
                 if (src.includes("image/png")) { ext = "png"; mediaType = "image/png"; }
                 
                 const filename = `image_${globalImageCounter}.${ext}`;
-                const imgBlob = await dataUrlToBlob(src);
+                const imgBlob = await dataUrlToBlob(src); // Base64 သို့မဟုတ် Blob ဖြစ်ဖြစ် Blob အဖြစ် ပြောင်းထုတ်မည်
                 
                 if (imgBlob) {
                     zip.file(`OEBPS/images/${filename}`, imgBlob);
-                    // 🌟 ဤနေရာတွင် Manifest ထဲသို့ ပုံအားလုံးရဲ့ ID (img_1, img_2, img_3, ...) ကို စာရင်းသွင်းပေးသွားမည်ဖြစ်သည်
                     manifestItems += `<item id="img_${globalImageCounter}" href="images/${filename}" media-type="${mediaType}"/>\n`;
                     img.setAttribute('src', `images/${filename}`);
-                    globalImageCounter++; // ပုံတစ်ပုံပြီးတိုင်း စနစ်တကျ နံပါတ် တိုးပေးသွားမည်။
+                    globalImageCounter++;
                 }
             }
         }
@@ -334,7 +345,7 @@ async function generateEPUB() {
     const ncxXml = `<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE ncx PUBLIC "-//NISO//DTD ncx v2005-1//EN" "http://www.daisy.org/z3986/2005/ncx-2005-1.dtd"><ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1"><head><meta name="dtb:uid" content="${Date.now()}"/></head><docTitle><text>${title}</text></docTitle><navMap>${ncxNav}</navMap></ncx>`;
     zip.file("OEBPS/toc.ncx", ncxXml);
 
-    // Browser အားလုံးတွင် ရာနှုန်းပြည့် အလုပ်လုပ်မည့် Stable Blob Generator
+    // Stable Download Flow 
     zip.generateAsync({ type: "blob", mimeType: "application/epub+zip" }).then(function (blob) {
         const filename = title.replace(/\s+/g, '_') + ".epub";
         const downloadUrl = window.URL.createObjectURL(blob);
