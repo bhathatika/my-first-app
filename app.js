@@ -1,314 +1,206 @@
-let chapters = [];
-let activeChapterIndex = null;
-let quill = null;
-
-// Initialize Quill Rich Text Editor
-document.addEventListener('DOMContentLoaded', () => {
-    quill = new Quill('#editor', {
-        theme: 'snow',
-        placeholder: 'ဒီနေရာမှာ စာသားများ ရိုက်ထည့်ပါ...',
-        modules: {
-            toolbar: [
-                ['bold', 'italic', 'underline'],
-                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                ['image', 'clean']
-            ]
-        }
-    });
-
-    quill.on('text-change', () => {
-        if (activeChapterIndex !== null && chapters[activeChapterIndex]) {
-            chapters[activeChapterIndex].content = quill.root.innerHTML;
-        }
-    });
-});
-
-// UI Elements
-const btnAddChapter = document.getElementById('btnAddChapter');
-const chaptersListContainer = document.getElementById('chaptersListContainer');
-const activeEditorSection = document.getElementById('activeEditorSection');
-const activeChTitle = document.getElementById('activeChTitle');
-const btnGenerate = document.getElementById('btnGenerate');
-const btnBackup = document.getElementById('btnBackup');
-const btnLoadBackup = document.getElementById('btnLoadBackup');
-const fileInput = document.getElementById('fileInput');
-const btnReset = document.getElementById('btnReset');
-
-btnAddChapter.addEventListener('click', () => {
-    const newChapter = {
-        title: `အခန်း (${chapters.length + 1})`,
-        content: ''
-    };
-    chapters.push(newChapter);
-    renderChapters();
-    selectChapter(chapters.length - 1);
-});
-
-activeChTitle.addEventListener('input', (e) => {
-    if (activeChapterIndex !== null && chapters[activeChapterIndex]) {
-        chapters[activeChapterIndex].title = e.target.value;
-        const btn = document.querySelector(`[data-index="${activeChapterIndex}"] .ch-title-text`);
-        if (btn) btn.innerText = e.target.value;
-    }
-});
-
-function renderChapters() {
-    chaptersListContainer.innerHTML = '';
-    chapters.forEach((ch, idx) => {
-        const div = document.createElement('div');
-        div.className = 'flex items-center justify-between bg-gray-700 p-2 rounded-lg gap-2 border border-gray-600';
-        div.setAttribute('data-index', idx);
-        
-        if(idx === activeChapterIndex) div.classList.add('active-chapter');
-
-        div.innerHTML = `
-            <button class="flex-1 text-left text-sm font-medium truncate py-1 ch-title-text">${ch.title}</button>
-            <button class="text-rose-400 hover:text-rose-300 font-bold px-2 py-1 text-sm btn-delete">&times;</button>
-        `;
-
-        div.querySelector('.ch-title-text').addEventListener('click', () => selectChapter(idx));
-        
-        div.querySelector('.btn-delete').addEventListener('click', (e) => {
-            e.stopPropagation();
-            if(confirm('ဤအခန်းကို ဖျက်ရန် သေချာပါသလား?')) {
-                chapters.splice(idx, 1);
-                if (activeChapterIndex === idx) {
-                    activeChapterIndex = null;
-                    activeEditorSection.classList.add('hidden');
-                } else if (activeChapterIndex > idx) {
-                    activeChapterIndex--;
-                }
-                renderChapters();
-                if(activeChapterIndex !== null) selectChapter(activeChapterIndex);
-            }
-        });
-
-        chaptersListContainer.appendChild(div);
-    });
-}
-
-function selectChapter(idx) {
-    if (idx < 0 || idx >= chapters.length) return;
-    activeChapterIndex = idx;
-    
-    renderChapters();
-    activeEditorSection.classList.remove('hidden');
-    activeChTitle.value = chapters[idx].title;
-    
-    if (quill) {
-        quill.root.innerHTML = chapters[idx].content || '';
+// ==========================================
+// 🌟 GENERATE EPUB FUNCTION (ဓာတ်ပုံများ စိတ်ကြိုက်ထည့်နိုင်/ဖျက်နိုင်သော စနစ်သစ်)
+// ==========================================
+async function generateEPUB() {
+    // ဒေတာများကို ပထမဦးစွာ IndexedDB ထဲသို့ Backup အရင်လုပ်မည်
+    if (typeof saveCurrentBookState === 'function') {
+        await saveCurrentBookState(); 
     }
     
-    activeEditorSection.scrollIntoView({ behavior: 'smooth' });
-}
-
-// XHTML စနစ်ညှပ်ချက်များနှင့် ကိုက်ညီအောင် လုံခြုံစွာ ပြင်ဆင်ပေးသည့် စနစ်
-function cleanHtmlForXhtml(htmlContent) {
-    if (!htmlContent) return '<p></p>';
-    let clean = htmlContent;
-    // self-closing tag မဖြစ်ခဲ့ရင် <br/> ပြောင်းပေးခြင်း
-    clean = clean.replace(/<br\s*\/?>/gi, '<br/>');
-    // စာလုံးခြားကွက်များကို XML Entity ပြောင်းလဲခြင်း
-    clean = clean.replace(/&nbsp;/g, '&#160;');
-    return clean;
-}
-
-// Base64 မှ Binary Blob သို့ ပြောင်းလဲပေးခြင်း
-function base64ToBlob(base64Str, contentType) {
-    const byteCharacters = atob(base64Str);
-    const byteArrays = [];
-    for (let offset = 0; offset < byteCharacters.length; offset += 512) {
-        const slice = byteCharacters.slice(offset, offset + 512);
-        const byteNumbers = new Array(slice.length);
-        for (let i = 0; i < slice.length; i++) {
-            byteNumbers[i] = slice.charCodeAt(i);
-        }
-        const byteArray = new Uint8Array(byteNumbers);
-        byteArrays.push(byteArray);
-    }
-    return new Blob(byteArrays, { type: contentType });
-}
-
-// 🌟 Generate ePub Core Logic (Tag Mismatch လုံးဝမဖြစ်စေမည့် ဗားရှင်းသစ်)
-btnGenerate.addEventListener('click', async () => {
-    if (chapters.length === 0) {
-        alert('ကျေးဇူးပြု၍ အခန်းအနည်းဆုံးတစ်ခု အရင်ထည့်ပါ!');
+    const title = document.getElementById('book-title').value || "Untitled Book";
+    const author = document.getElementById('author').value || "Unknown Author";
+    
+    if(!bookChapters || bookChapters.length === 0) {
+        alert("⚠️ သတိပေးချက်: အခန်း (Chapter) မရှိသေးပါ။ ကျေးဇူးပြု၍ '+ အခန်းတိုးမည်' ခလုတ်ကို အရင်နှိပ်ပေးပါဗျာ။");
         return;
     }
-    
-    const title = document.getElementById('bookTitle').value || 'My Novel';
-    const author = document.getElementById('bookAuthor').value || 'Unknown Author';
-    
+
+    if (typeof JSZip === 'undefined') {
+        alert("JSZip Library မတက်သေးပါ၊ ခေတ္တစောင့်ပြီး ပြန်ကြိုးစားပေးပါ။");
+        return;
+    }
+
     const zip = new JSZip();
-    zip.file("mimetype", "application/epub+zip");
+    zip.file("mimetype", "application/epub+zip", { compression: "STORE" });
     
-    const metaInf = zip.folder("META-INF");
-    metaInf.file("container.xml", `<?xml version="1.0"?><container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container"><rootfiles><rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/></rootfiles></container>`);
-    
-    const oebps = zip.folder("OEBPS");
-    const imagesFolder = oebps.folder("images");
-    
-    let manifestChapters = '';
-    let manifestImages = '';
-    let spineChapters = '';
-    let imageCounter = 0;
-    
-    for (let idx = 0; idx < chapters.length; idx++) {
-        let ch = chapters[idx];
-        manifestChapters += `<item id="ch${idx}" href="ch${idx}.xhtml" media-type="application/xhtml+xml"/>\n`;
-        spineChapters += `<itemref idref="ch${idx}"/>\n`;
-        
-        let parser = new DOMParser();
-        // XMLParser Error ကင်းဝေးစေရန် စနစ်တကျ Parse လုပ်ခြင်း
-        let doc = parser.parseFromString(`<div>${ch.content}</div>`, 'text/html');
-        let imgs = doc.querySelectorAll('img');
-        
-        imgs.forEach((img) => {
-            let src = img.getAttribute('src');
+    const containerXml = `<?xml version="1.0" encoding="UTF-8"?>
+    <container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
+        <rootfiles>
+            <rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/>
+        </rootfiles>
+    </container>`;
+    zip.file("META-INF/container.xml", containerXml);
+
+    let manifestItems = "";
+    let spineItems = "";
+    let imageCounter = 1;
+
+    // လက်ရှိ ရိုက်လက်စ အခန်းဒေတာကို Editor ထဲမှ ရယူခြင်း
+    const actualChapters = JSON.parse(JSON.stringify(bookChapters));
+    if (actualChapters[currentChapterIndex] && tinymce.activeEditor) {
+        actualChapters[currentChapterIndex].content = tinymce.activeEditor.getContent();
+    }
+
+    actualChapters.forEach((chap, index) => {
+        let htmlString = chap.content || "";
+        htmlString = htmlString.replace(/&nbsp;/g, '&#160;');
+
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(`<div>${htmlString}</div>`, 'text/html');
+        const container = doc.body.firstChild;
+
+        const brs = container.querySelectorAll('br');
+        brs.forEach(br => {
+            const pBr = doc.createElement('p');
+            pBr.innerHTML = '&#160;';
+            br.replaceWith(pBr);
+        });
+
+        // ဓာတ်ပုံများကို စစ်ဆေးပြီး ePub ထဲသို့ ထည့်သွင်းခြင်း
+        const imgs = container.querySelectorAll('img');
+        imgs.forEach(img => {
+            const src = img.getAttribute('src');
             if (src && src.startsWith('data:image')) {
-                imageCounter++;
+                let ext = "jpg";
+                let mediaType = "image/jpeg";
+                if (src.includes("image/png")) { ext = "png"; mediaType = "image/png"; }
+                else if (src.includes("image/gif")) { ext = "gif"; mediaType = "image/gif"; }
+
+                const filename = `image_${imageCounter}.${ext}`;
+                const imgBlob = base64ToBlob(src); // ဓာတ်ပုံကို Blob အဖြစ် ပြောင်းလဲခြင်း
                 
-                try {
-                    const parts = src.split(',');
-                    const meta = parts[0];
-                    const base64Data = parts[1];
-                    
-                    let mimeType = 'image/jpeg'; 
-                    if (meta.includes('image/png')) mimeType = 'image/png';
-                    if (meta.includes('image/gif')) mimeType = 'image/gif';
-                    if (meta.includes('image/webp')) mimeType = 'image/webp';
-                    
-                    let ext = mimeType.split('/')[1];
-                    let imgFilename = `img_${imageCounter}.${ext}`;
-                    
-                    let imgBlob = base64ToBlob(base64Data, mimeType);
-                    imagesFolder.file(imgFilename, imgBlob);
-                    manifestImages += `<item id="img${imageCounter}" href="images/${imgFilename}" media-type="${mimeType}"/>\n`;
-                    
-                    // 🌟 FIXED: <p> tag mismatch မဖြစ်စေရန် မူရင်းနေရာမှာတင် တိုက်ရိုက်အစားထိုးပြီး 
-                    // XHTML-compliant ဖြစ်အောင် <img /> ကို စနစ်တကျ ပိတ်ပေးပါသည်
-                    let newImg = document.createElement('img');
-                    newImg.setAttribute('src', `images/${imgFilename}`);
-                    newImg.setAttribute('alt', `Image ${imageCounter}`);
-                    newImg.className = 'epub-img';
-                    
-                    // မူရင်း Base64 ပုံနေရာမှာ အသစ်ပြောင်းလဲထားတဲ့ ပုံလမ်းကြောင်းနဲ့ အစားထိုးလဲလှယ်ခြင်း
-                    img.parentNode.replaceChild(newImg, img);
-                } catch(e) {
-                    console.error("Image processing error: ", e);
+                // 💡 ဓာတ်ပုံဒေတာ အမှန်အကန် ရှိမှသာ ဖိုင်ထဲသို့ ထည့်သွင်းရန် စစ်ဆေးချက်
+                if (imgBlob) {
+                    zip.file(`OEBPS/images/${filename}`, imgBlob);
+                    manifestItems += `<item id="img_${imageCounter}" href="images/${filename}" media-type="${mediaType}"/>\n`;
+                    img.setAttribute('src', `images/${filename}`);
+                    if (!img.getAttribute('alt')) img.setAttribute('alt', `photo_${imageCounter}`);
+                    imageCounter++;
+                } else {
+                    // ပျက်စီးနေသော သို့မဟုတ် ပျောက်ဆုံးနေသော ပုံများကို ကျော်သွားပြီး မူရင်း img tag ကို ဖယ်ရှားမည်
+                    img.remove();
                 }
             }
         });
+
+        const serializer = new XMLSerializer();
+        let finalizedXhtmlContent = serializer.serializeToString(container);
+        finalizedXhtmlContent = finalizedXhtmlContent.replace(/^<div[^>]*>/, '').replace(/<\/div>$/, '');
+
+        const chapHtml = `<?xml version="1.0" encoding="utf-8"?>
+        <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+        <html xmlns="http://www.w3.org/1999/xhtml">
+        <head>
+            <title>${chap.title}</title>
+            <style>
+                body { padding: 20px; font-family: sans-serif; line-height: 1.6; color: #111111; background-color: #ffffff; }
+                img { max-width: 100%; height: auto; display: block; margin: 15px auto; border-radius: 6px; box-shadow: 0 2px 5px rgba(0,0,0,0.15); }
+                h1 { font-size: 1.5em; text-align: center; margin-bottom: 20px; color: #1e2640; }
+                p { margin-bottom: 0.8em; text-align: justify; line-height: 1.6; }
+            </style>
+        </head>
+        <body>
+            <h1>${chap.title}</h1>
+            <div>${finalizedXhtmlContent}</div>
+        </body>
+        </html>`;
         
-        let processedHtml = doc.querySelector('div').innerHTML;
-        let cleanedContent = cleanHtmlForXhtml(processedHtml);
-        
-        const contentHtml = `<?xml version="1.0" encoding="utf-8"?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="my">
-<head>
-    <title>${ch.title}</title>
-    <style>
-        body { font-family: sans-serif; padding: 1em; line-height: 1.6; color: #000000; background-color: #ffffff; }
-        h1 { text-align: center; color: #111111; font-size: 1.5em; margin-bottom: 1em; }
-        p { margin-bottom: 0.8em; text-align: justify; }
-        .epub-img { max-width: 100%; height: auto; display: block; margin: 1.5em auto; text-align: center; }
-    </style>
-</head>
-<body>
-    <h1>${ch.title}</h1>
-    <div>${cleanedContent}</div>
-</body>
-</html>`;
-        oebps.file(`ch${idx}.xhtml`, contentHtml);
-    }
-    
-    const opfContent = `<?xml version="1.0" encoding="utf-8"?>
-<package xmlns="http://www.idpf.org/2007/opf" unique-identifier="bookid" version="2.0">
-<metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
-    <dc:title>${title}</dc:title>
-    <dc:creator>${author}</dc:creator>
-    <dc:identifier id="bookid">urn:uuid:${Math.random()}</dc:identifier>
-    <dc:language>my</dc:language>
-</metadata>
-<manifest>
-    <item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>
-    ${manifestChapters}
-    ${manifestImages}
-</manifest>
-<spine toc="ncx">
-    ${spineChapters}
-</spine>
-</package>`;
-    
-    oebps.file("content.opf", opfContent);
-    
-    let ncxNav = '';
-    chapters.forEach((ch, idx) => {
-        ncxNav += `<navPoint id="ch${idx}" playOrder="${idx+1}"><navLabel><text>${ch.title}</text></navLabel><content src="ch${idx}.xhtml"/></navPoint>\n`;
+        zip.file(`OEBPS/chapter_${index + 1}.xhtml`, chapHtml);
+        manifestItems += `<item id="chap_${index + 1}" href="chapter_${index + 1}.xhtml" media-type="application/xhtml+xml"/>\n`;
+        spineItems += `<itemref idref="chap_${index + 1}"/>\n`;
     });
-    
-    const ncxContent = `<?xml version="1.0" encoding="utf-8"?>
-<ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1">
-<head><meta name="dtb:uid" content="urn:uuid:123"/></head>
-<docTitle><text>${title}</text></docTitle>
-<navMap>${ncxNav}</navMap>
-</ncx>`;
-    
-    oebps.file("toc.ncx", ncxContent);
-    
-    const blob = await zip.generateAsync({ type: "blob" });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = `${title}.epub`;
-    link.click();
-});
 
-// Backup Data
-btnBackup.addEventListener('click', () => {
-    const data = {
-        title: document.getElementById('bookTitle').value,
-        author: document.getElementById('bookAuthor').value,
-        chapters: chapters
-    };
-    const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `${data.title || 'backup'}_backup.json`;
-    link.click();
-});
-
-// Load Backup
-btnLoadBackup.addEventListener('click', () => fileInput.click());
-fileInput.addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (event) => {
-        try {
-            const data = JSON.parse(event.target.result);
-            document.getElementById('bookTitle').value = data.title || '';
-            document.getElementById('bookAuthor').value = data.author || '';
-            chapters = data.chapters || [];
-            renderChapters();
-            if(chapters.length > 0) selectChapter(0);
-            alert('Backup ဖိုင်ကို အောင်မြင်စွာ တင်ပြီးပါပြီ!');
-        } catch (err) {
-            alert('ဖိုင်ဖတ်ရတာ မှားယွင်းနေပါသည်။');
+    // မျက်နှာဖုံးပုံ (Cover Image) ထည့်သွင်းခြင်း
+    if (typeof coverBase64 !== 'undefined' && coverBase64) {
+        let coverExt = "jpg";
+        let coverMime = "image/jpeg";
+        if (coverBase64.includes("image/png")) { coverExt = "png"; coverMime = "image/png"; }
+        
+        const coverBlob = base64ToBlob(coverBase64);
+        if (coverBlob) {
+            zip.file(`OEBPS/images/cover.${coverExt}`, coverBlob);
+            manifestItems += `<item id="cover-img" href="images/cover.${coverExt}" media-type="${coverMime}"/>\n`;
         }
-    };
-    reader.readAsText(file);
-});
-
-// Reset Form
-btnReset.addEventListener('click', () => {
-    if(confirm('စာအုပ်အသစ်စရန် သေချာပါသလား? ရှိသမျှစာများ ပျက်ပါမည်။')) {
-        document.getElementById('bookTitle').value = '';
-        document.getElementById('bookAuthor').value = '';
-        chapters = [];
-        activeChapterIndex = null;
-        renderChapters();
-        activeEditorSection.classList.add('hidden');
-        if(quill) quill.root.innerHTML = '';
     }
-});
+
+    const opfXml = `<?xml version="1.0" encoding="UTF-8"?>
+    <package xmlns="http://www.idpf.org/2007/opf" unique-identifier="bookid" version="2.0">
+        <metadata xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:opf="http://www.idpf.org/2007/opf">
+            <dc:title>${title}</dc:title>
+            <dc:creator opf:role="aut">${author}</dc:creator>
+            <dc:language>my</dc:language>
+            <dc:identifier id="bookid">urn:uuid:${Date.now()}</dc:identifier>
+             ${(typeof coverBase64 !== 'undefined' && coverBase64) ? '<meta name="cover" content="cover-img"/>' : ''}
+        </metadata>
+        <manifest>
+            <item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>
+            ${manifestItems}
+        </manifest>
+        <spine toc="ncx">
+            ${spineItems}
+        </spine>
+    </package>`;
+    zip.file("OEBPS/content.opf", opfXml);
+
+    let ncxNav = "";
+    actualChapters.forEach((chap, index) => {
+        ncxNav += `<navPoint id="nav_${index + 1}" playOrder="${index + 1}">
+            <navLabel><text>${chap.title}</text></navLabel>
+            <content src="chapter_${index + 1}.xhtml"/>
+        </navPoint>\n`;
+    });
+
+    const ncxXml = `<?xml version="1.0" encoding="UTF-8"?>
+    <!DOCTYPE ncx PUBLIC "-//NISO//DTD ncx v2005-1//EN" "http://www.daisy.org/z3986/2005/ncx-2005-1.dtd">
+    <ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1">
+        <head>
+            <meta name="dtb:uid" content="urn:uuid:${Date.now()}"/>
+            <meta name="dtb:depth" content="1"/>
+        </head>
+        <docTitle><text>${title}</text></docTitle>
+        <navMap>${ncxNav}</navMap>
+    </ncx>`;
+    zip.file("OEBPS/toc.ncx", ncxXml);
+
+    zip.generateAsync({ type: "blob", mimeType: "application/epub+zip" }).then(function (blob) {
+        const filename = title.replace(/\s+/g, '_') + ".epub";
+        
+        const reader = new FileReader();
+        reader.onloadend = function() {
+            const a = document.createElement('a');
+            a.href = reader.result;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => { document.body.removeChild(a); }, 500);
+        };
+        reader.readAsDataURL(blob);
+    }).catch(function (err) {
+        alert("ePub Generation Error: " + err.message);
+    });
+}
+
+// ==========================================
+// 🌟 BASE64 TO BLOB FUNCTION (Error ကာကွယ်ရေးစနစ်ပါဝင်သော ဗားရှင်းအသစ်)
+// ==========================================
+function base64ToBlob(base64Str) {
+    if (!base64Str || typeof base64Str !== 'string') return null;
+    if (!base64Str.includes(';base64,')) return null;
+
+    try {
+        const parts = base64Str.split(';base64,');
+        const contentType = parts[0].split(':')[1];
+        const raw = window.atob(parts[1]);
+        const rawLength = raw.length;
+        const uInt8Array = new Uint8Array(rawLength);
+
+        for (let i = 0; i < rawLength; ++i) {
+            uInt8Array[i] = raw.charCodeAt(i);
+        }
+
+        return new Blob([uInt8Array], { type: contentType });
+    } catch (e) {
+        console.error("ဓာတ်ပုံ ပြောင်းလဲမှု မအောင်မြင်ပါ (ကျော်သွားပါမည်):", e);
+        return null; 
+    }
+}
