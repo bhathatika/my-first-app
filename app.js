@@ -1,14 +1,18 @@
 async function generateEPUB() {
-    await saveCurrentBookState();
+    // ၁။ နောက်ကွယ်က ဒေတာများကို အရင်သိမ်းဆည်းခြင်း
+    if (typeof saveCurrentBookState === "function") {
+        await saveCurrentBookState();
+    }
+    
     const title = document.getElementById('book-title').value || "Untitled Book";
     const author = document.getElementById('author').value || "Unknown Author";
     
     if(!bookChapters || bookChapters.length === 0) {
-        const currentLang = localStorage.getItem('app_lang') || 'my';
-        alert(currentLang === 'en' ? "⚠️ Warning: No chapters found." : "⚠️ သတိပေးချက်: အခန်းမရှိသေးပါ။");
+        alert("⚠️ သတိပေးချက်: အခန်းမရှိသေးပါ။");
         return;
     }
 
+    // ၂။ ePub ဖိုင် ထုပ်ပိုးရန်ပြင်ဆင်ခြင်း
     const zip = new JSZip();
     zip.file("mimetype", "application/epub+zip", { compression: "STORE" });
     
@@ -24,6 +28,7 @@ async function generateEPUB() {
     let spineItems = "";
     let imageCounter = 1;
 
+    // အခန်းများကို တစ်ခန်းချင်း စီစစ်ခြင်း
     for (let index = 0; index < bookChapters.length; index++) {
         let chap = bookChapters[index];
         let htmlString = chap.content || "";
@@ -40,6 +45,7 @@ async function generateEPUB() {
             br.replaceWith(pBr);
         });
 
+        // စာသားထဲက ပုံများကို စီစစ်ခြင်း
         const imgs = container.querySelectorAll('img');
         for (let img of imgs) {
             const src = img.getAttribute('src');
@@ -89,7 +95,8 @@ async function generateEPUB() {
         spineItems += `<itemref idref="chap_${index + 1}"/>\n`;
     }
 
-    if (coverBase64) {
+    // မျက်နှာဖုံးပုံ (Cover Image) ထည့်သွင်းခြင်း
+    if (typeof coverBase64 !== 'undefined' && coverBase64) {
         let coverExt = "jpg";
         let coverMime = "image/jpeg";
         if (coverBase64.includes("image/png")) { coverExt = "png"; coverMime = "image/png"; }
@@ -107,7 +114,7 @@ async function generateEPUB() {
             <dc:creator opf:role="aut">${author}</dc:creator>
             <dc:language>my</dc:language>
             <dc:identifier id="bookid">urn:uuid:${Date.now()}</dc:identifier>
-             ${coverBase64 ? '<meta name="cover" content="cover-img"/>' : ''}
+             ${(typeof coverBase64 !== 'undefined' && coverBase64) ? '<meta name="cover" content="cover-img"/>' : ''}
         </metadata>
         <manifest>
             <item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>
@@ -139,21 +146,27 @@ async function generateEPUB() {
     </ncx>`;
     zip.file("OEBPS/toc.ncx", ncxXml);
 
+    // ၃။ 🌟 ဖိုင်ထုတ်ပြီးတာနဲ့ Alert မပြဘဲ တိုက်ရိုက် Force Download ဆွဲချမည့်အပိုင်း
     zip.generateAsync({ type: "blob", mimeType: "application/epub+zip" }).then(function (blob) {
         const filename = title.replace(/\s+/g, '_') + ".epub";
-        const fileURL = URL.createObjectURL(blob);
         
-        // 🌟 ခလုတ်နှိပ်လိုက်တာနဲ့ တန်းပြီး ဒေါင်းလုဒ်ဆွဲစေမည့်စနစ်
-        const a = document.createElement('a');
-        a.href = fileURL;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        
-        setTimeout(() => { 
-            document.body.removeChild(a); 
-            URL.revokeObjectURL(fileURL); 
-        }, 1000);
+        // iOS Safari ရော Chrome ပါ အလုပ်လုပ်စေမည့် HTML5 Download Link စနစ်
+        const reader = new FileReader();
+        reader.onloadend = function() {
+            const proxyLink = document.createElement('a');
+            proxyLink.href = reader.result;
+            proxyLink.download = filename;
+            proxyLink.style.display = 'none';
+            document.body.appendChild(proxyLink);
+            proxyLink.click();
+            
+            setTimeout(() => {
+                document.body.removeChild(proxyLink);
+            }, 500);
+        };
+        reader.readAsDataURL(blob);
 
-    }).catch(function (err) { alert("ePub Error: " + err.message); });
+    }).catch(function (err) { 
+        alert("Error: " + err.message); 
+    });
 }
