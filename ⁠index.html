@@ -3,9 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Advanced ePub Creator with Multi-Book Backup</title>
-    <!-- GitHub Pages ဝဘ်ဆိုက်ပေါ်တွင် စတိုင်များ ကောင်းမွန်စွာ အလုပ်လုပ်ရန် ပြင်ပ CSS ဖိုင်ကို ချိတ်ဆက်ခြင်း -->
-    <link rel="stylesheet" href="style.css">
+    <title>Web ePub Creator Pro</title>
     <!-- Quill Rich Text Editor Stylesheet -->
     <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
     <style>
@@ -22,331 +20,648 @@
             --sidebar-width: 260px;
         }
 
-        /* မျက်စိအေးစေမည့် Deep Navy Blue Theme */
         body.dark-mode {
-            --bg-color: #1e2530;        
-            --container-bg: #252e3c;    
-            --text-color: #cfd8dc;      
-            --border-color: #34495e;    
-            --primary-color: #51a4fa;    
-            --secondary-color: #3a4759;  
-            --success-color: #52be80;    
+            --bg-color: #1e2538;
+            --container-bg: #252e3c;
+            --text-color: #cfd8dc;
+            --border-color: #34495e;
+            --primary-color: #51a4fa;
+            --secondary-color: #3a4759;
+            --success-color: #52be80;
         }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            transition: background-color 0.3s, color 0.3s;
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-        }
-
-        header {
-            background-color: var(--container-bg);
-            border-bottom: 1px solid var(--border-color);
-            padding: 12px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        header h3 {
-            color: #2ecc71; 
-        }
-
-        .main-layout {
-            display: flex;
-            flex: 1;
-            position: relative;
-        }
-
-        /* Sidebar styling */
-        .sidebar {
-            width: var(--sidebar-width);
-            background-color: var(--container-bg);
-            border-right: 1px solid var(--border-color);
-            padding: 15px;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            overflow-y: auto;
-        }
-
-        .content-area {
-            flex: 1;
-            padding: 20px;
-            overflow-y: auto;
-        }
-
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            background-color: var(--container-bg);
-            padding: 25px;
-            border-radius: 8px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-        }
-
-        h2, h3 {
-            margin-bottom: 15px;
-            font-weight: 600;
-        }
-
-        .form-group {
-            margin-bottom: 15px;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 6px;
-            font-weight: bold;
-            font-size: 0.9em;
-        }
-
-        input[type="text"], input[type="file"], select {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            background-color: #1a1e25; 
-            color: var(--text-color);
-            font-size: 1em;
-        }
-
-        /* Button Styling */
-        button, .file-input-label {
-            display: inline-block;
-            width: 100%;
-            padding: 11px;
-            background-color: var(--primary-color);
-            color: white;
-            border: none;
-            border-radius: 6px;
-            font-size: 1em;
-            font-weight: bold;
-            cursor: pointer;
-            text-align: center;
-            transition: opacity 0.2s;
-        }
-
-        button:hover, .file-input-label:hover {
-            opacity: 0.9;
-        }
-
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background-color: var(--bg-color); color: var(--text-color); font-family: sans-serif; transition: background-color 0.3s; }
+        
+        header { background-color: var(--secondary-color); color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; }
+        .main-layout { display: flex; flex-wrap: wrap; padding: 20px; gap: 20px; max-width: 1200px; margin: 0 auto; }
+        .sidebar { width: var(--sidebar-width); flex: 1 1 260px; display: flex; flex-direction: column; gap: 20px; }
+        .content-area { flex: 1 1 600px; background: var(--container-bg); border: 1px solid var(--border-color); border-radius: 6px; padding: 20px; display: flex; flex-direction: column; gap: 15px; }
+        
+        .form-group { margin-bottom: 15px; display: flex; flex-direction: column; gap: 5px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input[type="text"], input[type="file"] { width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--container-bg); color: var(--text-color); }
+        
+        .button, .file-input-label { display: inline-block; padding: 10px 15px; background: var(--primary-color); color: white; border: none; border-radius: 4px; cursor: pointer; text-align: center; text-decoration: none; font-size: 14px; }
         .btn-primary { background-color: var(--primary-color); }
-        .btn-secondary { background-color: #3a4759; color: #cfd8dc; } 
-        .btn-success { background-color: var(--success-color); }      
-        .btn-danger { background-color: #2c3e50; color: #e74c3c; border: 1px solid #e74c3c; } 
-        .btn-warning { background-color: #2d384c; color: #51a4fa; border: 1px solid #51a4fa; } 
+        .btn-secondary { background-color: var(--secondary-color); }
+        .btn-success { background-color: var(--success-color); width: 100%; font-size: 16px; font-weight: bold; padding: 12px; margin-top: 10px; }
+        .btn-danger { background-color: var(--danger-color); color: white; width: 100%; padding: 8px; border-radius: 4px; margin-top: 5px; }
+        .btn-warning { background-color: var(--warning-color); }
 
-        /* Backup border layout */
-        .backup-section {
-            border: 1px solid var(--border-color);
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-            background-color: rgba(81, 164, 250, 0.02);
-        }
-        .backup-title {
-            font-size: 0.85em;
-            font-weight: bold;
-            color: var(--text-color);
-            margin-bottom: 8px;
-            text-align: center;
-            text-transform: uppercase;
-        }
+        .backup-section { border: 1px solid var(--border-color); padding: 15px; border-radius: 6px; display: flex; flex-direction: column; gap: 10px; }
+        .backup-title { font-size: 0.85em; font-weight: bold; text-align: center; }
+        .chapter-list { display: flex; flex-direction: column; gap: 8px; max-height: 400px; overflow-y: auto; border: 1px solid var(--border-color); padding: 10px; border-radius: 4px; }
+        .chapter-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; }
+        .chapter-item.active { background-color: var(--primary-color); color: white; border-color: var(--primary-color); }
+        .chapter-item button { width: auto; padding: 2px 8px; margin: 0; }
 
-        .chapter-list {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            max-height: 300px;
-            overflow-y: auto;
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            padding: 5px;
-        }
-
-        .chapter-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 8px;
-            background-color: var(--bg-color);
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.9em;
-        }
-
-        .chapter-item.active {
-            background-color: var(--primary-color);
-            color: white;
-        }
-
-        .chapter-item button {
-            width: auto;
-            padding: 2px 6px;
-            font-size: 0.8em;
-            background-color: transparent;
-            color: #e74c3c;
-        }
-
-        /* -----------------------------------------------------------
-           💥 EDITOR FORCE FIX (စာလုံးဖြူရန် အတင်းအကျပ် ညှိနှိုင်းချက်)
-        -------------------------------------------------------------- */
-        #editor-container {
-            height: 400px;
-            background-color: #ffffff;
-            color: #333333;
-            border-bottom-left-radius: 6px;
-            border-bottom-right-radius: 6px;
-        }
-
-        /* 🌙 Dark Mode မှာ စာရိုက်ကွက်အတွင်းရှိ စာလုံးအားလုံးကို အဖြူရောင် ဖြစ်အောင် အတင်း ပြောင်းလဲခိုင်းခြင်း */
-        body.dark-mode #editor-container {
-            background-color: #2d384c !important; /* စာစီရတာ ရှင်းလင်းစေမည့် ပိုလင်းသော နောက်ခံ */
-            border: 1px solid var(--border-color);
-        }
-
-        /* ⚠️ Quill Editor အတွင်းရှိ p, span, စာသားအားလုံးကို အဖြူရောင် ဖြစ်အောင် သေချာပေါက် Override လုပ်ပါသည် */
-        body.dark-mode .ql-editor,
-        body.dark-mode .ql-editor * {
-            color: #ffffff !important; 
-            font-size: 1.05em;
-            line-height: 1.6;
-        }
-
-        /* Placeholder စာလုံးမှိန် အရောင် */
-        body.dark-mode .ql-editor.ql-blank::before {
-            color: #95a5a6 !important;
-            font-style: normal;
-        }
-
-        body.dark-mode .ql-toolbar {
-            background-color: #252e3c !important;
-            border: 1px solid var(--border-color);
-        }
-
-        body.dark-mode .ql-snow .ql-stroke {
-            stroke: #cfd8dc !important;
-        }
-
-        body.dark-mode .ql-snow .ql-fill {
-            fill: #cfd8dc !important;
-        }
-
-        body.dark-mode .ql-snow .ql-picker {
-            color: #cfd8dc !important;
-        }
-
-        .ql-toolbar {
-            background-color: #eaeaea;
-            border-top-left-radius: 6px;
-            border-top-right-radius: 6px;
-        }
-
-        #pdfStatus {
-            font-size: 0.85em;
-            margin-top: 5px;
-            color: var(--success-color);
-            font-weight: bold;
-        }
+        #editor-container { height: 400px; background: #fff; color: #000; border-radius: 0 0 4px 4px; }
+        body.dark-mode #editor-container { background: #fff; color: #000; }
+        body.dark-mode .ql-toolbar { background: #eeeeee; border-radius: 4px 4px 0 0; }
+        #pdfStatus { font-size: 0.85em; margin-top: 5px; text-align: center; font-weight: bold; }
 
         @media (max-width: 768px) {
-            .main-layout {
-                flex-direction: column;
-            }
-            .sidebar {
-                width: 100%;
-                border-right: none;
-                border-bottom: 1px solid var(--border-color);
-            }
+            .main-layout { flex-direction: column; padding: 10px; }
+            .sidebar, .content-area { width: 100%; }
         }
     </style>
 </head>
-<body>
+<body class="dark-mode">
 
     <header>
-        <h3 style="margin:0;">🟢 Web ePub Creator Pro</h3>
-        <button id="modeToggle" style="width:auto; padding:6px 12px; font-size:0.85em; background-color: #252e3c; border: 1px solid #34495e;">☀️ Light Mode</button>
+        <h3 style="margin:0;">🌐 Web ePub Creator Pro</h3>
+        <div style="display:flex; gap:10px; align-items:center;">
+            <span style="font-size:14px; color:#52be80;">🟢 Premium Unlocked</span>
+            <button id="modeToggle" style="width:auto; padding:5px 10px;" class="button btn-warning">Light Mode</button>
+        </div>
     </header>
 
     <div class="main-layout">
-        <!-- Left Sidebar Navigation Control -->
         <div class="sidebar">
-            
-            <!-- EXCLUSIVE MULTI-BOOK BACKUP SYSTEM -->
             <div class="backup-section">
-                <div class="backup-title">💾 စာအုပ် Backup စီမံခန့်ခွဲမှု</div>
-                <button id="backupBookBtn" class="btn-secondary" style="font-size:0.85em; margin-bottom:6px; padding:8px;">📥 လက်ရှိစာအုပ်ကို ဖိုင်သိမ်းမည် (Backup)</button>
-                
-                <label class="file-input-label btn-warning" style="font-size:0.85em; margin-bottom:6px; padding:8px;">
-                    📤 စာအုပ်ဟောင်း ပြန်တင်မည် (Load Backup)
+                <div class="backup-title">💾 စာအုပ် BACKUP စီမံခန့်ခွဲမှု</div>
+                <button id="backupBookBtn" class="button btn-secondary">💾 လက်ရှိစာအုပ်ကို ဖိုင်သိမ်းဆည်းမည် (Backup)</button>
+                <label class="file-input-label" style="margin:0;">
+                    📥 စာအုပ်ဟောင်း ပြန်တင်မည် (Load Backup)
                     <input type="file" id="loadBackupFile" accept=".json" style="display:none;">
                 </label>
-                
-                <button id="resetAppBtn" class="btn-danger" style="font-size:0.85em; padding:8px;">🧹 စာအုပ်အသစ်အတွက် အစကပြန်စမည် (Reset)</button>
+                <button id="resetAppBtn" class="button btn-danger">🧨 စာအုပ်အသစ်အတွက် အစကပြန်စမည် (Reset)</button>
             </div>
 
             <div class="form-group">
                 <label>စာအုပ်အမည် (Book Title)</label>
-                <input type="text" id="bookTitle" placeholder="Enter book title..." value="My Novel">
+                <input type="text" id="bookTitle" placeholder="My Novel">
             </div>
             <div class="form-group">
                 <label>စာရေးဆရာ (Author)</label>
-                <input type="text" id="bookAuthor" placeholder="Enter author name..." value="Unknown Author">
+                <input type="text" id="bookAuthor" placeholder="Unknown Author">
             </div>
             <div class="form-group">
                 <label>မျက်နှာဖုံးပုံ (Cover Image)</label>
                 <input type="file" id="coverImage" accept="image/*">
             </div>
 
-            <hr style="border:0; border-top:1px solid var(--border-color); margin:5px 0;">
-
+            <hr style="border:0; border-top:1px solid var(--border-color); margin:10px 0;">
             <h3>အခန်းများ (Chapters)</h3>
-            <button id="addChapterBtn" class="btn-primary">+ အခန်းတိုးမည် (Add Chapter)</button>
-            <div class="chapter-list" id="chapterList"></div>
-
-            <hr style="border:0; border-top:1px solid var(--border-color); margin:5px 0;">
-
-            <div class="form-group" style="background:rgba(82, 190, 128, 0.05); padding:10px; border-radius:6px; border:1px solid var(--success-color);">
-                <label style="color:var(--success-color);">📄 PDF မှ စာသားထုတ်ယူရန် (Optional)</label>
-                <input type="file" id="pdfFile" accept=".pdf">
-                <button id="extractPdfBtn" class="btn-success" style="margin-top:8px; padding:6px; font-size:0.9em;">⚡ PDF မှ စာသားများကို ဆွဲထုတ်မည်</button>
-                <div id="pdfStatus"></div>
-            </div>
+            <button id="addChapterBtn" class="button btn-primary">+ အခန်းတိုးမည် (Add Chapter)</button>
+            <div class="chapter-list" id="chapter-list"></div>
         </div>
 
-        <!-- Right Working Main Content Workspace Editor Area -->
         <div class="content-area">
-            <div class="container">
-                <div class="form-group">
-                    <label>အခန်းခေါင်းစဉ် (Chapter Title)</label>
-                    <input type="text" id="chapterTitle" placeholder="Chapter Title">
-                </div>
-
-                <div class="form-group">
-                    <label>အခန်းတွင်းစာသား (Chapter Content)</label>
-                    <div id="editor-container"></div>
-                </div>
-
-                <button id="downloadEpub" class="btn-success" style="padding:15px; font-size:1.1em; margin-top:10px;">💾 ePub ဖိုင် ထုတ်ယူမည်</button>
+            <div class="backup-section" style="background: rgba(46, 204, 113, 0.1);">
+                <div class="backup-title" style="color: var(--success-color);">📄 PDF မှ စာသားထုတ်ယူရန် (Optional)</div>
+                <input type="file" id="pdfFile" accept=".pdf">
+                <button id="extractPdfBtn" class="button btn-success" style="margin:0; background-color:var(--success-color);">⚡ PDF မှ စာသားများကို ဆွဲထုတ်မည်</button>
+                <div id="pdfStatus"></div>
             </div>
+
+            <div class="form-group">
+                <label>အခန်းခေါင်းစဉ် (Chapter Title)</label>
+                <input type="text" id="chapterTitle" placeholder="Chapter Title">
+                <button id="clearContentBtn" class="button btn-danger">🧹 စာသားအားလုံးဖျက်ရန် (Clear All Content)</button>
+            </div>
+
+            <div class="form-group" style="flex:1; display:flex; flex-direction:column;">
+                <label>အခန်းတွင်းစာသား (Chapter Content)</label>
+                <div id="editor-container"></div>
+            </div>
+
+            <button id="downloadEpub" class="button btn-success">📦 ePub ဖိုင် ထုတ်ယူမည်</button>
         </div>
     </div>
 
-    <!-- External Dependable Script Libraries -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
-    <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="app.js"></script>
+    <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+
+        const quill = new Quill('#editor-container', {
+            theme: 'snow',
+            modules: {
+                toolbar: [
+                    ['bold', 'italic', 'underline'],
+                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                    ['image', 'clean']
+                ]
+            }
+        });
+
+        let chapters = [];
+        let currentChapterId = null;
+        let db = null;
+
+        const modeToggle = document.getElementById('modeToggle');
+        modeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('dark-mode');
+            modeToggle.innerText = document.body.classList.contains('dark-mode') ? "Light Mode" : "Dark Mode";
+        });
+
+        // INDEXEDDB ADVANCED LARGE STORAGE ENGINE (UNLIMITED STORAGE)
+        const dbName = "ePubCreatorDatabase";
+        const storeName = "bookStore";
+        const dbRequest = indexedDB.open(dbName, 1);
+
+        dbRequest.onupgradeneeded = function(e) {
+            let activeDb = e.target.result;
+            if (!activeDb.objectStoreNames.contains(storeName)) {
+                activeDb.createObjectStore(storeName, { keyPath: "id" });
+            }
+        };
+
+        dbRequest.onsuccess = function(e) {
+            db = e.target.result;
+            loadFromDatabase(); 
+        };
+
+        dbRequest.onerror = function(e) {
+            console.error("Database connection failed", e);
+        };
+
+        function autoSaveToDatabase() {
+            if (!db) return;
+            saveCurrentChapterState();
+            
+            const saveData = {
+                id: "current_book",
+                title: document.getElementById('bookTitle').value.trim(),
+                author: document.getElementById('bookAuthor').value.trim(),
+                chapters: chapters,
+                currentChapterId: currentChapterId
+            };
+
+            const transaction = db.transaction([storeName], "readwrite");
+            const store = transaction.objectStore(storeName);
+            store.put(saveData);
+        }
+
+        function loadFromDatabase() {
+            if (!db) return;
+            const transaction = db.transaction([storeName], "readonly");
+            const store = transaction.objectStore(storeName);
+            const request = store.get("current_book");
+
+            request.onsuccess = function(e) {
+                const data = e.target.result;
+                if (data) {
+                    document.getElementById('bookTitle').value = data.title || '';
+                    document.getElementById('bookAuthor').value = data.author || '';
+                    chapters = data.chapters || [];
+                    currentChapterId = data.currentChapterId || null;
+                    
+                    // AUTO-REPAIR MISSING OR DUPLICATED IDS
+                    repairChapterIds();
+
+                    renderChapters();
+                    if (currentChapterId !== null) {
+                        const ch = chapters.find(c => c.id === currentChapterId);
+                        if (ch) {
+                            document.getElementById('chapterTitle').value = ch.title;
+                            quill.root.innerHTML = ch.content;
+                        }
+                    }
+                }
+            };
+        }
+
+        // CRITICAL FIX: REPAIR IDS SYSTEM FOR IMPORTED DATA
+        function repairChapterIds() {
+            let ids = new Set();
+            chapters.forEach((ch, index) => {
+                // If ID is missing, empty, or already exists, generate a truly unique one
+                if (!ch.id || ch.id === "" || ids.has(ch.id)) {
+                    ch.id = "ch_id_" + index + "_" + Math.random().toString(36).substr(2, 9);
+                }
+                ids.add(ch.id);
+            });
+            if (chapters.length > 0 && (currentChapterId === null || !ids.has(currentChapterId))) {
+                currentChapterId = chapters[0].id;
+            }
+        }
+
+        function renderChapters() {
+            const list = document.getElementById('chapter-list');
+            list.innerHTML = '';
+            chapters.forEach((ch, index) => {
+                const item = document.createElement('div');
+                item.className = 'chapter-item' + (ch.id === currentChapterId ? ' active' : '');
+                
+                // Clicking anywhere on the box changes chapter correctly
+                item.addEventListener('click', (e) => {
+                    if (e.target.tagName !== 'BUTTON') {
+                        selectChapter(ch.id);
+                    }
+                });
+
+                const titleSpan = document.createElement('span');
+                titleSpan.innerText = ch.title || `Chapter ${index + 1}`;
+                item.appendChild(titleSpan);
+
+                const delBtn = document.createElement('button');
+                delBtn.className = 'button btn-danger';
+                delBtn.innerText = '✕';
+                delBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    deleteChapter(ch.id);
+                };
+                item.appendChild(delBtn);
+                list.appendChild(item);
+            });
+        }
+
+        function selectChapter(id) {
+            saveCurrentChapterState();
+            currentChapterId = id;
+            const ch = chapters.find(c => c.id === id);
+            if (ch) {
+                document.getElementById('chapterTitle').value = ch.title;
+                quill.root.innerHTML = ch.content;
+            }
+            renderChapters();
+            autoSaveToDatabase();
+        }
+
+        function saveCurrentChapterState() {
+            if (currentChapterId !== null) {
+                const ch = chapters.find(c => c.id === currentChapterId);
+                if (ch) {
+                    ch.title = document.getElementById('chapterTitle').value.trim();
+                    ch.content = quill.root.innerHTML;
+                }
+            }
+        }
+
+        function deleteChapter(id) {
+            if(confirm("ဤအခန်းကို ဖျက်ရန် သေချာပါသလား?")) {
+                chapters = chapters.filter(c => c.id !== id);
+                if (currentChapterId === id) {
+                    currentChapterId = chapters.length > 0 ? chapters[0].id : null;
+                }
+                if (currentChapterId !== null) {
+                    const ch = chapters.find(c => c.id === currentChapterId);
+                    document.getElementById('chapterTitle').value = ch.title;
+                    quill.root.innerHTML = ch.content;
+                } else {
+                    document.getElementById('chapterTitle').value = '';
+                    quill.root.innerHTML = '';
+                }
+                renderChapters();
+                autoSaveToDatabase();
+            }
+        }
+
+        document.getElementById('addChapterBtn').addEventListener('click', () => {
+            saveCurrentChapterState();
+            const newId = "ch_id_" + Date.now().toString() + "_" + Math.random().toString(36).substr(2, 5);
+            const newCh = { id: newId, title: 'အခန်းအသစ် ' + (chapters.length + 1), content: '' };
+            chapters.push(newCh);
+            currentChapterId = newId;
+            document.getElementById('chapterTitle').value = newCh.title;
+            quill.root.innerHTML = '';
+            renderChapters();
+            autoSaveToDatabase();
+        });
+
+        document.getElementById('clearContentBtn').addEventListener('click', () => {
+            if(confirm("ဤခန်းတွင်းရှိ စာသားအားလုံးကို ဖျက်ပစ်ရန် သေချာပါသလား?")) {
+                quill.root.innerHTML = '';
+                saveCurrentChapterState();
+                autoSaveToDatabase();
+            }
+        });
+
+        document.getElementById('chapterTitle').addEventListener('input', () => {
+            if (currentChapterId !== null) {
+                const ch = chapters.find(c => c.id === currentChapterId);
+                if (ch) {
+                    ch.title = document.getElementById('chapterTitle').value.trim();
+                    const activeItem = document.querySelector('.chapter-item.active span');
+                    if(activeItem) activeItem.innerText = ch.title || 'Untitled Chapter';
+                }
+            }
+            autoSaveToDatabase();
+        });
+
+        document.getElementById('bookTitle').addEventListener('input', autoSaveToDatabase);
+        document.getElementById('bookAuthor').addEventListener('input', autoSaveToDatabase);
+        
+        let debounceTimer;
+        quill.on('text-change', () => {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+                autoSaveToDatabase();
+            }, 500); 
+        });
+
+        document.getElementById('backupBookBtn').addEventListener('click', () => {
+            saveCurrentChapterState();
+            const bookData = {
+                title: document.getElementById('bookTitle').value.trim() || 'My Novel',
+                author: document.getElementById('bookAuthor').value.trim() || 'Unknown Author',
+                chapters: chapters
+            };
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(bookData));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", (bookData.title.replace(/\s+/g, '_')) + "_backup.json");
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        });
+
+        document.getElementById('loadBackupFile').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                try {
+                    const importedData = JSON.parse(evt.target.result);
+                    document.getElementById('bookTitle').value = importedData.title || '';
+                    document.getElementById('bookAuthor').value = importedData.author || '';
+                    chapters = importedData.chapters || [];
+                    
+                    // FORCE REPAIR IDS IMMEDIATELY ON IMPORT
+                    repairChapterIds();
+
+                    if (chapters.length > 0) {
+                        currentChapterId = chapters[0].id;
+                        document.getElementById('chapterTitle').value = chapters[0].title;
+                        quill.root.innerHTML = chapters[0].content;
+                    } else {
+                        currentChapterId = null;
+                        document.getElementById('chapterTitle').value = '';
+                        quill.root.innerHTML = '';
+                    }
+                    renderChapters();
+                    autoSaveToDatabase();
+                    alert("စာအုပ် Backup ဒေတာများကို အောင်မြင်စွာ ပြန်လည်တင်သွင်းပြီး ID များအား ပြုပြင်ပြီးပါပြီ။");
+                } catch(err) {
+                    alert("ဖတ်မရပါ။ ကောင်းမွန်သော Backup JSON ဖိုင် ဖြစ်ပါစေ။");
+                }
+            };
+            reader.readAsText(file);
+        });
+
+        document.getElementById('resetAppBtn').addEventListener('click', () => {
+            if(confirm("သေချာပါသလား? ဒေတာအားလုံး အစက ပြန်စပါမည်။")) {
+                if (db) {
+                    const transaction = db.transaction([storeName], "readwrite");
+                    const store = transaction.objectStore(storeName);
+                    store.delete("current_book");
+                }
+                document.getElementById('bookTitle').value = '';
+                document.getElementById('bookAuthor').value = '';
+                document.getElementById('coverImage').value = '';
+                document.getElementById('chapterTitle').value = '';
+                quill.root.innerHTML = '';
+                chapters = [];
+                currentChapterId = null;
+                renderChapters();
+            }
+        });
+
+        document.getElementById('extractPdfBtn').addEventListener('click', async () => {
+            const fileInput = document.getElementById('pdfFile');
+            const statusDiv = document.getElementById('pdfStatus');
+            if (!fileInput.files.length) {
+                alert("ကျေးဇူးပြု၍ PDF ဖိုင်တစ်ခု အရင်ရွေးချယ်ပေးပါ။");
+                return;
+            }
+            statusDiv.innerText = "စာသားများ ဆွဲထုတ်နေပါသည်၊ ခေတ္တစောင့်ဆိုင်းပေးပါ...";
+            statusDiv.style.color = "var(--warning-color)";
+            
+            const file = fileInput.files[0];
+            const fileReader = new FileReader();
+            
+            fileReader.onload = async function() {
+                const typedarray = new Uint8Array(this.result);
+                try {
+                    const pdf = await pdfjsLib.getDocument(typedarray).promise;
+                    let fullText = "";
+                    for (let i = 1; i <= pdf.numPages; i++) {
+                        const page = await pdf.getPage(i);
+                        const textContent = await page.getTextContent();
+                        const pageText = textContent.items.map(item => item.str).join(" ");
+                        fullText += pageText + "\n\n";
+                    }
+                    quill.root.innerHTML = quill.root.innerHTML + "<br><br>" + fullText.replace(/\n/g, '<br>');
+                    saveCurrentChapterState();
+                    autoSaveToDatabase();
+                    statusDiv.innerText = "PDF မှ စာသားများကို အောင်မြင်စွာ ထည့်သွင်းပြီးပါပြီ။";
+                    statusDiv.style.color = "var(--success-color)";
+                } catch (error) {
+                    console.error(error);
+                    statusDiv.innerText = "PDF ဖတ်ရာတွင် အမှားအယွင်းရှိပါသည်။";
+                    statusDiv.style.color = "var(--danger-color)";
+                }
+            };
+            fileReader.readAsArrayBuffer(file);
+        });
+
+        async function convertImgToBlob(url) {
+            try {
+                const res = await fetch(url);
+                const blob = await res.blob();
+                return blob;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        document.getElementById('downloadEpub').addEventListener('click', async () => {
+            saveCurrentChapterState();
+            if (chapters.length === 0) {
+                alert("ကျေးဇူးပြု၍ အခန်းအနည်းဆုံး တစ်ခန်း ထည့်သွင်းပေးပါ။");
+                return;
+            }
+
+            const zip = new JSZip();
+            const bookTitle = document.getElementById('bookTitle').value.trim() || "My Novel";
+            const bookAuthor = document.getElementById('bookAuthor').value.trim() || "Unknown Author";
+
+            zip.file("mimetype", "application/epub+zip", { compression: "STORE" });
+
+            zip.folder("META-INF").file("container.xml", `<?xml version="1.0" encoding="UTF-8"?>
+<container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
+    <rootfiles>
+        <rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/>
+    </rootfiles>
+</container>`);
+
+            const oebps = zip.folder("OEBPS");
+            const imagesFolder = oebps.folder("images");
+
+            const coverInput = document.getElementById('coverImage');
+            let hasCover = false;
+            let coverMediaType = "";
+            let coverData = null;
+
+            if (coverInput.files.length > 0) {
+                const coverFile = coverInput.files[0];
+                hasCover = true;
+                coverMediaType = coverFile.type || "image/jpeg";
+                coverData = await new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => resolve(e.target.result);
+                    reader.readAsArrayBuffer(coverFile);
+                });
+                oebps.file("cover" + getExtension(coverMediaType), coverData);
+            }
+
+            oebps.file("style.css", `body { font-family: sans-serif; padding: 5%; line-height: 1.5; } h1, h2 { text-align: center; color: #2c3e50; } p { margin-bottom: 1em; text-align: justify; } img { max-width: 100%; height: auto; display: block; margin: 10px auto; }`);
+
+            let totalImageCounter = 0;
+            let capturedImages = [];
+
+            for (let index = 0; index < chapters.length; index++) {
+                let ch = chapters[index];
+                let processedContent = (ch.content || "")
+                    .replace(/&nbsp;/g, ' ')
+                    .replace(/nbsp;/g, ' ')
+                    .replace(/nbsp/g, ' ');
+
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(`<div>${processedContent}</div>`, 'text/html');
+
+                const imgNodes = doc.getElementsByTagName('img');
+                for (let m = 0; m < imgNodes.length; m++) {
+                    let src = imgNodes[m].getAttribute('src');
+                    if (src) {
+                        totalImageCounter++;
+                        let imgId = `inline_img_${totalImageCounter}`;
+                        let ext = ".jpg";
+                        let mType = "image/jpeg";
+
+                        if (src.startsWith('data:image/')) {
+                            const match = src.match(/^data:(image\/[a-zA-Z+]+);base64,(.+)$/);
+                            if (match) {
+                                mType = match[1];
+                                ext = getExtension(mType);
+                                let base64Data = match[2];
+                                let binaryStr = atob(base64Data);
+                                let len = binaryStr.length;
+                                let bytes = new Uint8Array(len);
+                                for (let i = 0; i < len; i++) {
+                                    bytes[i] = binaryStr.charCodeAt(i);
+                                }
+                                imagesFolder.file(`${imgId}${ext}`, bytes.buffer);
+                                capturedImages.push({ id: imgId, href: `images/${imgId}${ext}`, type: mType });
+                                imgNodes[m].setAttribute('src', `images/${imgId}${ext}`);
+                            }
+                        } else if (src.startsWith('http')) {
+                            let blob = await convertImgToBlob(src);
+                            if (blob) {
+                                mType = blob.type || "image/jpeg";
+                                ext = getExtension(mType);
+                                let buffer = await blob.arrayBuffer();
+                                imagesFolder.file(`${imgId}${ext}`, buffer);
+                                capturedImages.push({ id: imgId, href: `images/${imgId}${ext}`, type: mType });
+                                imgNodes[m].setAttribute('src', `images/${imgId}${ext}`);
+                            }
+                        }
+                    }
+                }
+                
+                const brTags = doc.getElementsByTagName('br');
+                for (let i = brTags.length - 1; i >= 0; i--) {
+                    const xmlBr = doc.createElementNS("http://www.w3.org/1999/xhtml", "br");
+                    brTags[i].parentNode.replaceChild(xmlBr, brTags[i]);
+                }
+
+                const serializer = new XMLSerializer();
+                const strictXmlContent = serializer.serializeToString(doc.body.firstChild);
+
+                const chHtml = `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+<head>
+    <title>${ch.title || 'Chapter'}</title>
+    <link rel="stylesheet" href="style.css" type="text/css"/>
+</head>
+<body>
+    <h2>${ch.title || 'Chapter ' + (index + 1)}</h2>
+    ${strictXmlContent}
+</body>
+</html>`;
+                oebps.file(`chapter_${index + 1}.xhtml`, chHtml);
+            }
+
+            let manifestItems = `
+        <item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>
+        <item id="css" href="style.css" media-type="text/css"/>`;
+            let spineItems = "";
+
+            if (hasCover) {
+                manifestItems += `\n        <item id="cover-image" href="cover${getExtension(coverMediaType)}" media-type="${coverMediaType}"/>`;
+            }
+
+            capturedImages.forEach(img => {
+                manifestItems += `\n        <item id="${img.id}" href="${img.href}" media-type="${img.type}"/>`;
+            });
+
+            chapters.forEach((ch, index) => {
+                manifestItems += `\n        <item id="ch_${index + 1}" href="chapter_${index + 1}.xhtml" media-type="application/xhtml+xml"/>`;
+                spineItems += `\n        <itemref idref="ch_${index + 1}"/>`;
+            });
+
+            const opfXml = `<?xml version="1.0" encoding="UTF-8"?>
+<package xmlns="http://www.idpf.org/2007/opf" unique-identifier="bookid" version="2.0">
+    <metadata xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:opf="http://www.idpf.org/2007/opf">
+        <dc:title>${bookTitle}</dc:title>
+        <dc:creator opf:role="aut">${bookAuthor}</dc:creator>
+        <dc:identifier id="bookid">urn:uuid:${Date.now()}</dc:identifier>
+        <dc:language>en</dc:language>
+        ${hasCover ? '<meta name="cover" content="cover-image"/>' : ''}
+    </metadata>
+    <manifest>${manifestItems}
+    </manifest>
+    <spine toc="ncx">${spineItems}
+    </spine>
+</package>`;
+            oebps.file("content.opf", opfXml);
+
+            let navPoints = "";
+            chapters.forEach((ch, index) => {
+                navPoints += `
+        <navPoint id="nav_${index + 1}" playOrder="${index + 1}">
+            <navLabel><text>${ch.title || 'Chapter ' + (index + 1)}</text></navLabel>
+            <content src="chapter_${index + 1}.xhtml"/>
+        </navPoint>`;
+            });
+
+            const ncxXml = `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE ncx PUBLIC "-//NISO//DTD NCX 2005-1//EN" "http://www.daisy.org/z3986/2005/ncx-2005-1.dtd">
+<ncx xmlns="http://www.daisy.org/z3986/2005/ncx--" version="2005-1">
+    <head>
+        <meta name="dtb:uid" content="urn:uuid:id_here"/>
+        <meta name="dtb:depth" content="1"/>
+        <meta name="dtb:totalPageCount" content="0"/>
+        <meta name="dtb:maxPageNumber" content="0"/>
+    </head>
+    <docTitle><text>${bookTitle}</text></docTitle>
+    <navMap>${navPoints}
+    </navMap>
+</ncx>`;
+            oebps.file("toc.ncx", ncxXml);
+
+            zip.generateAsync({ type: "blob" }).then((content) => {
+                const a = document.createElement("a");
+                a.href = URL.createObjectURL(content);
+                a.download = `${bookTitle.replace(/\s+/g, '_')}.epub`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            });
+        });
+
+        function getExtension(mimeType) {
+            if (mimeType === "image/png") return ".png";
+            if (mimeType === "image/gif") return ".gif";
+            if (mimeType === "image/webp") return ".webp";
+            return ".jpg";
+        }
+    </script>
 </body>
 </html>
