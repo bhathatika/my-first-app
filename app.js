@@ -1,4 +1,3 @@
-// 🚀 ePub ဖိုင် ထုတ်ယူမည့် လုပ်ဆောင်ချက် (iOS Browser များ၏ Popup Blocker ကျော်ဖြတ်ရန် ပြင်ဆင်ပြီး)
 async function generateEPUB() {
     await saveCurrentBookState();
     const title = document.getElementById('book-title').value || "Untitled Book";
@@ -144,15 +143,13 @@ async function generateEPUB() {
         const filename = title.replace(/\s+/g, '_') + ".epub";
         const fileURL = URL.createObjectURL(blob);
         
-        // 🌟 [Popup Blocker ကျော်ဖြတ်ရန် အဓိကပြင်ဆင်ချက်] 
-        // iOS Browser များတွင် window.open အစား Anchor Tag ကို သုံးပြီး လက်ရှိ စာမျက်နှာထဲကနေပဲ တိုက်ရိုက်ဒေါင်းလုဒ်ဆွဲစေခြင်း
+        // 🌟 ခလုတ်နှိပ်လိုက်တာနဲ့ တန်းပြီး ဒေါင်းလုဒ်ဆွဲစေမည့်စနစ်
         const a = document.createElement('a');
         a.href = fileURL;
         a.download = filename;
         document.body.appendChild(a);
         a.click();
         
-        // သန့်ရှင်းရေးလုပ်ပြီး Memory ပြန်လွှတ်ခြင်း
         setTimeout(() => { 
             document.body.removeChild(a); 
             URL.revokeObjectURL(fileURL); 
