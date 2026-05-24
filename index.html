@@ -413,43 +413,24 @@
         reader.readAsText(file);
     }
 
-    // --- 🌟 XHTML CONTENT SANITIZER & SERIALIZER ENGINE (100% BULLETPROOF) 🌟 ---
-    function cleanHTMLForXHTML(htmlContent) {
-        if (!htmlContent) return "";
-        
-        // 1. Unescaped Spaces များကို XHTML ကုဒ်သို့ ပြောင်းလဲခြင်း
-        let clean = htmlContent.replace(/&nbsp;/g, '&#160;');
-
-        // 2. သန့်စင်ရန်အတွက် DOM Parser တစ်ခု တည်ဆောက်ခြင်း
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(`<div>${clean}</div>`, 'text/html');
-        const container = doc.body.firstChild;
-
-        // 3. Apple Books တွင် Error အတက်ဆုံး ဖြစ်သည့် <br> တက်ဂ်များကို <p> လွတ်အဖြစ် သန့်ရှင်းစွာ အစားထိုးခြင်း
-        const brs = container.querySelectorAll('br');
-        brs.forEach(br => {
-            const pBr = doc.createElement('p');
-            pBr.innerHTML = '&#160;';
-            br.replaceWith(pBr);
-        });
-
-        // 4. Img တက်ဂ်များအားလုံးကို စစ်ဆေးပြီး Attribute များ ဖြည့်သွင်းခြင်း
-        const imgs = container.querySelectorAll('img');
-        imgs.forEach(img => {
-            if (!img.getAttribute('alt')) img.setAttribute('alt', 'image');
-        });
-
-        // 5. 🌟 အဓိကအချက် - XMLSerializer ကို သုံးပြီး တက်ဂ်အဖွင့်အပိတ် အမှားအားလုံးကို XHTML စံနှုန်းအတိုင်း ရာနှုန်းပြည့် ပြန်ဆောက်ခြင်း 🌟
-        const serializer = new XMLSerializer();
-        let xmlString = serializer.serializeToString(container);
-        
-        // XML Root ၏ <div> အဖွင့်အပိတ်ကို ဖယ်ရှားပြီး အထဲက စာသားသက်သက်ကို ယူခြင်း
-        xmlString = xmlString.replace(/^<div[^>]*>/, '').replace(/<\/div>$/, '');
-
-        return xmlString;
+    // Base64 string ထဲကနေ ePub သိမ်းဆည်းဖို့ သက်ဆိုင်ရာ Binary Byte Data အဖြစ် ပြောင်းပေးတဲ့ helper function
+    function base64ToBlob(base64Data) {
+        const sliceSize = 1024;
+        const byteCharacters = atob(base64Data.split(',')[1]);
+        const byteArrays = [];
+        for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
+            const slice = byteCharacters.slice(offset, offset + sliceSize);
+            const byteNumbers = new Array(slice.length);
+            for (let i = 0; i < slice.length; i++) {
+                byteNumbers[i] = slice.charCodeAt(i);
+            }
+            const byteArray = new Uint8Array(byteNumbers);
+            byteArrays.push(byteArray);
+        }
+        return new Blob(byteArrays);
     }
 
-    // --- 🌟 INDUSTRIAL GRADE BULLETPROOF EPUB ENGINE 🌟 ---
+    // --- 🌟 INDUSTRIAL GRADE MULTI-IMAGE EPUB ENGINE 🌟 ---
     function generateEPUB() {
         saveCurrentBookState();
         
@@ -471,7 +452,7 @@
         // Rule 1: Apple Books Requirement - mimetype MUST be the absolute first file and uncompressed
         zip.file("mimetype", "application/epub+zip", { compression: "STORE" });
         
-        // Metadata structure
+        // Metadata Structure
         const containerXml = `<?xml version="1.0" encoding="UTF-8"?>
         <container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
             <rootfiles>
@@ -482,12 +463,62 @@
 
         let manifestItems = "";
         let spineItems = "";
+        let imageCounter = 1;
 
-        // Build chapters
+        // အခန်းများကို တစ်ခန်းချင်းစီ စစ်ဆေးပြီး HTML သန့်စင်ခြင်းနှင့် ပုံများထုတ်ယူခြင်း စတင်မည်
         bookChapters.forEach((chap, index) => {
-            // စာသားများကို သန့်စင်ပြီးမှ ePub ထဲ ထည့်သွင်းခြင်း
-            const finalizedContent = cleanHTMLForXHTML(chap.content);
+            let htmlString = chap.content || "";
+            
+            // Unescaped space များကို ပြောင်းလဲခြင်း
+            htmlString = htmlString.replace(/&nbsp;/g, '&#160;');
 
+            // HTML parser တည်ဆောက်ခြင်း
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(`<div>${htmlString}</div>`, 'text/html');
+            const container = doc.body.firstChild;
+
+            // <br> တက်ဂ်များကို <p> လွတ်အဖြစ် သန့်ရှင်းစွာ အစားထိုးခြင်း
+            const brs = container.querySelectorAll('br');
+            brs.forEach(br => {
+                const pBr = doc.createElement('p');
+                pBr.innerHTML = '&#160;';
+                br.replaceWith(pBr);
+            });
+
+            // 🌟 ဓာတ်ပုံများကို ဖမ်းယူပြီး ePub Image Resource အဖြစ် ပြောင်းလဲသိုလှောင်ခြင်း စနစ်သစ် 🌟
+            const imgs = container.querySelectorAll('img');
+            imgs.forEach(img => {
+                const src = img.getAttribute('src');
+                if (src && src.startsWith('data:image')) {
+                    // Image Type ရှာဖွေခြင်း (png သို့မဟုတ် jpeg)
+                    let ext = "jpg";
+                    let mediaType = "image/jpeg";
+                    if (src.includes("image/png")) { ext = "png"; mediaType = "image/png"; }
+                    else if (src.includes("image/gif")) { ext = "gif"; mediaType = "image/gif"; }
+
+                    const filename = `image_${imageCounter}.${ext}`;
+                    const imgBlob = base64ToBlob(src);
+                    
+                    // 1. ePub ထဲသို့ ဓာတ်ပုံဖိုင်ကို သီးသန့် လမ်းကြောင်းဖြင့် ထည့်သွင်းခြင်း
+                    zip.file(`OEBPS/images/${filename}`, imgBlob);
+                    
+                    // 2. content.opf အတွက် Manifest ကြေညာချက် တည်ဆောက်ခြင်း
+                    manifestItems += `<item id="img_${imageCounter}" href="images/${filename}" media-type="${mediaType}"/>\n`;
+
+                    // 3. XHTML ထဲက <img> တက်ဂ်ရဲ့ src လမ်းကြောင်းကို ePub Internal relative path သို့ ပြောင်းလဲခြင်း
+                    img.setAttribute('src', `images/${filename}`);
+                    if (!img.getAttribute('alt')) img.setAttribute('alt', `photo_${imageCounter}`);
+                    
+                    imageCounter++;
+                }
+            });
+
+            // XMLSerializer သုံးပြီး တက်ဂ်များကို ရာနှုန်းပြည့် လုံခြုံစိတ်ချရသော XHTML အဖြစ် ပြန်ပြောင်းခြင်း
+            const serializer = new XMLSerializer();
+            let finalizedXhtmlContent = serializer.serializeToString(container);
+            finalizedXhtmlContent = finalizedXhtmlContent.replace(/^<div[^>]*>/, '').replace(/<\/div>$/, '');
+
+            // အခန်းတစ်ခုချင်းစီအတွက် XHTML စာမျက်နှာ တည်ဆောက်ခြင်း
             const chapHtml = `<?xml version="1.0" encoding="utf-8"?>
             <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
             <html xmlns="http://www.w3.org/1999/xhtml">
@@ -495,14 +526,14 @@
                 <title>${chap.title}</title>
                 <style>
                     body { padding: 20px; font-family: sans-serif; line-height: 1.6; color: #111111; background-color: #ffffff; }
-                    img { max-width: 100%; height: auto; display: block; margin: 10px 0; border-radius: 4px; }
-                    h1 { font-size: 1.5em; text-align: center; margin-bottom: 20px; }
+                    img { max-width: 100%; height: auto; display: block; margin: 15px auto; border-radius: 6px; box-shadow: 0 2px 5px rgba(0,0,0,0.15); }
+                    h1 { font-size: 1.5em; text-align: center; margin-bottom: 20px; color: #1e2640; }
                     p { margin-bottom: 0.8em; text-align: justify; line-height: 1.6; }
                 </style>
             </head>
             <body>
                 <h1>${chap.title}</h1>
-                <div>${finalizedContent}</div>
+                <div>${finalizedXhtmlContent}</div>
             </body>
             </html>`;
             
@@ -511,7 +542,18 @@
             spineItems += `<itemref idref="chap_${index + 1}"/>\n`;
         });
 
-        // Content OPF
+        // မျက်နှာဖုံးပုံ (Cover) ရှိခဲ့ရင် ထည့်သွင်းပေးခြင်း
+        if (coverBase64) {
+            let coverExt = "jpg";
+            let coverMime = "image/jpeg";
+            if (coverBase64.includes("image/png")) { coverExt = "png"; coverMime = "image/png"; }
+            
+            const coverBlob = base64ToBlob(coverBase64);
+            zip.file(`OEBPS/images/cover.${coverExt}`, coverBlob);
+            manifestItems += `<item id="cover-img" href="images/cover.${coverExt}" media-type="${coverMime}"/>\n`;
+        }
+
+        // Content OPF ဖိုင်တည်ဆောက်ခြင်း
         const opfXml = `<?xml version="1.0" encoding="UTF-8"?>
         <package xmlns="http://www.idpf.org/2007/opf" unique-identifier="bookid" version="2.0">
             <metadata xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:opf="http://www.idpf.org/2007/opf">
@@ -519,6 +561,7 @@
                 <dc:creator opf:role="aut">${author}</dc:creator>
                 <dc:language>my</dc:language>
                 <dc:identifier id="bookid">urn:uuid:${Date.now()}</dc:identifier>
+                ${coverBase64 ? '<meta name="cover" content="cover-img"/>' : ''}
             </metadata>
             <manifest>
                 <item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>
@@ -551,7 +594,7 @@
         </ncx>`;
         zip.file("OEBPS/toc.ncx", ncxXml);
 
-        // Generate and download
+        // ePub ဖိုင် ထုတ်ယူပြီး Download ပြုလုပ်ခြင်း
         zip.generateAsync({ type: "blob", mimeType: "application/epub+zip" }).then(function (blob) {
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
