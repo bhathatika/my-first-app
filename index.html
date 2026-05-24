@@ -9,10 +9,10 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- TinyMCE Editor (စာရိုက်သည့်နေရာ) -->
+    <!-- TinyMCE Editor -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tinymce/6.7.0/tinymce.min.js"></script>
     
-    <!-- JSZip (ePub ထုတ်လုပ်ပေးမည့် Library) -->
+    <!-- JSZip -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
     <style>
@@ -22,6 +22,9 @@
     </style>
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen pb-12">
+
+    <!-- Hidden Input For Native Mobile Image Picker -->
+    <input type="file" id="hidden-editor-image-picker" accept="image/*" class="hidden" onchange="handleInlineImageUpload(event)">
 
     <!-- 🌐 Main Container -->
     <div class="max-w-xl mx-auto px-4 pt-6">
@@ -40,18 +43,15 @@
                 <i class="fa-solid fa-database text-amber-400"></i> စာအုပ် BACKUP စီမံခန့်ခွဲမှု
             </h2>
             <div class="grid grid-cols-1 gap-2.5">
-                <!-- Backup Button -->
                 <button onclick="exportToBackupFile()" class="w-full bg-slate-700 hover:bg-slate-600 text-slate-200 py-3 px-4 rounded-lg flex items-center justify-center gap-2 font-medium transition active:scale-95 border border-slate-600">
-                    <i class="fa-solid fa-file-export text-emerald-400"></i> လက်ရှိစာအုပ်ကို ဖိုင်သိမ်းဆည်းမည် (Backup)
+                    <i class="fa-solid fa-file-export text-emerald-400"></i>  လက်ရှိစာအုပ်ကို ဖိုင်သိမ်းဆည်းမည် (Backup)
                 </button>
                 
-                <!-- Load Backup Button -->
                 <label class="w-full bg-slate-700 hover:bg-slate-600 text-slate-200 py-3 px-4 rounded-lg flex items-center justify-center gap-2 font-medium transition active:scale-95 border border-slate-600 cursor-pointer text-center">
                     <i class="fa-solid fa-file-import text-sky-400"></i> စာအုပ်ဖောင်း ပြန်တင်မည် (Load Backup)
                     <input type="file" id="backup-upload" accept=".json" onchange="loadFromBackupFile(event)" class="hidden">
                 </label>
                 
-                <!-- Reset Button -->
                 <button onclick="resetAllData()" class="w-full bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 py-3 px-4 rounded-lg flex items-center justify-center gap-2 font-medium transition active:scale-95 border border-rose-800/50">
                     <i class="fa-solid fa-trash-can text-rose-400"></i> စာအုပ်အသစ်အတွက် အစကပြန်စမည် (Reset)
                 </button>
@@ -79,7 +79,6 @@
                     </label>
                     <span id="cover-status" class="text-sm text-slate-400 truncate">No file selected</span>
                 </div>
-                <!-- Preview Cover Panel -->
                 <div id="cover-preview-box" class="mt-2 hidden">
                     <img id="cover-preview" src="" class="w-24 h-auto rounded border border-slate-600 shadow-md">
                 </div>
@@ -92,9 +91,7 @@
             <button onclick="addNewChapter()" class="w-full bg-sky-600 hover:bg-sky-500 text-white py-3 rounded-lg font-medium flex items-center justify-center gap-1.5 transition active:scale-95 mb-3 shadow-lg shadow-sky-950/20">
                 <i class="fa-solid fa-plus"></i> အခန်းတိုးမည် (Add Chapter)
             </button>
-            <div id="chapters-list" class="space-y-2 max-h-48 overflow-y-auto pr-1">
-                <!-- Chapters items will inject here dynamically -->
-            </div>
+            <div id="chapters-list" class="space-y-2 max-h-48 overflow-y-auto pr-1"></div>
         </div>
 
         <!-- ✍️ EDITOR SECTION -->
@@ -118,9 +115,6 @@
 
     </div>
 
-    <!-- ========================================================================= -->
-    <!-- 🧠 CORE JAVASCRIPT LOGIC (INDEXEDDB & FILE UPLOAD FIXED) -->
-    <!-- ========================================================================= -->
     <script>
         let bookChapters = [];
         let currentChapterIndex = 0;
@@ -144,43 +138,27 @@
             });
         }
 
-        // 🖼️ TINYMCE INITIALIZATION WITH LOCAL IMAGE UPLOAD FUNCTION
+        // 🔥 TINYMCE INITIALIZATION WITH DIRECT NATIVE PICKER FIXED FOR SAFARI/IPHONE
         tinymce.init({
             selector: '#editor',
             height: 350,
             menubar: false,
             skin: 'oxide-dark',
             content_css: 'dark',
-            plugins: 'image lists link charmap base64image',
-            toolbar: 'bold italic underline | numlist bullist | image link | removeformat',
+            plugins: 'lists link charmap',
+            toolbar: 'bold italic underline | numlist bullist | custom_image link | removeformat',
             
-            // 💡 ဖုန်းထဲက ပုံကို ရွေးချယ်ပြီး Editor ထဲ တိုက်ရိုက်ထည့်သွင်းနိုင်စေမည့် စနစ်
-            image_title: true,
-            automatic_uploads: true,
-            file_picker_types: 'image',
-            file_picker_callback: function (cb, value, meta) {
-                const input = document.createElement('input');
-                input.setAttribute('type', 'file');
-                input.setAttribute('accept', 'image/*');
-
-                input.onchange = function () {
-                    const file = this.files[0];
-                    const reader = new FileReader();
-                    reader.onload = function () {
-                        const id = 'blobid' + (new Date()).getTime();
-                        const blobCache =  tinymce.activeEditor.editorUpload.blobCache;
-                        const base64 = reader.result.split(',')[1];
-                        const blobInfo = blobCache.create(id, file, base64);
-                        blobCache.add(blobInfo);
-
-                        cb(blobInfo.blobUri(), { title: file.name });
-                    };
-                    reader.readAsDataURL(file);
-                };
-
-                input.click();
-            },
             setup: function(editor) {
+                // 📱 iPhone/Safari တိုက်ရိုက်အလုပ်လုပ်မည့် Custom Image Button ကို ဖန်တီးခြင်း
+                editor.ui.registry.addButton('custom_image', {
+                    icon: 'image',
+                    tooltip: 'Insert Image From Gallery',
+                    onAction: function () {
+                        // ဖုန်းထဲက ပြခန်းကို တိုက်ရိုက်လှမ်းဖွင့်ခိုင်းခြင်း
+                        document.getElementById('hidden-editor-image-picker').click();
+                    }
+                });
+
                 editor.on('NodeChange keyup change', function() {
                     if (bookChapters[currentChapterIndex]) {
                         bookChapters[currentChapterIndex].content = editor.getContent();
@@ -189,6 +167,26 @@
                 });
             }
         });
+
+        // ဖုန်းပြခန်းထဲက ပုံကိုရွေးပြီးတာနဲ့ Editor ထဲ တန်းထည့်ပေးမည့် စနစ်
+        function handleInlineImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const base64Data = e.target.result;
+                
+                if (tinymce.activeEditor) {
+                    // Editor ထဲကို မူရင်း Base64 ပုံစံအတိုင်း ပုံရိပ်တိုက်ရိုက်ထည့်ပေးခြင်း
+                    tinymce.activeEditor.insertContent(`<img src="${base64Data}" alt="${file.name}" style="max-w-full; height:auto; display:block; margin:10px auto;"/>`);
+                    tinymce.activeEditor.fire('change');
+                }
+                // ရွေးချယ်ပြီးသား Input ဖိုင်ကို ဖျက်ပြီး နောက်တစ်ကြိမ်ထပ်ရွေးလို့ရအောင် လုပ်ခြင်း
+                document.getElementById('hidden-editor-image-picker').value = "";
+            };
+            reader.readAsDataURL(file);
+        }
 
         // App Initial Load
         window.addEventListener('DOMContentLoaded', async () => {
@@ -368,7 +366,7 @@
                 getRequest.onsuccess = function() {
                     const state = getRequest.result;
                     if (!state) {
-                        alert("⚠️ သိမ်းဆည်းထားသည့် ဒေတာမရှိသေးပါ။");
+                        alert("⚠️  သိမ်းဆည်းထားသည့် ဒေတာမရှိသေးပါ။");
                         return;
                     }
 
@@ -419,7 +417,6 @@
         function base64ToBlob(base64Str) {
             if (!base64Str || typeof base64Str !== 'string') return null;
             
-            // tinyMCE blob uri သို့မဟုတ် base64 စာသားအစစ်ဖြစ်ကြောင်း စစ်ဆေးခြင်း
             let contentType = "image/jpeg";
             let rawData = base64Str;
 
@@ -441,7 +438,7 @@
                 }
                 return new Blob([uInt8Array], { type: contentType });
             } catch (e) {
-                console.error("ဓာတ်ပုံ ပြောင်းလဲမှု ကျော်သွားပါသည်:", e);
+                console.error("Conversion skip:", e);
                 return null; 
             }
         }
@@ -495,30 +492,14 @@
                 for (let img of imgs) {
                     const src = img.getAttribute('src');
                     
-                    // TinyMCE Blob URL ဖြစ်နေပါက Base64 သို့ ပြန်ပြောင်းရန်
-                    let finalSrc = src;
-                    if (src && src.startsWith('blob:')) {
-                        try {
-                            const response = await fetch(src);
-                            const blobData = await response.blob();
-                            finalSrc = await new Promise((resolve) => {
-                                const reader = new FileReader();
-                                reader.onloadend = () => resolve(reader.result);
-                                reader.readAsDataURL(blobData);
-                            });
-                        } catch (err) {
-                            console.error("Blob Fetch Error:", err);
-                        }
-                    }
-
-                    if (finalSrc && finalSrc.startsWith('data:image')) {
+                    if (src && src.startsWith('data:image')) {
                         let ext = "jpg";
                         let mediaType = "image/jpeg";
-                        if (finalSrc.includes("image/png")) { ext = "png"; mediaType = "image/png"; }
-                        else if (finalSrc.includes("image/gif")) { ext = "gif"; mediaType = "image/gif"; }
+                        if (src.includes("image/png")) { ext = "png"; mediaType = "image/png"; }
+                        else if (src.includes("image/gif")) { ext = "gif"; mediaType = "image/gif"; }
 
                         const filename = `image_${imageCounter}.${ext}`;
-                        const imgBlob = base64ToBlob(finalSrc);
+                        const imgBlob = base64ToBlob(src);
                         
                         if (imgBlob) {
                             zip.file(`OEBPS/images/${filename}`, imgBlob);
