@@ -40,7 +40,7 @@ function compressImage(file, maxWidth, maxHeight, quality) {
     });
 }
 
-// 🌟 Photo Library မှ ပုံတစ်ပုံတည်း သို့မဟုတ် အများကြီးထည့်လျှင် တန်းစီထည့်ပေးမည့် စနစ် 🌟
+// Photo Library မှ ပုံတစ်ပုံချင်းဖြစ်စေ၊ အများကြီးဖြစ်စေ စိတ်ချရဆုံး သွင်းပေးသည့် စနစ်
 async function insertImagesToEditor(event) {
     const files = event.target.files;
     if (!files || files.length === 0) return;
@@ -52,18 +52,15 @@ async function insertImagesToEditor(event) {
     for (let i = 0; i < files.length; i++) {
         try {
             const compressedBase64 = await compressImage(files[i], 800, 800, 0.75);
-            // XHTML စံနှုန်းမီအောင် <img /> သေချာပိတ်ပြီး String စနစ်ဖြင့် တည်ဆောက်သည်
             imagesHtml += `<div style="text-align:center; margin:15px auto;"><img src="${compressedBase64}" alt="inserted_image" style="max-width:100%; height:auto; display:inline-block;" /></div>`;
         } catch (err) {
             console.error("Image compression error:", err);
         }
     }
     
-    // Editor ထဲသို့ စာသားအနေဖြင့် အဆင်ပြေပြေ တိုက်ရိုက်ပေါင်းထည့်ခြင်း
     editor.innerHTML += imagesHtml;
-    
     saveCurrentChapterContentLive();
-    event.target.value = ""; // Input ကို Reset ပြန်လုပ်သည်
+    event.target.value = ""; 
 }
 
 function updateChapterTitleLive() {
@@ -190,7 +187,7 @@ function loadBookState() {
     }
 }
 
-// Pure JavaScript Base64 to Blob Decoder (Chrome Safe)
+// Pure JavaScript Base64 to Blob Decoder
 function dataUrlToBlob(dataUrl) {
     if (!dataUrl || !dataUrl.includes(',')) return null;
     try {
@@ -210,12 +207,12 @@ function dataUrlToBlob(dataUrl) {
     }
 }
 
-// 🚀 မည်သည့် Browser တွင်မဆို ပုံအရေအတွက် (၁ပုံမှသည် အများကြီးအထိ) ၁၀၀% ဒေါင်းလုဒ်ကျိန်းသေရစေမည့် Perfect Engine 🚀
+// 🚀 မည်သည့် Browser တွင်မဆို ရာနှုန်းပြည့် အလုပ်လုပ်မည့် တည်ငြိမ်ပြီးသား ဖွဲ့စည်းမှုစနစ်အမှန်
 async function generateEPUB() {
     saveCurrentBookState();
     
     if (typeof JSZip === "undefined") {
-        alert("⚠️ စနစ်တစ်ခုလုံး အလုပ်လုပ်ရန် ပြင်ဆင်နေဆဲဖြစ်သည်။ စက္ကန့်အနည်းငယ် စောင့်ပြီးမှ ဒေါင်းလုဒ်ပြန်နှိပ်ပေးပါဗျာ။");
+        alert("⚠️ စနစ်လည်ပတ်မှု အားနည်းနေပါသည်။ ဝဘ်ဆိုက်ကို Refresh တစ်ချက်လုပ်ပြီးမှ ပြန်လည်ဒေါင်းလုဒ်နှိပ်ပေးပါဗျာ။");
         return;
     }
 
@@ -237,7 +234,6 @@ async function generateEPUB() {
     let spineItems = "";
     let globalImageCounter = 1;
 
-    // Cover Image Handling
     if (coverBase64 && coverBase64.includes("data:image")) {
         let coverExt = "jpg"; let coverMime = "image/jpeg";
         if (coverBase64.includes("image/png")) { coverExt = "png"; coverMime = "image/png"; }
@@ -249,7 +245,6 @@ async function generateEPUB() {
         }
     }
 
-    // Chapters Handling
     for (let index = 0; index < bookChapters.length; index++) {
         let chap = bookChapters[index];
         let htmlString = chap.content || "";
@@ -260,7 +255,7 @@ async function generateEPUB() {
         const tempDiv = document.createElement('div');
         tempDiv.innerHTML = htmlString;
         
-        // 🌟 ဤနေရာတွင် Live HTMLCollection ကြောင့် Crash မဖြစ်စေရန် Array စစ်စစ်အဖြစ် အသေပြောင်းလဲလိုက်ခြင်း 🌟
+        // Tailwind ရဲ့ နှောင့်ယှက်မှုကို ကျော်လွှားရန် Array.from ဖြင့် အရှင်မှ ပုံစံသေသို့ လဲလှယ်ခြင်း
         const imgs = Array.from(tempDiv.getElementsByTagName('img'));
         
         for (let img of imgs) {
@@ -275,7 +270,6 @@ async function generateEPUB() {
                 if (imgBlob) {
                     zip.file(`OEBPS/images/${filename}`, imgBlob);
                     manifestItems += `<item id="img_${globalImageCounter}" href="images/${filename}" media-type="${mediaType}"/>\n`;
-                    // ePub ရဲ့ အတွင်းပိုင်း လမ်းကြောင်းသို့ အောင်မြင်စွာ ပြောင်းလဲသည်
                     img.setAttribute('src', `images/${filename}`);
                     globalImageCounter++;
                 }
@@ -319,7 +313,6 @@ async function generateEPUB() {
     const ncxXml = `<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE ncx PUBLIC "-//NISO//DTD ncx v2005-1//EN" "http://www.daisy.org/z3986/2005/ncx-2005-1.dtd"><ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1"><head><meta name="dtb:uid" content="${Date.now()}"/></head><docTitle><text>${title}</text></docTitle><navMap>${ncxNav}</navMap></ncx>`;
     zip.file("OEBPS/toc.ncx", ncxXml);
 
-    // ZIP Compilation
     zip.generateAsync({ type: "blob", mimeType: "application/epub+zip" }).then(function (blob) {
         const filename = title.replace(/\s+/g, '_') + ".epub";
         const downloadUrl = window.URL.createObjectURL(blob);
