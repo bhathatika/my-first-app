@@ -5,16 +5,34 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Web ePub Creator Pro</title>
     <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com/"></script>
     <!-- FontAwesome Font Icon -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- JSZip Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <!-- TinyMCE Rich Text Editor -->
-    <script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
     <style>
-        body { font-family: 'Pyidaungsu', sans-serif; background-color: #1e293b; }
-        .editor-container { background: #1e293b; border-radius: 8px; }
+        body { font-family: sans-serif; background-color: #1e293b; }
+        /* API Key မလိုသော Standard Rich Text Editor Component */
+        .custom-editor {
+            min-height: 350px;
+            background-color: #ffffff;
+            color: #111111;
+            border-radius: 8px;
+            padding: 15px;
+            overflow-y: auto;
+            border: 2px solid #475569;
+        }
+        .custom-editor:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+        .custom-editor img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: 10px auto;
+            border-radius: 6px;
+        }
     </style>
 </head>
 <body class="bg-slate-900 text-gray-100">
@@ -34,14 +52,14 @@
             </h2>
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <button onclick="exportToBackupFile()" class="bg-emerald-600 hover:bg-emerald-700 text-white p-2 rounded-lg flex items-center justify-center gap-2 transition-all font-medium">
-                    <i class="fa-solid fa-download"></i> လက်ရှိစာအုပ်ကို ဖိုင်အဖြစ်သိမ်းဆည်းမည် (Backup)
+                    <i class="fa-solid fa-download"></i> Backup ဖိုင်သိမ်းမည်
                 </button>
                 <button onclick="document.getElementById('backup-file-input').click()" class="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-lg flex items-center justify-center gap-2 transition-all font-medium">
-                    <i class="fa-solid fa-upload"></i> စာအုပ်ဖိုင်ကို ပြန်တင်မည် (Load Backup)
+                    <i class="fa-solid fa-upload"></i> Backup ပြန်တင်မည်
                 </button>
                 <input type="file" id="backup-file-input" onchange="importFromBackupFile(event)" accept=".json" class="hidden">
                 <button onclick="resetCurrentBookState()" class="bg-rose-600 hover:bg-rose-700 text-white p-2 rounded-lg flex items-center justify-center gap-2 transition-all font-medium">
-                    <i class="fa-solid fa-trash-can"></i> စာအုပ်အသစ်အတွက် အကုန်ပြန်စမည် (Reset)
+                    <i class="fa-solid fa-trash-can"></i> အကုန်ပြန်စမည် (Reset)
                 </button>
             </div>
         </section>
@@ -77,16 +95,28 @@
 
             <!-- Right Editor Area -->
             <div class="md:col-span-2 space-y-4">
-                <div class="editor-container p-4 border border-slate-700 bg-slate-800">
+                <div class="p-4 border border-slate-700 bg-slate-800 rounded-xl">
                     <div class="mb-3">
                         <label class="block text-sm font-semibold text-gray-300 mb-1">အခန်းခေါင်းစဉ် (Chapter Title)</label>
                         <input type="text" id="current-chapter-title" oninput="updateChapterTitleLive()" placeholder="အခန်းခေါင်းစဉ် ထည့်ပါ..." class="w-full p-2 bg-slate-700 border border-slate-600 rounded-lg text-white">
                     </div>
-                    <button onclick="clearAllContent()" class="bg-rose-700 hover:bg-rose-800 text-white text-xs px-4 py-2 rounded-lg mb-3 flex items-center gap-1">
-                        <i class="fa-solid fa-paint-brush"></i> စာသားအားလုံးဖျက်ရန် (Clear All Content)
-                    </button>
-                    <label class="block text-sm font-semibold text-gray-300 mb-1">အခန်းပါဝင်အကြောင်းအရာ (Chapter Content)</label>
-                    <textarea id="editor"></textarea>
+                    
+                    <!-- Editor Toolbar (စာလုံးအထူ၊ စောင်း၊ ပုံထည့်ခလုတ်များ) -->
+                    <div class="flex flex-wrap gap-2 p-2 bg-slate-700 rounded-t-lg border-b border-slate-600">
+                        <button type="button" onclick="execCmd('bold')" class="px-3 py-1 bg-slate-600 hover:bg-slate-500 rounded font-bold" title="Bold">B</button>
+                        <button type="button" onclick="execCmd('italic')" class="px-3 py-1 bg-slate-600 hover:bg-slate-500 rounded italic" title="Italic">I</button>
+                        <button type="button" onclick="execCmd('underline')" class="px-3 py-1 bg-slate-600 hover:bg-slate-500 rounded underline" title="Underline">U</button>
+                        <button type="button" onclick="document.getElementById('editor-image-input').click()" class="px-3 py-1 bg-blue-600 hover:bg-blue-500 rounded flex items-center gap-1 text-xs" title="Insert Image">
+                            <i class="fa-solid fa-image"></i> ပုံထည့်ရန်
+                        </button>
+                        <input type="file" id="editor-image-input" onchange="insertImageToEditor(event)" accept="image/*" class="hidden">
+                        <button type="button" onclick="clearAllContent()" class="ml-auto px-3 py-1 bg-rose-700 hover:bg-rose-600 rounded text-xs flex items-center gap-1">
+                            <i class="fa-solid fa-trash"></i> အကုန်ဖျက်ရန်
+                        </button>
+                    </div>
+                    
+                    <!-- 🌟 Core Text Editor Box (API Key မလိုဘဲ စာရေးလို့ရ၊ ပုံထည့်လို့ရသော အကွက်) -->
+                    <div id="editor" class="custom-editor" contenteditable="true" oninput="saveCurrentChapterContentLive()"></div>
                 </div>
 
                 <!-- Final Export Button -->
