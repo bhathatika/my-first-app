@@ -40,7 +40,7 @@ function compressImage(file, maxWidth, maxHeight, quality) {
     });
 }
 
-// 🌟 Photo Library မှ တစ်ပုံချင်းစီ သို့မဟုတ် အများကြီးထည့်လျှင် လုံးဝ အဆင်ပြေစေမည့် စနစ် 🌟
+// 🌟 Photo Library မှ ပုံတစ်ပုံတည်း သို့မဟုတ် အများကြီးထည့်လျှင် တန်းစီထည့်ပေးမည့် စနစ် 🌟
 async function insertImagesToEditor(event) {
     const files = event.target.files;
     if (!files || files.length === 0) return;
@@ -52,18 +52,18 @@ async function insertImagesToEditor(event) {
     for (let i = 0; i < files.length; i++) {
         try {
             const compressedBase64 = await compressImage(files[i], 800, 800, 0.75);
-            // ဓာတ်ပုံတစ်ခုချင်းစီကို XML စည်းကမ်းအတိုင်း <img src="..." /> သေချာ ပိတ်ပြီး String အဖြစ် တည်ဆောက်သည်
+            // XHTML စံနှုန်းမီအောင် <img /> သေချာပိတ်ပြီး String စနစ်ဖြင့် တည်ဆောက်သည်
             imagesHtml += `<div style="text-align:center; margin:15px auto;"><img src="${compressedBase64}" alt="inserted_image" style="max-width:100%; height:auto; display:inline-block;" /></div>`;
         } catch (err) {
             console.error("Image compression error:", err);
         }
     }
     
-    // Editor ထဲသို့ စာသားစနစ်ဖြင့် တိုက်ရိုက် ထည့်သွင်းခြင်း
+    // Editor ထဲသို့ စာသားအနေဖြင့် အဆင်ပြေပြေ တိုက်ရိုက်ပေါင်းထည့်ခြင်း
     editor.innerHTML += imagesHtml;
     
     saveCurrentChapterContentLive();
-    event.target.value = ""; // Reset file input
+    event.target.value = ""; // Input ကို Reset ပြန်လုပ်သည်
 }
 
 function updateChapterTitleLive() {
@@ -190,7 +190,7 @@ function loadBookState() {
     }
 }
 
-// Pure JavaScript Base64 to Blob Decoder (Chrome & Safari Multi-compatible)
+// Pure JavaScript Base64 to Blob Decoder (Chrome Safe)
 function dataUrlToBlob(dataUrl) {
     if (!dataUrl || !dataUrl.includes(',')) return null;
     try {
@@ -210,7 +210,7 @@ function dataUrlToBlob(dataUrl) {
     }
 }
 
-// 🚀 မည်သည့် Browser တွင်မဆို ပုံအရေအတွက် မရွေး (၁၀၀%) ဒေါင်းလုဒ် ကျိန်းသေရစေမည့် Universal Compiler Engine
+// 🚀 မည်သည့် Browser တွင်မဆို ပုံအရေအတွက် (၁ပုံမှသည် အများကြီးအထိ) ၁၀၀% ဒေါင်းလုဒ်ကျိန်းသေရစေမည့် Perfect Engine 🚀
 async function generateEPUB() {
     saveCurrentBookState();
     
@@ -249,23 +249,22 @@ async function generateEPUB() {
         }
     }
 
-    // 🌟 ပုံတစ်ပုံချင်းရော အများကြီးပါပါ အမှားကင်းစင်စွာ ခွဲထုတ်ပေးမည့် လုံခြုံစိတ်ချရဆုံး နည်းလမ်းသစ်
+    // Chapters Handling
     for (let index = 0; index < bookChapters.length; index++) {
         let chap = bookChapters[index];
         let htmlString = chap.content || "";
         
-        // HTML စာသားများကို ePub (XHTML) standard နှင့် ကိုက်ညီအောင် သန့်စင်ခြင်း
         htmlString = htmlString.replace(/&nbsp;/g, '&#160;');
         htmlString = htmlString.replace(/<br>/g, '<br/>').replace(/<hr>/g, '<hr/>');
 
-        // Virtual Element တည်ဆောက်ပြီး DOMParser အစား Safe Loop ပတ်ခြင်း
         const tempDiv = document.createElement('div');
         tempDiv.innerHTML = htmlString;
-        const imgs = tempDiv.getElementsByTagName('img');
         
-        // Editor ထဲက ပုံအားလုံးကို တစ်ပုံချင်းစီ စစ်ထုတ်ယူခြင်း
-        for (let i = 0; i < imgs.length; i++) {
-            const src = imgs[i].src;
+        // 🌟 ဤနေရာတွင် Live HTMLCollection ကြောင့် Crash မဖြစ်စေရန် Array စစ်စစ်အဖြစ် အသေပြောင်းလဲလိုက်ခြင်း 🌟
+        const imgs = Array.from(tempDiv.getElementsByTagName('img'));
+        
+        for (let img of imgs) {
+            const src = img.getAttribute('src');
             if (src && src.startsWith('data:image')) {
                 let ext = "jpg"; let mediaType = "image/jpeg";
                 if (src.includes("image/png")) { ext = "png"; mediaType = "image/png"; }
@@ -276,8 +275,8 @@ async function generateEPUB() {
                 if (imgBlob) {
                     zip.file(`OEBPS/images/${filename}`, imgBlob);
                     manifestItems += `<item id="img_${globalImageCounter}" href="images/${filename}" media-type="${mediaType}"/>\n`;
-                    // ePub အတွင်းပိုင်း လမ်းကြောင်းသို့ လဲလှယ်သည်
-                    imgs[i].src = `images/${filename}`;
+                    // ePub ရဲ့ အတွင်းပိုင်း လမ်းကြောင်းသို့ အောင်မြင်စွာ ပြောင်းလဲသည်
+                    img.setAttribute('src', `images/${filename}`);
                     globalImageCounter++;
                 }
             }
@@ -320,7 +319,7 @@ async function generateEPUB() {
     const ncxXml = `<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE ncx PUBLIC "-//NISO//DTD ncx v2005-1//EN" "http://www.daisy.org/z3986/2005/ncx-2005-1.dtd"><ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1"><head><meta name="dtb:uid" content="${Date.now()}"/></head><docTitle><text>${title}</text></docTitle><navMap>${ncxNav}</navMap></ncx>`;
     zip.file("OEBPS/toc.ncx", ncxXml);
 
-    // ZIP Build & Download Flow
+    // ZIP Compilation
     zip.generateAsync({ type: "blob", mimeType: "application/epub+zip" }).then(function (blob) {
         const filename = title.replace(/\s+/g, '_') + ".epub";
         const downloadUrl = window.URL.createObjectURL(blob);
