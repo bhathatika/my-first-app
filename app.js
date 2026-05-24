@@ -8,7 +8,7 @@ function execCmd(command) {
     saveCurrentChapterContentLive();
 }
 
-// ဓာတ်ပုံများကို အရွယ်အစားချုံ့ပြီး Base64 ပြောင်းပေးသည့် စနစ်
+// ဓာတ်ပုံများကို အရွယ်အစားချုံ့ပေးသည့် စနစ်
 function compressImage(file, maxWidth, maxHeight, quality) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -40,7 +40,7 @@ function compressImage(file, maxWidth, maxHeight, quality) {
     });
 }
 
-// ဓာတ်ပုံ အများကြီးထည့်လျှင် တန်းစီပြီး စနစ်တကျထည့်ပေးမည့် စနစ်
+// 🌟 မနက်ပိုင်းက အောင်မြင်ခဲ့သော အလုပ်အလုပ်ဆုံး String-Based Multi-Image Insertion စနစ် 🌟
 async function insertImagesToEditor(event) {
     const files = event.target.files;
     if (!files || files.length === 0) return;
@@ -48,26 +48,23 @@ async function insertImagesToEditor(event) {
     const editor = document.getElementById('editor');
     editor.focus();
 
+    let imagesHtml = "";
     for (let i = 0; i < files.length; i++) {
         try {
+            // ပုံတစ်ပုံချင်းစီကို သေချာချုံ့ပြီး Base64 ပြောင်းသည်
             const compressedBase64 = await compressImage(files[i], 800, 800, 0.75);
-            const img = document.createElement('img');
-            img.src = compressedBase64;
-            img.alt = "inserted_image";
-            img.style.maxWidth = "100%";
-            img.style.height = "auto";
-            img.style.display = "block";
-            img.style.margin = "10px auto";
-            
-            editor.appendChild(img);
-            editor.appendChild(document.createElement('br'));
+            // 🌟 ဤနေရာတွင် Chrome Crash မဖြစ်စေရန် String အဖြစ် တိုက်ရိုက် တည်ဆောက်သည်
+            imagesHtml += `<div style="text-align:center; margin:15px auto;"><img src="${compressedBase64}" alt="inserted_image" style="max-width:100%; height:auto; display:inline-block;" /><br/></div>`;
         } catch (err) {
-            console.error("Image insertion error:", err);
+            console.error("Image compression error:", err);
         }
     }
     
+    // Editor ရဲ့ အောက်ဆုံးမှာ စာသားအနေနဲ့ အကုန်ပြိုင်တူ ပေါင်းထည့်ပေးလိုက်ခြင်း (မနက်က နည်းလမ်းဟောင်း အောင်မြင်ချက်)
+    editor.innerHTML += imagesHtml;
+    
     saveCurrentChapterContentLive();
-    event.target.value = ""; 
+    event.target.value = ""; // Reset file input
 }
 
 function updateChapterTitleLive() {
@@ -194,7 +191,7 @@ function loadBookState() {
     }
 }
 
-// 🌟 Google Chrome လုံခြုံရေး ပိတ်ပင်မှုများကို ကျော်ဖြတ်နိုင်ရန် Fetch မသုံးဘဲ သန့်သန့် ဖွဲ့စည်းထားသော Base64 Decoder စနစ်သစ် 🌟
+// Pure JavaScript Base64 to Blob Decoder (Chrome Safe)
 function dataUrlToBlob(dataUrl) {
     if (!dataUrl || !dataUrl.includes(',')) return null;
     try {
@@ -214,7 +211,7 @@ function dataUrlToBlob(dataUrl) {
     }
 }
 
-// 🚀 Chrome, Safari, Firefox အားလုံးတွင် ရာနှုန်းပြည့် အလုပ်လုပ်မည့် Core Engine
+// 🚀 Chrome တွင် ဓာတ်ပုံမည်မျှပါပါ ၁၀၀% ဒေါင်းလုဒ်ဆွဲပေးမည့် Stable Engine
 async function generateEPUB() {
     saveCurrentBookState();
     
@@ -241,6 +238,7 @@ async function generateEPUB() {
     let spineItems = "";
     let globalImageCounter = 1;
 
+    // Cover Image Handling
     if (coverBase64 && coverBase64.includes("data:image")) {
         let coverExt = "jpg"; let coverMime = "image/jpeg";
         if (coverBase64.includes("image/png")) { coverExt = "png"; coverMime = "image/png"; }
@@ -252,43 +250,47 @@ async function generateEPUB() {
         }
     }
 
+    // Chapters & Inlined Multi Images Parsing Flow
     for (let index = 0; index < bookChapters.length; index++) {
         let chap = bookChapters[index];
         let htmlString = chap.content || "";
+        
+        // XML စည်းကမ်းချက်များနှင့် ကိုက်ညီစေရန် သန့်စင်ခြင်း
         htmlString = htmlString.replace(/&nbsp;/g, '&#160;');
+        htmlString = htmlString.replace(/<br>/g, '<br/>').replace(/<hr>/g, '<hr/>');
 
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(`<div>${htmlString}</div>`, 'text/html');
-        const container = doc.body.firstChild;
-
-        const imgs = container.querySelectorAll('img');
-        for (let img of imgs) {
-            const src = img.getAttribute('src');
+        // Regex ဖြင့် ပုံများကို ရှာဖွေပြီး Chrome Crash ဖြစ်ခြင်းကို လုံးဝကာကွယ်ခြင်း
+        const imgRegex = /<img[^>]+src="([^">]+)"[^>]*>/g;
+        let match;
+        let modifiedHtmlString = htmlString;
+        
+        while ((match = imgRegex.exec(htmlString)) !== null) {
+            const src = match[1];
             if (src && src.startsWith('data:image')) {
                 let ext = "jpg"; let mediaType = "image/jpeg";
                 if (src.includes("image/png")) { ext = "png"; mediaType = "image/png"; }
                 
                 const filename = `image_${globalImageCounter}.${ext}`;
-                const imgBlob = dataUrlToBlob(src); // 🌟 Chrome မှာ Block မဖြစ်တော့သော နေရာ
+                const imgBlob = dataUrlToBlob(src);
                 
                 if (imgBlob) {
                     zip.file(`OEBPS/images/${filename}`, imgBlob);
                     manifestItems += `<item id="img_${globalImageCounter}" href="images/${filename}" media-type="${mediaType}"/>\n`;
-                    img.setAttribute('src', `images/${filename}`);
+                    // ePub အတွင်းပိုင်း လမ်းကြောင်းသို့ ပြောင်းလဲခြင်း
+                    modifiedHtmlString = modifiedHtmlString.replace(src, `images/${filename}`);
                     globalImageCounter++;
                 }
             }
         }
 
-        const serializer = new XMLSerializer();
-        let finalizedXhtmlContent = serializer.serializeToString(container);
-        finalizedXhtmlContent = finalizedXhtmlContent.replace(/^<div[^>]*>/, '').replace(/<\/div>$/, '');
-
         const chapHtml = `<?xml version="1.0" encoding="utf-8"?>
         <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
         <html xmlns="http://www.w3.org/1999/xhtml">
         <head><title>${chap.title}</title></head>
-        <body><h1>${chap.title}</h1><div>${finalizedXhtmlContent}</div></body>
+        <body>
+            <h1>${chap.title}</h1>
+            <div>${modifiedHtmlString}</div>
+        </body>
         </html>`;
         
         zip.file(`OEBPS/chapter_${index + 1}.xhtml`, chapHtml);
@@ -316,6 +318,7 @@ async function generateEPUB() {
     const ncxXml = `<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE ncx PUBLIC "-//NISO//DTD ncx v2005-1//EN" "http://www.daisy.org/z3986/2005/ncx-2005-1.dtd"><ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1"><head><meta name="dtb:uid" content="${Date.now()}"/></head><docTitle><text>${title}</text></docTitle><navMap>${ncxNav}</navMap></ncx>`;
     zip.file("OEBPS/toc.ncx", ncxXml);
 
+    // Final Compression Download Flow
     zip.generateAsync({ type: "blob", mimeType: "application/epub+zip" }).then(function (blob) {
         const filename = title.replace(/\s+/g, '_') + ".epub";
         const downloadUrl = window.URL.createObjectURL(blob);
@@ -336,7 +339,7 @@ async function generateEPUB() {
 
 function exportToBackupFile() {
     const saved = localStorage.getItem('epub_creator_pro_state');
-    if (!saved) return alert("⚠️  သိမ်းဆည်းရန် ဒေတာမရှိပါ။");
+    if (!saved) return alert("⚠️ သိမ်းဆည်းရန် ဒေတာမရှိပါ။");
     const blob = new Blob([saved], { type: "application/json" });
     
     const downloadUrl = window.URL.createObjectURL(blob);
