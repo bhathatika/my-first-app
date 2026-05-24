@@ -1,107 +1,100 @@
-<!-- ========================================================================= -->
-<!-- 🌟 UI CUSTOMIZE BAR (NIGHT MODE & LANGUAGE) - အန္တရာယ်ကင်း သီးသန့်စနစ် -->
-<!-- ========================================================================= -->
-<div class="settings-bar" style="display: flex; justify-content: flex-end; gap: 10px; padding: 10px; background: inherit;">
-    <!-- ဘာသာစကား ရွေးချယ်ရန် Dropdown -->
-    <select id="lang-select" onchange="changeAppLanguage()" style="padding: 6px 12px; border-radius: 4px; border: 1px solid #ccc; cursor: pointer; font-family: sans-serif;">
-        <option value="my">မြန်မာဘာသာ</option>
-        <option value="en">English</option>
-    </select>
-    
-    <!-- Night Mode ဖွင့်/ပိတ် ခလုတ် -->
-    <button id="theme-toggle" onclick="toggleAppTheme()" style="padding: 6px 12px; border-radius: 4px; border: 1px solid #ccc; cursor: pointer; font-family: sans-serif; background-color: #f0f0f0; color: #333;">
-        🌙 Night Mode
-    </button>
-</div>
+<!DOCTYPE html>
+<html lang="my">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web ePub Creator Pro</title>
+    <!-- Tailwind CSS (အစ်ကို့ App ရဲ့ Style များ) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Framework -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- JSZip Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <!-- TinyMCE Rich Text Editor -->
+    <script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+    <style>
+        body { font-family: 'Pyidaungsu', sans-serif; background-color: #f3f4f6; }
+        .editor-container { background: white; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-900">
 
-<!-- 🌙 Night Mode အတွက် စတိုင်လ်အသစ် (မူလ UI Layout များ လုံးဝ မပျောက်စေရန် ပြင်ဆင်ပြီး) -->
-<style>
-body.dark-mode {
-    background-color: #121212 !important;
-    color: #e0e0e0 !important;
-}
+    <div class="max-w-5xl mx-auto p-4 md:p-6">
+        <!-- Header အပိုင်း -->
+        <header class="flex justify-between items-center mb-6 bg-slate-800 text-white p-4 rounded-xl shadow-md">
+            <h1 class="text-xl font-bold flex items-center gap-2">
+                <i class="fa-solid fa-book-open text-yellow-400"></i> Web ePub Creator Pro
+            </h1>
+        </header>
 
-/* စာသားရိုက်သည့်နေရာနှင့် Input များကိုသာ အရောင်ပြောင်းခြင်း */
-body.dark-mode input, 
-body.dark-mode textarea, 
-body.dark-mode select {
-    background-color: #2d2d2d !important;
-    color: #ffffff !important;
-    border: 1px solid #444444 !important;
-}
+        <!-- စာအုပ် BACKUP စီမံခန့်ခွဲမှု အပိုင်း -->
+        <section class="bg-white p-4 rounded-xl shadow-sm mb-6 border border-gray-200">
+            <h2 class="text-md font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                <i class="fa-solid fa-database text-blue-500"></i> စာအုပ် BACKUP စီမံခန့်ခွဲမှု
+            </h2>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <button onclick="exportToBackupFile()" class="bg-emerald-600 hover:bg-emerald-700 text-white p-2 rounded-lg flex items-center justify-center gap-2 transition-all font-medium">
+                    <i class="fa-solid fa-download"></i> လက်ရှိစာအုပ်ကို ဖိုင်အဖြစ်သိမ်းဆည်းမည် (Backup)
+                </button>
+                <button onclick="triggerBackupUpload()" class="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-lg flex items-center justify-center gap-2 transition-all font-medium">
+                    <i class="fa-solid fa-upload"></i> စာအုပ်ဖိုင်ကို ပြန်တင်မည် (Load Backup)
+                </button>
+                <input type="file" id="backup-file-input" onchange="importFromBackupFile(event)" accept=".json" class="hidden">
+                <button onclick="resetCurrentBookState()" class="bg-rose-600 hover:bg-rose-700 text-white p-2 rounded-lg flex items-center justify-center gap-2 transition-all font-medium">
+                    <i class="fa-solid fa-trash-can"></i> စာအုပ်အသစ်အတွက် အကုန်ပြန်စမည် (Reset)
+                </button>
+            </div>
+        </section>
 
-/* ခလုတ်များကိုသာ အရောင်ပြောင်းခြင်း */
-body.dark-mode button, 
-body.dark-mode .btn {
-    background-color: #333333 !important;
-    color: #ffffff !important;
-    border: 1px solid #555555 !important;
-}
+        <!-- စာအုပ် အချက်အလက်များ ထည့်သွင်းရန် အပိုင်း -->
+        <main class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="md:col-span-1 space-y-4">
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+                    <label class="block text-sm font-semibold text-gray-600 mb-1">စာအုပ်အမည် (Book Title)</label>
+                    <input type="text" id="book-title" placeholder="စာအုပ်အမည် ထည့်ပါ..." class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none mb-3">
 
-body.dark-mode #theme-toggle {
-    background-color: #444444 !important;
-    color: #ffffff !important;
-}
-</style>
+                    <label class="block text-sm font-semibold text-gray-600 mb-1">စာရေးဆရာ (Author)</label>
+                    <input type="text" id="author" placeholder="စာရေးဆရာအမည် ထည့်ပါ..." class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none mb-3">
 
-<!-- 🧠 Night Mode နှင့် Language အတွက် သီးသန့် JavaScript (app.js ကို လုံးဝမထိခိုက်စေပါ) -->
-<script>
-function toggleAppTheme() {
-    const body = document.body;
-    const btn = document.getElementById('theme-toggle');
-    body.classList.toggle('dark-mode');
-    
-    if (body.classList.contains('dark-mode')) {
-        btn.innerText = "☀️ Light Mode";
-        localStorage.setItem('app_theme', 'dark');
-    } else {
-        btn.innerText = "🌙 Night Mode";
-        localStorage.setItem('app_theme', 'light');
-    }
-}
+                    <label class="block text-sm font-semibold text-gray-600 mb-1">မျက်နှာဖုံးပုံ (Cover Image)</label>
+                    <input type="file" id="cover-image-input" onchange="handleCoverImage(event)" accept="image/*" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer">
+                    <div id="cover-status" class="text-xs text-emerald-600 mt-1 font-medium hidden">✓ Cover Loaded</div>
+                </div>
 
-function changeAppLanguage() {
-    const lang = document.getElementById('lang-select').value;
-    localStorage.setItem('app_lang', lang);
-    
-    const bookTitleInput = document.getElementById('book-title');
-    const authorInput = document.getElementById('author');
-    const allButtons = document.querySelectorAll('button');
-    
-    if (lang === 'en') {
-        if (bookTitleInput) bookTitleInput.placeholder = "Book Title";
-        if (authorInput) authorInput.placeholder = "Author Name";
-        
-        allButtons.forEach(btn => {
-            if (btn.innerText.includes("အခန်းတိုးမည်")) btn.innerText = "+ Add Chapter";
-            if (btn.innerText.includes("ePub ဖိုင် ထုတ်ယူမည်") || btn.innerText.includes("ePub ဖိုင်ထုတ်မည်")) btn.innerText = "📩 Export ePub";
-            if (btn.innerText.includes("Backup")) btn.innerText = "💾 Save Backup";
-        });
-    } else {
-        if (bookTitleInput) bookTitleInput.placeholder = "စာအုပ်အမည် (Book Title)";
-        if (authorInput) authorInput.placeholder = "စာရေးဆရာ (Author)";
-        
-        allButtons.forEach(btn => {
-            if (btn.innerText.includes("Add Chapter")) btn.innerText = "+ အခန်းတိုးမည်";
-            if (btn.innerText.includes("Export ePub")) btn.innerText = "📩 ePub ဖိုင် ထုတ်ယူမည်";
-            if (btn.innerText.includes("Save Backup")) btn.innerText = "💾 Backup ဖိုင်သိမ်းမည်";
-        });
-    }
-}
+                <!-- အခန်းများ စာရင်း -->
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="font-bold text-gray-700">အခန်းများ (Chapters)</h3>
+                        <button onclick="createNewChapter()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1.5 rounded-lg flex items-center gap-1 transition-all">
+                            <i class="fa-solid fa-plus"></i> အခန်းတိုးမည်
+                        </button>
+                    </div>
+                    <ul id="chapter-list" class="space-y-2 max-h-64 overflow-y-auto pr-1">
+                        <!-- အခန်းစာရင်းများ ဤနေရာတွင် ပေါ်လာမည် -->
+                    </ul>
+                </div>
+            </div>
 
-window.addEventListener('load', () => {
-    if (localStorage.getItem('app_theme') === 'dark') {
-        document.body.classList.add('dark-mode');
-        const btn = document.getElementById('theme-toggle');
-        if (btn) btn.innerText = "☀️ Light Mode";
-    }
-    
-    const savedLang = localStorage.getItem('app_lang');
-    const langSelect = document.getElementById('lang-select');
-    if (savedLang && langSelect) {
-        langSelect.value = savedLang;
-        changeAppLanguage();
-    }
-});
-</script>
-<!-- ========================================================================= -->
+            <!-- စာသားတည်းဖြတ်သည့် Editor အပိုင်း -->
+            <div class="md:col-span-2 space-y-4">
+                <div class="editor-container p-4 border border-gray-200">
+                    <div class="mb-3">
+                        <label class="block text-sm font-semibold text-gray-600 mb-1">အခန်းခေါင်းစဉ် (Chapter Title)</label>
+                        <input type="text" id="current-chapter-title" oninput="updateChapterTitleLive()" placeholder="အခန်းခေါင်းစဉ် ထည့်ပါ..." class="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <label class="block text-sm font-semibold text-gray-600 mb-1">အခန်းပါဝင်အကြောင်းအရာ (Chapter Content)</label>
+                    <textarea id="editor"></textarea>
+                </div>
+
+                <!-- Final Export ခလုတ်ကြီး -->
+                <button onclick="generateEPUB()" class="w-full bg-amber-500 hover:bg-amber-600 text-white p-3 rounded-xl shadow-md flex items-center justify-center gap-2 font-bold text-lg transition-all transform active:scale-95">
+                    <i class="fa-solid fa-file-arrow-down text-xl"></i> ePub ဖိုင် ထုတ်ယူမည်
+                </button>
+            </div>
+        </main>
+    </div>
+
+    <!-- အဓိက လုပ်ဆောင်ချက်များ ပါဝင်သော ပြင်ဆင်ပြီးသား app.js ကို ချိတ်ဆက်ခြင်း -->
+    <script src="app.js"></script>
+</body>
+</html>
