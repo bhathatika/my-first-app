@@ -23,8 +23,8 @@
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen pb-12">
 
-    <!-- Hidden Input For Native Mobile Image Picker -->
-    <input type="file" id="hidden-editor-image-picker" accept="image/*" class="hidden" onchange="handleInlineImageUpload(event)">
+    <!-- 📱 Hidden Input Fixed For Multiple Image Picker -->
+    <input type="file" id="hidden-editor-image-picker" accept="image/*" multiple class="hidden" onchange="handleInlineImageUpload(event)">
 
     <!-- 🌐 Main Container -->
     <div class="max-w-xl mx-auto px-4 pt-6">
@@ -44,7 +44,7 @@
             </h2>
             <div class="grid grid-cols-1 gap-2.5">
                 <button onclick="exportToBackupFile()" class="w-full bg-slate-700 hover:bg-slate-600 text-slate-200 py-3 px-4 rounded-lg flex items-center justify-center gap-2 font-medium transition active:scale-95 border border-slate-600">
-                    <i class="fa-solid fa-file-export text-emerald-400"></i>  လက်ရှိစာအုပ်ကို ဖိုင်သိမ်းဆည်းမည် (Backup)
+                    <i class="fa-solid fa-file-export text-emerald-400"></i> လက်ရှိစာအုပ်ကို ဖိုင်သိမ်းဆည်းမည် (Backup)
                 </button>
                 
                 <label class="w-full bg-slate-700 hover:bg-slate-600 text-slate-200 py-3 px-4 rounded-lg flex items-center justify-center gap-2 font-medium transition active:scale-95 border border-slate-600 cursor-pointer text-center">
@@ -138,7 +138,7 @@
             });
         }
 
-        // 🔥 TINYMCE INITIALIZATION WITH DIRECT NATIVE PICKER FIXED FOR SAFARI/IPHONE
+        // TinyMCE Init
         tinymce.init({
             selector: '#editor',
             height: 350,
@@ -149,12 +149,10 @@
             toolbar: 'bold italic underline | numlist bullist | custom_image link | removeformat',
             
             setup: function(editor) {
-                // 📱 iPhone/Safari တိုက်ရိုက်အလုပ်လုပ်မည့် Custom Image Button ကို ဖန်တီးခြင်း
                 editor.ui.registry.addButton('custom_image', {
                     icon: 'image',
-                    tooltip: 'Insert Image From Gallery',
+                    tooltip: 'Insert Images From Gallery',
                     onAction: function () {
-                        // ဖုန်းထဲက ပြခန်းကို တိုက်ရိုက်လှမ်းဖွင့်ခိုင်းခြင်း
                         document.getElementById('hidden-editor-image-picker').click();
                     }
                 });
@@ -168,24 +166,28 @@
             }
         });
 
-        // ဖုန်းပြခန်းထဲက ပုံကိုရွေးပြီးတာနဲ့ Editor ထဲ တန်းထည့်ပေးမည့် စနစ်
+        // 🖼️ ဓာတ်ပုံအများကြီးကို တပြိုင်နက် ဖတ်ပြီး Editor ထဲ စီထည့်ပေးမည့် စနစ်သစ်
         function handleInlineImageUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
+            const files = event.target.files;
+            if (!files || files.length === 0) return;
 
-            const reader = new FileReader();
-            reader.onload = function (e) {
-                const base64Data = e.target.result;
-                
-                if (tinymce.activeEditor) {
-                    // Editor ထဲကို မူရင်း Base64 ပုံစံအတိုင်း ပုံရိပ်တိုက်ရိုက်ထည့်ပေးခြင်း
-                    tinymce.activeEditor.insertContent(`<img src="${base64Data}" alt="${file.name}" style="max-w-full; height:auto; display:block; margin:10px auto;"/>`);
-                    tinymce.activeEditor.fire('change');
-                }
-                // ရွေးချယ်ပြီးသား Input ဖိုင်ကို ဖျက်ပြီး နောက်တစ်ကြိမ်ထပ်ရွေးလို့ရအောင် လုပ်ခြင်း
-                document.getElementById('hidden-editor-image-picker').value = "";
-            };
-            reader.readAsDataURL(file);
+            // ရွေးချယ်လိုက်သော ဖိုင်အားလုံးကို Loop ပတ်ပြီး တစ်ပုံချင်း ဖတ်ခိုင်းခြင်း
+            Array.from(files).forEach(file => {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    const base64Data = e.target.result;
+                    
+                    if (tinymce.activeEditor) {
+                        // ပုံတွေကို အောက်ကနေ ဆင့်ကာဆင့်ကာ တန်းစီဝင်သွားအောင် ထည့်ပေးခြင်း
+                        tinymce.activeEditor.insertContent(`<img src="${base64Data}" alt="${file.name}" style="max-w-full; height:auto; display:block; margin:12px auto;"/>`);
+                        tinymce.activeEditor.fire('change');
+                    }
+                };
+                reader.readAsDataURL(file);
+            });
+
+            // နောက်တစ်ကြိမ် ပြန်ရွေးလို့ရအောင် Reset လုပ်ခြင်း
+            document.getElementById('hidden-editor-image-picker').value = "";
         }
 
         // App Initial Load
@@ -366,7 +368,7 @@
                 getRequest.onsuccess = function() {
                     const state = getRequest.result;
                     if (!state) {
-                        alert("⚠️  သိမ်းဆည်းထားသည့် ဒေတာမရှိသေးပါ။");
+                        alert("⚠️ သိမ်းဆည်းထားသည့် ဒေတာမရှိသေးပါ။");
                         return;
                     }
 
@@ -479,7 +481,6 @@
                 const doc = parser.parseFromString(`<div>${htmlString}</div>`, 'text/html');
                 const container = doc.body.firstChild;
 
-                // <br> Tags Fix
                 const brs = container.querySelectorAll('br');
                 brs.forEach(br => {
                     const pBr = doc.createElement('p');
@@ -487,7 +488,6 @@
                     br.replaceWith(pBr);
                 });
 
-                // Images inside Chapter Handler
                 const imgs = container.querySelectorAll('img');
                 for (let img of imgs) {
                     const src = img.getAttribute('src');
@@ -540,7 +540,6 @@
                 spineItems += `<itemref idref="chap_${index + 1}"/>\n`;
             }
 
-            // Cover Image Embedded
             if (coverBase64) {
                 let coverExt = "jpg";
                 let coverMime = "image/jpeg";
