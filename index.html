@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Web ePub Creator Pro</title>
-    <!-- Tailwind CSS (အစ်ကို့ App ရဲ့ Style များ) -->
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome Framework -->
+    <!-- FontAwesome Font Icon -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- JSZip Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -20,7 +20,7 @@
 <body class="bg-gray-100 text-gray-900">
 
     <div class="max-w-5xl mx-auto p-4 md:p-6">
-        <!-- Header အပိုင်း -->
+        <!-- Header Title Bar -->
         <header class="flex justify-between items-center mb-6 bg-slate-800 text-white p-4 rounded-xl shadow-md">
             <h1 class="text-xl font-bold flex items-center gap-2">
                 <i class="fa-solid fa-book-open text-yellow-400"></i> Web ePub Creator Pro
@@ -33,10 +33,11 @@
                 <i class="fa-solid fa-database text-blue-500"></i> စာအုပ် BACKUP စီမံခန့်ခွဲမှု
             </h2>
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <!-- ⚠️ Function နာမည်များအား အစ်ကို့ app.js ပါအတိုင်း တိကျစွာ ပြန်ပြင်ထားပါသည် -->
                 <button onclick="exportToBackupFile()" class="bg-emerald-600 hover:bg-emerald-700 text-white p-2 rounded-lg flex items-center justify-center gap-2 transition-all font-medium">
                     <i class="fa-solid fa-download"></i> လက်ရှိစာအုပ်ကို ဖိုင်အဖြစ်သိမ်းဆည်းမည် (Backup)
                 </button>
-                <button onclick="triggerBackupUpload()" class="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-lg flex items-center justify-center gap-2 transition-all font-medium">
+                <button onclick="document.getElementById('backup-file-input').click()" class="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-lg flex items-center justify-center gap-2 transition-all font-medium">
                     <i class="fa-solid fa-upload"></i> စာအုပ်ဖိုင်ကို ပြန်တင်မည် (Load Backup)
                 </button>
                 <input type="file" id="backup-file-input" onchange="importFromBackupFile(event)" accept=".json" class="hidden">
@@ -46,8 +47,9 @@
             </div>
         </section>
 
-        <!-- စာအုပ် အချက်အလက်များ ထည့်သွင်းရန် အပိုင်း -->
+        <!-- Main Content Area -->
         <main class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Left Sidebar -->
             <div class="md:col-span-1 space-y-4">
                 <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
                     <label class="block text-sm font-semibold text-gray-600 mb-1">စာအုပ်အမည် (Book Title)</label>
@@ -65,28 +67,30 @@
                 <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
                     <div class="flex justify-between items-center mb-3">
                         <h3 class="font-bold text-gray-700">အခန်းများ (Chapters)</h3>
-                        <button onclick="createNewChapter()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1.5 rounded-lg flex items-center gap-1 transition-all">
-                            <i class="fa-solid fa-plus"></i> အခန်းတိုးမည်
+                        <!-- ⚠️ Function နာမည်ကို အစ်ကို့ မူလအတိုင်း ပြန်ပြောင်းထားသည် -->
+                        <button onclick="addChapter()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1.5 rounded-lg flex items-center gap-1 transition-all">
+                            <i class="fa-solid fa-plus"></i> + အခန်းတိုးမည်
                         </button>
                     </div>
                     <ul id="chapter-list" class="space-y-2 max-h-64 overflow-y-auto pr-1">
-                        <!-- အခန်းစာရင်းများ ဤနေရာတွင် ပေါ်လာမည် -->
+                        <!-- Dynamic Chapters List -->
                     </ul>
                 </div>
             </div>
 
-            <!-- စာသားတည်းဖြတ်သည့် Editor အပိုင်း -->
+            <!-- Right Editor Area -->
             <div class="md:col-span-2 space-y-4">
                 <div class="editor-container p-4 border border-gray-200">
                     <div class="mb-3">
                         <label class="block text-sm font-semibold text-gray-600 mb-1">အခန်းခေါင်းစဉ် (Chapter Title)</label>
+                        <!-- ⚠️ Live update function ပြန်ထည့်ထားသည် -->
                         <input type="text" id="current-chapter-title" oninput="updateChapterTitleLive()" placeholder="အခန်းခေါင်းစဉ် ထည့်ပါ..." class="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
                     <label class="block text-sm font-semibold text-gray-600 mb-1">အခန်းပါဝင်အကြောင်းအရာ (Chapter Content)</label>
                     <textarea id="editor"></textarea>
                 </div>
 
-                <!-- Final Export ခလုတ်ကြီး -->
+                <!-- Final Export Button -->
                 <button onclick="generateEPUB()" class="w-full bg-amber-500 hover:bg-amber-600 text-white p-3 rounded-xl shadow-md flex items-center justify-center gap-2 font-bold text-lg transition-all transform active:scale-95">
                     <i class="fa-solid fa-file-arrow-down text-xl"></i> ePub ဖိုင် ထုတ်ယူမည်
                 </button>
@@ -94,7 +98,7 @@
         </main>
     </div>
 
-    <!-- အဓိက လုပ်ဆောင်ချက်များ ပါဝင်သော ပြင်ဆင်ပြီးသား app.js ကို ချိတ်ဆက်ခြင်း -->
+    <!-- အစ်ကို့ရဲ့ အလုပ်လုပ်နေတဲ့ app.js ကို ပြန်ချိတ်ဆက်ခြင်း -->
     <script src="app.js"></script>
 </body>
 </html>
