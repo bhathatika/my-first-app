@@ -2,22 +2,51 @@ let bookChapters = [];
 let currentChapterId = null;
 let coverBase64 = "";
 
-// Text Format Function များ
+// Text Format Commands
 function execCmd(command) {
     document.execCommand(command, false, null);
     saveCurrentChapterContentLive();
 }
 
-// Editor ထဲသို့ ဓာတ်ပုံ ထည့်သွင်းခြင်း
+// 🌟 iOS/Safari တွင် စာသားများမပျက်ဘဲ ဓာတ်ပုံများ တစ်ပုံပြီးတစ်ပုံ စိတ်ကြိုက်ထည့်နိုင်သည့် စနစ်သစ်
 function insertImageToEditor(event) {
     const file = event.target.files[0];
     if (file) {
         const reader = new FileReader();
         reader.onload = function(e) {
-            const imgHtml = `<img src="${e.target.result}" alt="inserted_image" />`;
-            document.getElementById('editor').focus();
-            document.execCommand('insertHTML', false, imgHtml);
+            const editor = document.getElementById('editor');
+            editor.focus();
+            
+            // လက်ရှိ ကာဆာ (Cursor) ရှိနေတဲ့နေရာကို ထောက်လှမ်းခြင်း
+            const selection = window.getSelection();
+            if (selection.rangeCount > 0) {
+                const range = selection.getRangeAt(0);
+                
+                // ကာဆာက Editor အကွက်ထဲမှာ ရှိနေမှသာ ပုံထည့်ရန်
+                if (editor.contains(range.commonAncestorContainer)) {
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    img.alt = "inserted_image";
+                    
+                    range.deleteContents();
+                    range.insertNode(img);
+                    
+                    // ပုံထည့်ပြီးရင် ကာဆာကို ပုံရဲ့အောက်သို့ ရွှေ့ပေးခြင်း
+                    range.setStartAfter(img);
+                    range.setEndAfter(img);
+                    selection.removeAllRanges();
+                    selection.addRange(range);
+                    
+                    saveCurrentChapterContentLive();
+                    event.target.value = ""; // Reset Input File
+                    return;
+                }
+            }
+            
+            // တကယ်လို့ ကာဆာက Editor ထဲမှာ မရှိနေရင် အောက်ဆုံးမှာ ပုံသွားထည့်ပေးခြင်း
+            editor.innerHTML += `<div><img src="${e.target.result}" alt="inserted_image"/></div>`;
             saveCurrentChapterContentLive();
+            event.target.value = ""; 
         };
         reader.readAsDataURL(file);
     }
@@ -164,11 +193,16 @@ function base64ToBlob(base64Str) {
     return new Blob([ab], { type: mimeString });
 }
 
-// 🚀 ePub ထုတ်ယူ၍ တိုက်ရိုက်ဒေါင်းလုဒ်ဆွဲသည့် အဓိက Function
+// 🚀 ePub ထုတ်ယူ၍ ဒေါင်းလုဒ်ဆွဲသည့် အဓိက စနစ် (ID Error များကို ရှင်းလင်းထားသည်)
 async function generateEPUB() {
     saveCurrentBookState();
-    const title = document.getElementById('book-title').value || "Untitled_Book";
-    const author = document.getElementById('author').value || "Unknown_Author";
+    
+    // ID ကွက်တိဖြစ်အောင် ပြင်ဆင်ထားသည်
+    const titleEl = document.getElementById('book-title');
+    const authorEl = document.getElementById('author');
+    
+    const title = (titleEl && titleEl.value) ? titleEl.value : "Untitled_Book";
+    const author = (authorEl && authorEl.value) ? authorEl.value : "Unknown_Author";
     
     if(bookChapters.length === 0) {
         alert("⚠️ သတိပေးချက်: အခန်းမရှိသေးပါ။");
@@ -257,19 +291,18 @@ async function generateEPUB() {
     const ncxXml = `<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE ncx PUBLIC "-//NISO//DTD ncx v2005-1//EN" "http://www.daisy.org/z3986/2005/ncx-2005-1.dtd"><ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1"><head><meta name="dtb:uid" content="${Date.now()}"/></head><docTitle><text>${title}</text></docTitle><navMap>${ncxNav}</navMap></ncx>`;
     zip.file("OEBPS/toc.ncx", ncxXml);
 
-    // iOS/Safari Direct Force Download
+    // iOS/Android ရာနှုန်းပြည့် Force ဒေါင်းလုဒ်ဆွဲချသည့်စနစ်
     zip.generateAsync({ type: "blob", mimeType: "application/epub+zip" }).then(function (blob) {
         const filename = title.replace(/\s+/g, '_') + ".epub";
-        const reader = new FileReader();
-        reader.onloadend = function() {
-            const a = document.createElement('a');
-            a.href = reader.result;
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
-            setTimeout(() => document.body.removeChild(a), 500);
-        };
-        reader.readAsDataURL(blob);
+        const a = document.createElement('a');
+        a.href = window.URL.createObjectURL(blob);
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => {
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(a.href);
+        }, 500);
     });
 }
 
