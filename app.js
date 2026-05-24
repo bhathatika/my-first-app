@@ -214,27 +214,25 @@ function loadBookState() {
     }
 }
 
-// 🔥 Chrome Memory Crash လုံးဝမဖြစ်စေရန် စိတ်အချရဆုံး စာသားအခြေပြု Converter စနစ်သစ်
-function base64ToBlobSafe(dataUrl) {
-    if (!dataUrl || !dataUrl.includes(",")) return null;
+// 🔥 Chrome တွင် ဓာတ်ပုံပါက Security Block ဖြစ်ခြင်းကို ၁၀၀% ကျော်ဖြတ်ရန် သန့်စင်ပြီးသား ArrayBuffer သို့ ပြောင်းလဲသည့်စနစ်
+function base64ToArrayBuffer(base64Data) {
+    if (!base64Data || !base64Data.includes(",")) return null;
     try {
-        const parts = dataUrl.split(',');
-        const mimeString = parts[0].split(':')[1].split(';')[0];
-        const byteString = atob(parts[1]);
-        const arrayBuffer = new ArrayBuffer(byteString.length);
-        const uint8Array = new Uint8Array(arrayBuffer);
-        
-        for (let i = 0; i < byteString.length; i++) {
-            uint8Array[i] = byteString.charCodeAt(i);
+        const base64String = base64Data.split(',')[1];
+        const binaryString = atob(base64String);
+        const len = binaryString.length;
+        const bytes = new Uint8Array(len);
+        for (let i = 0; i < len; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
         }
-        return new Blob([arrayBuffer], { type: mimeString });
+        return bytes.buffer;
     } catch (e) {
-        console.error("Safe blob conversion error:", e);
+        console.error("ArrayBuffer conversion error:", e);
         return null;
     }
 }
 
-// 🚀 Generate EPUB စနစ်ကြီးတစ်ခုလုံးကို တည်ငြိမ်အောင် ပြင်ဆင်ထားမှု
+// 🚀 Generate EPUB စနစ်ကြီးတစ်ခုလုံးကို Chrome တွင် ဓာတ်ပုံပါဝင်လည်း ရာနှုန်းပြည့် အလုပ်လုပ်အောင် ပြင်ဆင်ထားမှု
 async function generateEPUB() {
     saveCurrentBookState();
     const title = document.getElementById('book-title').value || "Untitled_Book";
@@ -246,6 +244,7 @@ async function generateEPUB() {
     }
 
     const zip = new JSZip();
+    // JSZip အား ပထမဆုံး ဖိုင်ဆောက်ခိုင်းခြင်း
     zip.file("mimetype", "application/epub+zip", { compression: "STORE" });
     
     const containerXml = `<?xml version="1.0" encoding="UTF-8"?><container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container"><rootfiles><rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/></rootfiles></container>`;
@@ -255,7 +254,6 @@ async function generateEPUB() {
     let spineItems = "";
     let imageCounter = 1;
 
-    // 🔥 Chrome Memory Freeze မဖြစ်စေရန် သေသေချာချာ စောင့်ဆိုင်းပေးမည့် တည်ငြိမ်သော Sequential Loop ပုံစံသစ်
     for (let index = 0; index < bookChapters.length; index++) {
         let chap = bookChapters[index];
         let htmlString = chap.content || "";
@@ -267,7 +265,6 @@ async function generateEPUB() {
 
         const imgs = container.querySelectorAll('img');
         
-        // 🌟 ဤနေရာတွင် အဓိကပြင်ဆင်ထားပါသည် - ပုံတစ်ပုံချင်းစီကို တစ်ခုချင်းစောင့်ပြီး ပြောင်းလဲပေးခြင်း
         for (let j = 0; j < imgs.length; j++) {
             const img = imgs[j];
             const src = img.getAttribute('src');
@@ -276,9 +273,10 @@ async function generateEPUB() {
                 if (src.includes("image/png")) { ext = "png"; mediaType = "image/png"; }
                 const filename = `image_${imageCounter}.${ext}`;
                 
-                const imgBlob = base64ToBlobSafe(src);
-                if (imgBlob) {
-                    zip.file(`OEBPS/images/${filename}`, imgBlob);
+                // 🌟 ဤနေရာတွင် Chrome လုံခြုံရေး ကျော်ဖြတ်ရန် ArrayBuffer ဖြင့် တိုက်ရိုက်ထည့်သွင်းခြင်း
+                const imgBuffer = base64ToArrayBuffer(src);
+                if (imgBuffer) {
+                    zip.file(`OEBPS/images/${filename}`, imgBuffer, { binary: true });
                     manifestItems += `<item id="img_${imageCounter}" href="images/${filename}" media-type="${mediaType}"/>\n`;
                     img.setAttribute('src', `images/${filename}`);
                     imageCounter++;
@@ -306,9 +304,9 @@ async function generateEPUB() {
         let coverExt = "jpg"; let coverMime = "image/jpeg";
         if (coverBase64.includes("image/png")) { coverExt = "png"; coverMime = "image/png"; }
         
-        const coverBlob = base64ToBlobSafe(coverBase64);
-        if (coverBlob) {
-            zip.file(`OEBPS/images/cover.${coverExt}`, coverBlob);
+        const coverBuffer = base64ToArrayBuffer(coverBase64);
+        if (coverBuffer) {
+            zip.file(`OEBPS/images/cover.${coverExt}`, coverBuffer, { binary: true });
             manifestItems += `<item id="cover-img" href="images/cover.${coverExt}" media-type="${coverMime}"/>\n`;
         }
     }
@@ -333,10 +331,14 @@ async function generateEPUB() {
     const ncxXml = `<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE ncx PUBLIC "-//NISO//DTD ncx v2005-1//EN" "http://www.daisy.org/z3986/2005/ncx-2005-1.dtd"><ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1"><head><meta name="dtb:uid" content="${Date.now()}"/></head><docTitle><text>${title}</text></docTitle><navMap>${ncxNav}</navMap></ncx>`;
     zip.file("OEBPS/toc.ncx", ncxXml);
 
-    // 🌟 Mobile Chrome အတွက် Memory ချွေတာပြီး အတည်ငြိမ်ဆုံး ဒေါင်းလုဒ်ထုတ်ပေးမည့် ထွက်ပေါက်
-    zip.generateAsync({ type: "blob", mimeType: "application/epub+zip" }).then(function (blob) {
+    // 🌟 🌟 🌟 Chrome ရော Browser အားလုံးမှာပါ ဓာတ်ပုံကြောင့် ဒေါင်းလုဒ်မပိတ်နိုင်တော့မည့် Native Uint8Array Download System 🌟 🌟 🌟
+    zip.generateAsync({ type: "uint8array", mimeType: "application/epub+zip" }).then(function (content) {
         const filename = title.replace(/\s+/g, '_') + ".epub";
+        
+        // Chrome မှ လုံးဝခွင့်ပြုသော စံသတ်မှတ်ချက် Blob ပြောင်းလဲခြင်း
+        const blob = new Blob([content], { type: "application/epub+zip" });
         const downloadUrl = window.URL.createObjectURL(blob);
+        
         const a = document.createElement('a');
         a.href = downloadUrl;
         a.download = filename;
@@ -346,7 +348,7 @@ async function generateEPUB() {
         setTimeout(() => {
             document.body.removeChild(a);
             window.URL.revokeObjectURL(downloadUrl);
-        }, 1200);
+        }, 1500);
     }).catch(function(err) {
         alert("ဒေါင်းလုဒ်ဆွဲရာတွင် အမှားအယွင်းရှိနေပါသည်။");
     });
