@@ -1,115 +1,11 @@
 // ==========================================
-// 🌟 INDEXEDDB STORAGE SYSTEM (ဓာတ်ပုံအမြောက်အမြား သိမ်းဆည်းရန် စနစ်သစ်)
-// ==========================================
-const dbName = "WebEPubCreatorProDB";
-const storeName = "BookBackupStore";
-
-function openDatabase() {
-    return new Promise((resolve, reject) => {
-        const request = indexedDB.open(dbName, 1);
-        request.onupgradeneeded = function(e) {
-            const db = e.target.result;
-            if (!db.objectStoreNames.contains(storeName)) {
-                db.createObjectStore(storeName);
-            }
-        };
-        request.onsuccess = function(e) { resolve(e.target.result); };
-        request.onerror = function(e) { reject(e.target.error); };
-    });
-}
-
-// ==========================================
-// ၁။ SAVE BOOK STATE FUNCTION (ဓာတ်ပုံကြီးများပါ စိတ်ကြိုက် သိမ်းဆည်းနိုင်ပြီ)
-// ==========================================
-async function saveCurrentBookState() {
-    const editorContent = tinymce.activeEditor ? tinymce.activeEditor.getContent() : "";
-    
-    if (currentChapterIndex === null || currentChapterIndex === undefined) {
-        if (bookChapters && bookChapters.length > 0) {
-            currentChapterIndex = 0;
-        }
-    }
-
-    if (currentChapterIndex !== null && bookChapters[currentChapterIndex]) {
-        bookChapters[currentChapterIndex].content = editorContent;
-    }
-    
-    const bookTitle = document.getElementById('book-title').value;
-    const bookAuthor = document.getElementById('author').value;
-
-    try {
-        const db = await openDatabase();
-        const tx = db.transaction(storeName, "readwrite");
-        const store = tx.objectStore(storeName);
-
-        // ဒေတာအားလုံးကို IndexedDB ထဲသို့ Unlimited အနေဖြင့် စိတ်ချရစွာ သိမ်းဆည်းခြင်း
-        store.put(bookTitle, 'saved_book_title');
-        store.put(bookAuthor, 'saved_book_author');
-        store.put(bookChapters, 'saved_book_chapters');
-        if (coverBase64) {
-            store.put(coverBase64, 'saved_book_cover');
-        }
-
-        console.log("💾 Book details and all heavy images saved safely to IndexedDB!");
-    } catch (error) {
-        console.error("IndexedDB Backup Error: ", error);
-    }
-}
-
-// ==========================================
-// ၂။ LOAD BACKUP FUNCTION (အစ်ကို့အတွက် Backup ပြန်ခေါ်တဲ့ စနစ်သစ်)
-// ==========================================
-async function loadSavedBookState() {
-    try {
-        const db = await openDatabase();
-        const tx = db.transaction(storeName, "readonly");
-        const store = tx.objectStore(storeName);
-
-        const titleReq = store.get('saved_book_title');
-        const authorReq = store.get('saved_book_author');
-        const chaptersReq = store.get('saved_book_chapters');
-        const coverReq = store.get('saved_book_cover');
-
-        tx.oncomplete = function() {
-            if (titleReq.result) document.getElementById('book-title').value = titleReq.result;
-            if (authorReq.result) document.getElementById('author').value = authorReq.result;
-            
-            if (chaptersReq.result) {
-                bookChapters = chaptersReq.result;
-                updateChapterList(); // အခန်းစာရင်းကို ပြန် Update လုပ်ရန်
-                
-                // ပထမဆုံး အခန်းရှိလျှင် Editor ထဲသို့ ပြန်ပြပေးရန်
-                if (bookChapters.length > 0) {
-                    currentChapterIndex = 0;
-                    if (tinymce.activeEditor) {
-                        tinymce.activeEditor.setContent(bookChapters[0].content || "");
-                    }
-                }
-            }
-            
-            if (coverReq.result) {
-                coverBase64 = coverReq.result;
-                const preview = document.getElementById('cover-preview');
-                if (preview) {
-                    preview.src = coverBase64;
-                    preview.style.display = 'block';
-                }
-                const status = document.getElementById('cover-status');
-                if (status) status.innerText = "Cover Loaded ✓";
-            }
-            alert("✅ စာအုပ်နှင့် ဓာတ်ပုံများအားလုံးကို Backup မှ အောင်မြင်စွာ ပြန်လည်ခေါ်ယူပြီးပါပြီ အစ်ကို!");
-        };
-    } catch (error) {
-        alert("Backup ပြန်ခေါ်ရာတွင် အမှားအယွင်းရှိပါသည်။");
-    }
-}
-
-// ==========================================
-// ၃။ GENERATE EPUB FUNCTION (ဓာတ်ပုံရာချီပါစေ ချွတ်ယွင်းချက်မရှိ ထုတ်ပေးမည့်စနစ်)
+// 🌟 GENERATE EPUB FUNCTION (ဓာတ်ပုံများ စိတ်ကြိုက်ထည့်နိုင်/ဖျက်နိုင်သော စနစ်သစ်)
 // ==========================================
 async function generateEPUB() {
-    // ဓာတ်ပုံအကြီးကြီးတွေပါ စိတ်ချလက်ချ အရင်သိမ်းမည်
-    await saveCurrentBookState(); 
+    // ဒေတာများကို ပထမဦးစွာ IndexedDB ထဲသို့ Backup အရင်လုပ်မည်
+    if (typeof saveCurrentBookState === 'function') {
+        await saveCurrentBookState(); 
+    }
     
     const title = document.getElementById('book-title').value || "Untitled Book";
     const author = document.getElementById('author').value || "Unknown Author";
@@ -139,7 +35,7 @@ async function generateEPUB() {
     let spineItems = "";
     let imageCounter = 1;
 
-    // တည်းဖြတ်ဆဲ အခန်းဒေတာကို Editor ထဲမှ တိုက်ရိုက် ရယူခြင်း
+    // လက်ရှိ ရိုက်လက်စ အခန်းဒေတာကို Editor ထဲမှ ရယူခြင်း
     const actualChapters = JSON.parse(JSON.stringify(bookChapters));
     if (actualChapters[currentChapterIndex] && tinymce.activeEditor) {
         actualChapters[currentChapterIndex].content = tinymce.activeEditor.getContent();
@@ -160,7 +56,7 @@ async function generateEPUB() {
             br.replaceWith(pBr);
         });
 
-        // ဓာတ်ပုံများကို ePub ထဲသို့ ပေါင်းထည့်ခြင်း
+        // ဓာတ်ပုံများကို စစ်ဆေးပြီး ePub ထဲသို့ ထည့်သွင်းခြင်း
         const imgs = container.querySelectorAll('img');
         imgs.forEach(img => {
             const src = img.getAttribute('src');
@@ -171,13 +67,19 @@ async function generateEPUB() {
                 else if (src.includes("image/gif")) { ext = "gif"; mediaType = "image/gif"; }
 
                 const filename = `image_${imageCounter}.${ext}`;
-                const imgBlob = base64ToBlob(src);
+                const imgBlob = base64ToBlob(src); // ဓာတ်ပုံကို Blob အဖြစ် ပြောင်းလဲခြင်း
                 
-                zip.file(`OEBPS/images/${filename}`, imgBlob);
-                manifestItems += `<item id="img_${imageCounter}" href="images/${filename}" media-type="${mediaType}"/>\n`;
-                img.setAttribute('src', `images/${filename}`);
-                if (!img.getAttribute('alt')) img.setAttribute('alt', `photo_${imageCounter}`);
-                imageCounter++;
+                // 💡 ဓာတ်ပုံဒေတာ အမှန်အကန် ရှိမှသာ ဖိုင်ထဲသို့ ထည့်သွင်းရန် စစ်ဆေးချက်
+                if (imgBlob) {
+                    zip.file(`OEBPS/images/${filename}`, imgBlob);
+                    manifestItems += `<item id="img_${imageCounter}" href="images/${filename}" media-type="${mediaType}"/>\n`;
+                    img.setAttribute('src', `images/${filename}`);
+                    if (!img.getAttribute('alt')) img.setAttribute('alt', `photo_${imageCounter}`);
+                    imageCounter++;
+                } else {
+                    // ပျက်စီးနေသော သို့မဟုတ် ပျောက်ဆုံးနေသော ပုံများကို ကျော်သွားပြီး မူရင်း img tag ကို ဖယ်ရှားမည်
+                    img.remove();
+                }
             }
         });
 
@@ -208,13 +110,17 @@ async function generateEPUB() {
         spineItems += `<itemref idref="chap_${index + 1}"/>\n`;
     });
 
-    if (coverBase64) {
+    // မျက်နှာဖုံးပုံ (Cover Image) ထည့်သွင်းခြင်း
+    if (typeof coverBase64 !== 'undefined' && coverBase64) {
         let coverExt = "jpg";
         let coverMime = "image/jpeg";
         if (coverBase64.includes("image/png")) { coverExt = "png"; coverMime = "image/png"; }
+        
         const coverBlob = base64ToBlob(coverBase64);
-        zip.file(`OEBPS/images/cover.${coverExt}`, coverBlob);
-        manifestItems += `<item id="cover-img" href="images/cover.${coverExt}" media-type="${coverMime}"/>\n`;
+        if (coverBlob) {
+            zip.file(`OEBPS/images/cover.${coverExt}`, coverBlob);
+            manifestItems += `<item id="cover-img" href="images/cover.${coverExt}" media-type="${coverMime}"/>\n`;
+        }
     }
 
     const opfXml = `<?xml version="1.0" encoding="UTF-8"?>
@@ -224,7 +130,7 @@ async function generateEPUB() {
             <dc:creator opf:role="aut">${author}</dc:creator>
             <dc:language>my</dc:language>
             <dc:identifier id="bookid">urn:uuid:${Date.now()}</dc:identifier>
-            ${coverBase64 ? '<meta name="cover" content="cover-img"/>' : ''}
+             ${(typeof coverBase64 !== 'undefined' && coverBase64) ? '<meta name="cover" content="cover-img"/>' : ''}
         </metadata>
         <manifest>
             <item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>
@@ -259,7 +165,6 @@ async function generateEPUB() {
     zip.generateAsync({ type: "blob", mimeType: "application/epub+zip" }).then(function (blob) {
         const filename = title.replace(/\s+/g, '_') + ".epub";
         
-        // iOS Safari တွင် Heavy File များ ဒေါင်းလုဒ်ဆွဲရန် အကောင်းဆုံး Flow
         const reader = new FileReader();
         reader.onloadend = function() {
             const a = document.createElement('a');
@@ -274,12 +179,14 @@ async function generateEPUB() {
         alert("ePub Generation Error: " + err.message);
     });
 }
+
 // ==========================================
-// 🌟 ဓာတ်ပုံ DATA များကို EPUB ဖိုင်အဖြစ် ပြောင်းလဲပေးမည့် မရှိမဖြစ် FUNCTION
+// 🌟 BASE64 TO BLOB FUNCTION (Error ကာကွယ်ရေးစနစ်ပါဝင်သော ဗားရှင်းအသစ်)
 // ==========================================
 function base64ToBlob(base64Str) {
-    if (!base64Str) return null;
-    
+    if (!base64Str || typeof base64Str !== 'string') return null;
+    if (!base64Str.includes(';base64,')) return null;
+
     try {
         const parts = base64Str.split(';base64,');
         const contentType = parts[0].split(':')[1];
@@ -293,7 +200,7 @@ function base64ToBlob(base64Str) {
 
         return new Blob([uInt8Array], { type: contentType });
     } catch (e) {
-        console.error("Blob Conversion Error: ", e);
-        return null;
+        console.error("ဓာတ်ပုံ ပြောင်းလဲမှု မအောင်မြင်ပါ (ကျော်သွားပါမည်):", e);
+        return null; 
     }
 }
