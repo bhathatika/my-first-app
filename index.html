@@ -23,35 +23,71 @@
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen pb-12">
 
-    <!-- 📱 Hidden Input Fixed For Multiple Image Picker -->
-    <input type="file" id="hidden-editor-image-picker" accept="image/*" multiple class="hidden" onchange="handleInlineImageUpload(event)">
+    <!-- 🔐 1. SIGN IN / SIGN UP SCREEN (လင့်ခ်နှိပ်လျှင် အရင်ဆုံး ပေါ်လာမည့် နေရာ) -->
+    <div id="auth-screen" class="max-w-md mx-auto px-4 pt-24 hidden">
+        <div class="bg-slate-800 rounded-2xl p-6 border border-slate-700/80 shadow-2xl space-y-6">
+            
+            <!-- Logo / Title -->
+            <div class="text-center space-y-2">
+                <div class="inline-flex bg-amber-500/10 p-4 rounded-full text-amber-400 text-3xl mb-1">
+                    <i class="fa-solid fa-book-open"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-slate-100">Web ePub Creator Pro</h2>
+                <p class="text-sm text-slate-400">ဆက်လက်အသုံးပြုရန် အကောင့်ဝင်ပေးပါ</p>
+            </div>
 
-    <!-- 🌐 Main Container -->
-    <div class="max-w-xl mx-auto px-4 pt-6">
+            <!-- Tabs (Sign In / Sign Up) -->
+            <div class="flex bg-slate-900 p-1 rounded-xl border border-slate-800">
+                <button id="tab-login" onclick="switchAuthTab('login')" class="w-full text-sm font-medium py-2.5 rounded-lg bg-amber-500 text-slate-950 transition">Sign In</button>
+                <button id="tab-register" onclick="switchAuthTab('register')" class="w-full text-sm font-medium py-2.5 rounded-lg text-slate-400 hover:text-slate-200 transition">Sign Up</button>
+            </div>
+
+            <!-- Form -->
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-medium text-slate-400 mb-1.5">အီးမေးလ် (Email Address)</label>
+                    <input type="email" id="auth-email" placeholder="example@email.com" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3.5 py-2.5 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-amber-500 transition shadow-inner">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-400 mb-1.5">စကားဝှက် (Password)</label>
+                    <input type="password" id="auth-password" placeholder="••••••••" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3.5 py-2.5 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-amber-500 transition shadow-inner">
+                </div>
+                
+                <button id="auth-submit-btn" onclick="submitAuthForm()" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-3 rounded-lg text-sm transition active:scale-95 shadow-lg shadow-amber-950/20">
+                    အကောင့်ဝင်မည် (Sign In)
+                </button>
+            </div>
+            
+            <div class="text-center">
+                <span class="text-xs text-amber-400/60 font-medium">👑 Premium စနစ်ဖြင့် အသုံးပြုနိုင်ပါပြီ</span>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- 🌐 2. MAIN APP SCREEN (အကောင့်ဝင်ပြီးမှသာ လှမ်းပြမည့် နေရာ) -->
+    <div id="main-app-screen" class="max-w-xl mx-auto px-4 pt-6 hidden">
         
-        <!-- 🎯 HEADER SECTION WITH SIGN IN / SIGN UP -->
+        <!-- Hidden Input For Multiple Image Picker -->
+        <input type="file" id="hidden-editor-image-picker" accept="image/*" multiple class="hidden" onchange="handleInlineImageUpload(event)">
+        
+        <!-- 🎯 HEADER SECTION -->
         <div class="flex flex-col gap-4 mb-6 pb-4 border-b border-slate-800">
-            <!-- Top Row: Logo & Profile Buttons -->
             <div class="flex justify-between items-center">
                 <h1 class="text-2xl font-bold text-amber-400 flex items-center gap-2">
                     <i class="fa-solid fa-book-open"></i> Web ePub Creator Pro
                 </h1>
                 
-                <!-- Authentication Buttons (Sign In / Sign Up) -->
-                <div class="flex items-center gap-2 text-xs">
-                    <button onclick="handleSignIn()" class="text-slate-400 hover:text-slate-200 px-2.5 py-1.5 font-medium transition">
-                        Sign In
-                    </button>
-                    <button onclick="handleSignUp()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg border border-slate-700 transition font-medium active:scale-95">
-                        Sign Up
-                    </button>
-                </div>
+                <!-- Sign Out Button -->
+                <button onclick="handleSignOut()" class="bg-slate-800 hover:bg-slate-700 text-rose-400 hover:text-rose-300 text-xs px-3 py-1.5 rounded-lg border border-slate-700 transition font-medium active:scale-95 flex items-center gap-1">
+                    <i class="fa-solid fa-right-from-bracket"></i> ထွက်မည်
+                </button>
             </div>
 
-            <!-- Bottom Row: Account Status / Premium Badge -->
+            <!-- Account Status / Premium Badge -->
             <div class="flex justify-between items-center bg-slate-800/40 px-3 py-2 rounded-lg border border-slate-800/60">
-                <span class="text-xs text-slate-400 flex items-center gap-1.5">
-                    <i class="fa-solid fa-circle-user text-emerald-400 text-sm"></i> အကောင့်ဝင်ထားပြီးသားဖြစ်သည်
+                <span id="user-display-email" class="text-xs text-slate-400 flex items-center gap-1.5">
+                    <i class="fa-solid fa-circle-user text-emerald-400 text-sm"></i> loading...
                 </span>
                 <span class="bg-amber-500/20 text-amber-300 text-xs px-2.5 py-1 rounded-full border border-amber-500/30 font-medium flex items-center gap-1">
                     <i class="fa-solid fa-crown text-[10px]"></i> Premium
@@ -66,7 +102,7 @@
             </h2>
             <div class="grid grid-cols-1 gap-2.5">
                 <button onclick="exportToBackupFile()" class="w-full bg-slate-700 hover:bg-slate-600 text-slate-200 py-3 px-4 rounded-lg flex items-center justify-center gap-2 font-medium transition active:scale-95 border border-slate-600">
-                    <i class="fa-solid fa-file-export text-emerald-400"></i>  လက်ရှိစာအုပ်ကို ဖိုင်သိမ်းဆည်းမည် (Backup)
+                    <i class="fa-solid fa-file-export text-emerald-400"></i> လက်ရှိစာအုပ်ကို ဖိုင်သိမ်းဆည်းမည် (Backup)
                 </button>
                 
                 <label class="w-full bg-slate-700 hover:bg-slate-600 text-slate-200 py-3 px-4 rounded-lg flex items-center justify-center gap-2 font-medium transition active:scale-95 border border-slate-600 cursor-pointer text-center">
@@ -141,6 +177,7 @@
         let bookChapters = [];
         let currentChapterIndex = 0;
         let coverBase64 = "";
+        let authMode = "login"; // login သို့မဟုတ် register
 
         const DB_NAME = 'WebEpubCreatorDB';
         const DB_VERSION = 1;
@@ -160,42 +197,103 @@
             });
         }
 
-        // Placeholder Auth Functions (အစ်ကို့ရဲ့ Backend Sign In စနစ်ရှိရင် ဒီနေရာမှာ ချိတ်ဆက်နိုင်ပါတယ်)
-        function handleSignIn() {
-            alert("Sign In စနစ်သို့ ချိတ်ဆက်နေပါသည်...");
-        }
-
-        function handleSignUp() {
-            alert("Sign Up စနစ်သို့ ချိတ်ဆက်နေပါသည်...");
-        }
-
-        // TinyMCE Init
-        tinymce.init({
-            selector: '#editor',
-            height: 350,
-            menubar: false,
-            skin: 'oxide-dark',
-            content_css: 'dark',
-            plugins: 'lists link charmap',
-            toolbar: 'bold italic underline | numlist bullist | custom_image link | removeformat',
+        // 🔐 AUTHENTICATION SYSTEM (အကောင့်စနစ် ထိန်းချုပ်ခြင်း)
+        function checkUserAuth() {
+            // Browser ရဲ့ Session ထဲမှာ အကောင့်ဝင်ထားသလား စစ်ဆေးခြင်း
+            const loggedInUser = localStorage.getItem('epub_user_session');
             
-            setup: function(editor) {
-                editor.ui.registry.addButton('custom_image', {
-                    icon: 'image',
-                    tooltip: 'Insert Images From Gallery',
-                    onAction: function () {
-                        document.getElementById('hidden-editor-image-picker').click();
-                    }
-                });
-
-                editor.on('NodeChange keyup change', function() {
-                    if (bookChapters[currentChapterIndex]) {
-                        bookChapters[currentChapterIndex].content = editor.getContent();
-                        saveCurrentBookState();
-                    }
-                });
+            if (loggedInUser) {
+                // အကောင့်ဝင်ပြီးသားဆိုလျှင် App ကြီးကို တန်းဖွင့်ပြသည်
+                document.getElementById('auth-screen').classList.add('hidden');
+                document.getElementById('main-app-screen').classList.remove('hidden');
+                document.getElementById('user-display-email').innerHTML = `<i class="fa-solid fa-circle-user text-emerald-400 text-sm"></i> ${loggedInUser}`;
+                initTinyMCE(); // Editor ကို စတင်ဖွင့်လှစ်သည်
+                loadBookDataFromDB(); // စာအုပ်ဒေတာ ဆွဲတင်သည်
+            } else {
+                // အကောင့်မဝင်ရသေးလျှင် Sign In Box ကို အရင်ပြသည်
+                document.getElementById('main-app-screen').classList.add('hidden');
+                document.getElementById('auth-screen').classList.remove('hidden');
             }
-        });
+        }
+
+        function switchAuthTab(mode) {
+            authMode = mode;
+            const loginTab = document.getElementById('tab-login');
+            const registerTab = document.getElementById('tab-register');
+            const submitBtn = document.getElementById('auth-submit-btn');
+
+            if (mode === 'login') {
+                loginTab.className = "w-full text-sm font-medium py-2.5 rounded-lg bg-amber-500 text-slate-950 transition";
+                registerTab.className = "w-full text-sm font-medium py-2.5 rounded-lg text-slate-400 hover:text-slate-200 transition";
+                submitBtn.innerText = "အကောင့်ဝင်မည် (Sign In)";
+            } else {
+                registerTab.className = "w-full text-sm font-medium py-2.5 rounded-lg bg-amber-500 text-slate-950 transition";
+                loginTab.className = "w-full text-sm font-medium py-2.5 rounded-lg text-slate-400 hover:text-slate-200 transition";
+                submitBtn.innerText = "အကောင့်သစ်ဖွင့်မည် (Sign Up)";
+            }
+        }
+
+        function submitAuthForm() {
+            const email = document.getElementById('auth-email').value.trim();
+            const password = document.getElementById('auth-password').value.trim();
+
+            if (!email || !password) {
+                alert("⚠️ ကျေးဇူးပြု၍ အီးမေးလ်နှင့် စကားဝှက်ကို ရိုက်ထည့်ပေးပါဗျာ။");
+                return;
+            }
+
+            if (authMode === 'login') {
+                // Sign In လုပ်ခြင်း (နမူနာအနေဖြင့် ရိုက်သမျှကို လက်ခံပေးထားပါသည်)
+                localStorage.setItem('epub_user_session', email);
+                checkUserAuth();
+            } else {
+                // Sign Up လုပ်ခြင်း
+                alert("🎉 အကောင့်သစ်ကို အောင်မြင်စွာ တည်ဆောက်ပြီးပါပြီ။ Sign In ဝင်နိုင်ပါပြီ။");
+                switchAuthTab('login');
+            }
+        }
+
+        function handleSignOut() {
+            if (confirm("အကောင့်ထဲမှ ထွက်ရန် သေချာပါသလား?")) {
+                localStorage.removeItem('epub_user_session');
+                if (tinymce.activeEditor) {
+                    tinymce.remove('#editor'); // Editor ဖြုတ်ချခြင်း
+                }
+                location.reload(); // App ကို အစက ပြန်ပတ်ခြင်း
+            }
+        }
+
+        // TinyMCE Init Function
+        function initTinyMCE() {
+            if (tinymce.get('editor')) return; // ရှိပြီးသားဆို ထပ်မဖွင့်ရန်
+            
+            tinymce.init({
+                selector: '#editor',
+                height: 350,
+                menubar: false,
+                skin: 'oxide-dark',
+                content_css: 'dark',
+                plugins: 'lists link charmap',
+                toolbar: 'bold italic underline | numlist bullist | custom_image link | removeformat',
+                
+                setup: function(editor) {
+                    editor.ui.registry.addButton('custom_image', {
+                        icon: 'image',
+                        tooltip: 'Insert Images From Gallery',
+                        onAction: function () {
+                            document.getElementById('hidden-editor-image-picker').click();
+                        }
+                    });
+
+                    editor.on('NodeChange keyup change', function() {
+                        if (bookChapters[currentChapterIndex]) {
+                            bookChapters[currentChapterIndex].content = editor.getContent();
+                            saveCurrentBookState();
+                        }
+                    });
+                }
+            });
+        }
 
         function handleInlineImageUpload(event) {
             const files = event.target.files;
@@ -215,8 +313,8 @@
             document.getElementById('hidden-editor-image-picker').value = "";
         }
 
-        // App Initial Load
-        window.addEventListener('DOMContentLoaded', async () => {
+        // App Initial Load (ဒေတာဆွဲတင်မည့် အပိုင်း)
+        async function loadBookDataFromDB() {
             try {
                 const db = await initDB();
                 const transaction = db.transaction([STORE_NAME], 'readonly');
@@ -247,6 +345,11 @@
             } catch (err) {
                 console.error("DB Load Error:", err);
             }
+        }
+
+        // ဝင်ဝင်ချင်းမှာ အကောင့်စစ်ဆေးမှုကို အရင်ဦးဆုံး လုပ်ခိုင်းခြင်း
+        window.addEventListener('DOMContentLoaded', () => {
+            checkUserAuth();
         });
 
         // Auto Save
@@ -335,7 +438,7 @@
             if (tinymce.activeEditor) {
                 tinymce.activeEditor.setContent(bookChapters[idx].content || "");
             } else {
-                setTimeout(() => { tinymce.activeEditor.setContent(bookChapters[idx].content || ""); }, 300);
+                setTimeout(() => { if(tinymce.activeEditor) tinymce.activeEditor.setContent(bookChapters[idx].content || ""); }, 300);
             }
         }
 
@@ -429,7 +532,6 @@
                     const transaction = db.transaction([STORE_NAME], 'readwrite');
                     const store = transaction.objectStore(STORE_NAME);
                     await store.put(state, 'currentBook');
-                    
                     alert("🎉 Backup ဒေတာများကို အောင်မြင်စွာ ထည့်သွင်းပြီးပါပြီ။");
                     location.reload(); 
                 } catch (error) {
@@ -459,10 +561,7 @@
                     uInt8Array[i] = raw.charCodeAt(i);
                 }
                 return new Blob([uInt8Array], { type: contentType });
-            } catch (e) {
-                console.error("Conversion skip:", e);
-                return null; 
-            }
+            } catch (e) { return null; }
         }
 
         // 🚀 CORE EPUB GENERATOR
