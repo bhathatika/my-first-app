@@ -194,21 +194,30 @@ function loadBookState() {
     }
 }
 
-async function dataUrlToBlob(dataUrl) {
-    if (!dataUrl) return null;
+// 🌟 Google Chrome လုံခြုံရေး ပိတ်ပင်မှုများကို ကျော်ဖြတ်နိုင်ရန် Fetch မသုံးဘဲ သန့်သန့် ဖွဲ့စည်းထားသော Base64 Decoder စနစ်သစ် 🌟
+function dataUrlToBlob(dataUrl) {
+    if (!dataUrl || !dataUrl.includes(',')) return null;
     try {
-        const response = await fetch(dataUrl);
-        return await response.blob();
+        const parts = dataUrl.split(',');
+        const contentType = parts[0].split(':')[1].split(';')[0];
+        const raw = window.atob(parts[1]);
+        const rawLength = raw.length;
+        const uInt8Array = new Uint8Array(rawLength);
+        
+        for (let i = 0; i < rawLength; ++i) {
+            uInt8Array[i] = raw.charCodeAt(i);
+        }
+        return new Blob([uInt8Array], { type: contentType });
     } catch (e) {
+        console.error("Decoder error:", e);
         return null;
     }
 }
 
-// 🚀 Chrome တွင် လုံးဝ ဒေါင်းလုဒ်အဆင်ပြေစေမည့် Core compiler စနစ်အသစ်
+// 🚀 Chrome, Safari, Firefox အားလုံးတွင် ရာနှုန်းပြည့် အလုပ်လုပ်မည့် Core Engine
 async function generateEPUB() {
     saveCurrentBookState();
     
-    // JSZip ရှိမရှိ အရင်စစ်ဆေးပြီး မရှိပါက ပျက်နေသော Library ကို Safe Fallback ဖြစ်စေရန်
     if (typeof JSZip === "undefined") {
         alert("⚠️ စနစ်တစ်ခုလုံး အလုပ်လုပ်ရန် ပြင်ဆင်နေဆဲဖြစ်သည်။ စက္ကန့်အနည်းငယ် စောင့်ပြီးမှ ဒေါင်းလုဒ်ပြန်နှိပ်ပေးပါဗျာ။");
         return;
@@ -236,7 +245,7 @@ async function generateEPUB() {
         let coverExt = "jpg"; let coverMime = "image/jpeg";
         if (coverBase64.includes("image/png")) { coverExt = "png"; coverMime = "image/png"; }
         
-        const coverBlob = await dataUrlToBlob(coverBase64);
+        const coverBlob = dataUrlToBlob(coverBase64);
         if (coverBlob) {
             zip.file(`OEBPS/images/cover.${coverExt}`, coverBlob);
             manifestItems += `<item id="cover-img" href="images/cover.${coverExt}" media-type="${coverMime}"/>\n`;
@@ -255,12 +264,12 @@ async function generateEPUB() {
         const imgs = container.querySelectorAll('img');
         for (let img of imgs) {
             const src = img.getAttribute('src');
-            if (src) {
+            if (src && src.startsWith('data:image')) {
                 let ext = "jpg"; let mediaType = "image/jpeg";
                 if (src.includes("image/png")) { ext = "png"; mediaType = "image/png"; }
                 
                 const filename = `image_${globalImageCounter}.${ext}`;
-                const imgBlob = await dataUrlToBlob(src);
+                const imgBlob = dataUrlToBlob(src); // 🌟 Chrome မှာ Block မဖြစ်တော့သော နေရာ
                 
                 if (imgBlob) {
                     zip.file(`OEBPS/images/${filename}`, imgBlob);
@@ -327,7 +336,7 @@ async function generateEPUB() {
 
 function exportToBackupFile() {
     const saved = localStorage.getItem('epub_creator_pro_state');
-    if (!saved) return alert("⚠️ သိမ်းဆည်းရန် ဒေတာမရှိပါ။");
+    if (!saved) return alert("⚠️  သိမ်းဆည်းရန် ဒေတာမရှိပါ။");
     const blob = new Blob([saved], { type: "application/json" });
     
     const downloadUrl = window.URL.createObjectURL(blob);
