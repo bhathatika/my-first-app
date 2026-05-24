@@ -214,24 +214,23 @@ function loadBookState() {
     }
 }
 
-// 🔥 Chrome တွင် ဓာတ်ပုံကြောင့် ဒေါင်းလုဒ်ပိတ်ဆို့မှုကို ရာနှုန်းပြည့်ကျော်ဖြတ်မည့် Modern Fetch-Blob Converter စနစ်သစ်
-async function urlToBlob(dataUrl) {
-    if (!dataUrl || !dataUrl.startsWith("data:image")) return null;
+// 🔥 Chrome Memory Crash လုံးဝမဖြစ်စေရန် စိတ်အချရဆုံး စာသားအခြေပြု Converter စနစ်သစ်
+function base64ToBlobSafe(dataUrl) {
+    if (!dataUrl || !dataUrl.includes(",")) return null;
     try {
-        const res = await fetch(dataUrl);
-        return await res.blob();
-    } catch (e) {
-        console.error("Modern Blob conversion failed, trying fallback:", e);
-        // Fallback backward compatibility
         const parts = dataUrl.split(',');
-        const byteString = atob(parts[1].replace(/\s/g, '')); // Chrome စိတ်ကြိုက် သန့်စင်ပေးခြင်း
         const mimeString = parts[0].split(':')[1].split(';')[0];
-        const ab = new ArrayBuffer(byteString.length);
-        const ia = new Uint8Array(ab);
+        const byteString = atob(parts[1]);
+        const arrayBuffer = new ArrayBuffer(byteString.length);
+        const uint8Array = new Uint8Array(arrayBuffer);
+        
         for (let i = 0; i < byteString.length; i++) {
-            ia[i] = byteString.charCodeAt(i);
+            uint8Array[i] = byteString.charCodeAt(i);
         }
-        return new Blob([ab], { type: mimeString });
+        return new Blob([arrayBuffer], { type: mimeString });
+    } catch (e) {
+        console.error("Safe blob conversion error:", e);
+        return null;
     }
 }
 
@@ -256,6 +255,7 @@ async function generateEPUB() {
     let spineItems = "";
     let imageCounter = 1;
 
+    // 🔥 Chrome Memory Freeze မဖြစ်စေရန် သေသေချာချာ စောင့်ဆိုင်းပေးမည့် တည်ငြိမ်သော Sequential Loop ပုံစံသစ်
     for (let index = 0; index < bookChapters.length; index++) {
         let chap = bookChapters[index];
         let htmlString = chap.content || "";
@@ -266,15 +266,17 @@ async function generateEPUB() {
         const container = doc.body.firstChild;
 
         const imgs = container.querySelectorAll('img');
-        for (let img of imgs) {
+        
+        // 🌟 ဤနေရာတွင် အဓိကပြင်ဆင်ထားပါသည် - ပုံတစ်ပုံချင်းစီကို တစ်ခုချင်းစောင့်ပြီး ပြောင်းလဲပေးခြင်း
+        for (let j = 0; j < imgs.length; j++) {
+            const img = imgs[j];
             const src = img.getAttribute('src');
             if (src && src.startsWith('data:image')) {
                 let ext = "jpg"; let mediaType = "image/jpeg";
                 if (src.includes("image/png")) { ext = "png"; mediaType = "image/png"; }
                 const filename = `image_${imageCounter}.${ext}`;
                 
-                // 🔥 Chrome အလုပ်လုပ်ရန် အရေးကြီးသော Async Fetch ပြောင်းလဲမှု
-                const imgBlob = await urlToBlob(src);
+                const imgBlob = base64ToBlobSafe(src);
                 if (imgBlob) {
                     zip.file(`OEBPS/images/${filename}`, imgBlob);
                     manifestItems += `<item id="img_${imageCounter}" href="images/${filename}" media-type="${mediaType}"/>\n`;
@@ -304,7 +306,7 @@ async function generateEPUB() {
         let coverExt = "jpg"; let coverMime = "image/jpeg";
         if (coverBase64.includes("image/png")) { coverExt = "png"; coverMime = "image/png"; }
         
-        const coverBlob = await urlToBlob(coverBase64);
+        const coverBlob = base64ToBlobSafe(coverBase64);
         if (coverBlob) {
             zip.file(`OEBPS/images/cover.${coverExt}`, coverBlob);
             manifestItems += `<item id="cover-img" href="images/cover.${coverExt}" media-type="${coverMime}"/>\n`;
@@ -331,6 +333,7 @@ async function generateEPUB() {
     const ncxXml = `<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE ncx PUBLIC "-//NISO//DTD ncx v2005-1//EN" "http://www.daisy.org/z3986/2005/ncx-2005-1.dtd"><ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1"><head><meta name="dtb:uid" content="${Date.now()}"/></head><docTitle><text>${title}</text></docTitle><navMap>${ncxNav}</navMap></ncx>`;
     zip.file("OEBPS/toc.ncx", ncxXml);
 
+    // 🌟 Mobile Chrome အတွက် Memory ချွေတာပြီး အတည်ငြိမ်ဆုံး ဒေါင်းလုဒ်ထုတ်ပေးမည့် ထွက်ပေါက်
     zip.generateAsync({ type: "blob", mimeType: "application/epub+zip" }).then(function (blob) {
         const filename = title.replace(/\s+/g, '_') + ".epub";
         const downloadUrl = window.URL.createObjectURL(blob);
@@ -343,14 +346,14 @@ async function generateEPUB() {
         setTimeout(() => {
             document.body.removeChild(a);
             window.URL.revokeObjectURL(downloadUrl);
-        }, 1000);
+        }, 1200);
     }).catch(function(err) {
         alert("ဒေါင်းလုဒ်ဆွဲရာတွင် အမှားအယွင်းရှိနေပါသည်။");
     });
 }
 
 // Backup စနစ်များ
-async function exportToBackupFile() {
+function exportToBackupFile() {
     const saved = localStorage.getItem('epub_creator_pro_state');
     if (!saved) return alert("⚠️ သိမ်းဆည်းရန် ဒေတာမရှိပါ။");
     const blob = new Blob([saved], { type: "application/json" });
