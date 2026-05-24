@@ -8,7 +8,7 @@ function execCmd(command) {
     saveCurrentChapterContentLive();
 }
 
-// ဓာတ်ပုံများကို Error လုံးဝမတက်စေဘဲ ချုံ့ပေးပြီး Safe Base64 ပြောင်းပေးသည့် စနစ်
+// ဓာတ်ပုံများကို အရွယ်အစားချုံ့ပြီး Base64 ပြောင်းပေးသည့် စနစ်
 function compressImage(file, maxWidth, maxHeight, quality) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -40,7 +40,7 @@ function compressImage(file, maxWidth, maxHeight, quality) {
     });
 }
 
-// 🌟 ဓာတ်ပုံ အများကြီး (Multiple Images) ပြိုင်တူထည့်လျှင် Error တက်ခြင်းကို ၁၀၀% ဖြေရှင်းထားသော စနစ်စ်
+// ဓာတ်ပုံ အများကြီးထည့်လျှင် တန်းစီပြီး စနစ်တကျထည့်ပေးမည့် စနစ်
 async function insertImagesToEditor(event) {
     const files = event.target.files;
     if (!files || files.length === 0) return;
@@ -48,46 +48,28 @@ async function insertImagesToEditor(event) {
     const editor = document.getElementById('editor');
     editor.focus();
 
-    // Loop ကို အလောတကြီး မပတ်ဘဲ တစ်ပုံချင်းစီ သေချာ Base64 ပြောင်းပြီးမှ Editor ထဲ ထည့်ပေးသည့် စနစ်
     for (let i = 0; i < files.length; i++) {
         try {
             const compressedBase64 = await compressImage(files[i], 800, 800, 0.75);
+            const img = document.createElement('img');
+            img.src = compressedBase64;
+            img.alt = "inserted_image";
+            img.style.maxWidth = "100%";
+            img.style.height = "auto";
+            img.style.display = "block";
+            img.style.margin = "10px auto";
             
-            // Cursor ရှိတဲ့နေရာမှာ စနစ်တကျ ပုံဝင်စေရန်
-            const selection = window.getSelection();
-            if (selection.rangeCount > 0) {
-                const range = selection.getRangeAt(0);
-                if (editor.contains(range.commonAncestorContainer)) {
-                    const img = document.createElement('img');
-                    img.src = compressedBase64;
-                    img.alt = "inserted_image";
-                    img.style.maxWidth = "100%";
-                    img.style.height = "auto";
-                    img.style.display = "block";
-                    img.style.margin = "10px auto";
-                    
-                    range.deleteContents();
-                    range.insertNode(img);
-                    
-                    range.setStartAfter(img);
-                    range.setEndAfter(img);
-                    selection.removeAllRanges();
-                    selection.addRange(range);
-                    continue;
-                }
-            }
-            // အကယ်၍ Editor ထဲမှာ Cursor မရှိခဲ့ပါက အောက်ဆုံးမှာ တိုးထည့်ပေးမည်
-            editor.innerHTML += `<div><img src="${compressedBase64}" alt="inserted_image" style="max-width:100%; height:auto; display:block; margin:10px auto;"/></div>`;
+            editor.appendChild(img);
+            editor.appendChild(document.createElement('br'));
         } catch (err) {
-            console.error("Image loading error:", err);
+            console.error("Image insertion error:", err);
         }
     }
     
     saveCurrentChapterContentLive();
-    event.target.value = ""; // Reset File Input
+    event.target.value = ""; 
 }
 
-// အခန်းခေါင်းစဉ် Live ပြောင်းလဲခြင်း
 function updateChapterTitleLive() {
     if (!currentChapterId) return;
     const titleInput = document.getElementById('current-chapter-title').value;
@@ -98,7 +80,6 @@ function updateChapterTitleLive() {
     }
 }
 
-// အခန်းပါဝင်မှုများကို Live သိမ်းဆည်းခြင်း
 function saveCurrentChapterContentLive() {
     if (!currentChapterId) return;
     const chap = bookChapters.find(c => c.id === currentChapterId);
@@ -108,7 +89,6 @@ function saveCurrentChapterContentLive() {
     }
 }
 
-// အခန်းအသစ်တိုးခြင်း
 function addChapter() {
     const newId = "chap_" + Date.now();
     const newChap = {
@@ -121,7 +101,6 @@ function addChapter() {
     selectChapter(newId);
 }
 
-// အခန်းများစာရင်း ပြသခြင်း
 function renderChapterList() {
     const list = document.getElementById('chapter-list');
     list.innerHTML = "";
@@ -140,7 +119,6 @@ function renderChapterList() {
     });
 }
 
-// အခန်းကို ရွေးချယ်ကြည့်ရှုခြင်း
 function selectChapter(id) {
     currentChapterId = id;
     const chap = bookChapters.find(c => c.id === id);
@@ -151,7 +129,6 @@ function selectChapter(id) {
     }
 }
 
-// အခန်းဖျက်ခြင်း
 function deleteChapter(id) {
     bookChapters = bookChapters.filter(c => c.id !== id);
     if (currentChapterId === id) {
@@ -166,7 +143,6 @@ function deleteChapter(id) {
     saveCurrentBookState();
 }
 
-// မျက်နှာဖုံးပုံစနစ်
 async function handleCoverImage(event) {
     const file = event.target.files[0];
     if (file) {
@@ -180,7 +156,6 @@ async function handleCoverImage(event) {
     }
 }
 
-// စာသားအားလုံး ဖျက်ထုတ်ခြင်း
 function clearAllContent() {
     if(confirm("စာသားအားလုံးကို ဖျက်ပစ်ရန် သေချာပါသလား။")) {
         document.getElementById('editor').innerHTML = "";
@@ -188,7 +163,6 @@ function clearAllContent() {
     }
 }
 
-// ဒေတာများအား LocalStorage တွင် သိမ်းခြင်း
 function saveCurrentBookState() {
     const state = {
         title: document.getElementById('book-title').value,
@@ -199,7 +173,6 @@ function saveCurrentBookState() {
     localStorage.setItem('epub_creator_pro_state', JSON.stringify(state));
 }
 
-// ဒေတာများ ပြန်ခေါ်ခြင်း
 function loadBookState() {
     const saved = localStorage.getItem('epub_creator_pro_state');
     if (saved) {
@@ -221,35 +194,26 @@ function loadBookState() {
     }
 }
 
-// Base64 မှ Safe Blob ပြောင်းလဲပေးသည့် စနစ်
 async function dataUrlToBlob(dataUrl) {
     if (!dataUrl) return null;
-    // အကယ်၍ Base64 စစ်စစ် မဟုတ်ဘဲ Blob String ဖြစ်နေပါက Fetch ဖြင့် တိုက်ရိုက်ယူမည်
-    if (!dataUrl.startsWith("data:image")) {
-        try {
-            const response = await fetch(dataUrl);
-            return await response.blob();
-        } catch (e) { return null; }
-    }
     try {
         const response = await fetch(dataUrl);
         return await response.blob();
     } catch (e) {
-        const parts = dataUrl.split(',');
-        const contentType = parts[0].split(':')[1].split(';')[0];
-        const raw = window.atob(parts[1]);
-        const rawLength = raw.length;
-        const uInt8Array = new Uint8Array(rawLength);
-        for (let i = 0; i < rawLength; ++i) {
-            uInt8Array[i] = raw.charCodeAt(i);
-        }
-        return new Blob([uInt8Array], { type: contentType });
+        return null;
     }
 }
 
-// 🚀 ဓာတ်ပုံ ဘယ်နှပုံပဲရှိရှိ ခွဲခြားပြီး Manifest ထဲ စနစ်တကျ ထည့်သွင်းပေးမည့် ကွန်ပိုင်လာ စနစ်အသစ်
+// 🚀 Chrome တွင် လုံးဝ ဒေါင်းလုဒ်အဆင်ပြေစေမည့် Core compiler စနစ်အသစ်
 async function generateEPUB() {
     saveCurrentBookState();
+    
+    // JSZip ရှိမရှိ အရင်စစ်ဆေးပြီး မရှိပါက ပျက်နေသော Library ကို Safe Fallback ဖြစ်စေရန်
+    if (typeof JSZip === "undefined") {
+        alert("⚠️ စနစ်တစ်ခုလုံး အလုပ်လုပ်ရန် ပြင်ဆင်နေဆဲဖြစ်သည်။ စက္ကန့်အနည်းငယ် စောင့်ပြီးမှ ဒေါင်းလုဒ်ပြန်နှိပ်ပေးပါဗျာ။");
+        return;
+    }
+
     const title = document.getElementById('book-title').value || "Untitled_Book";
     const author = document.getElementById('author').value || "Unknown_Author";
     
@@ -268,7 +232,6 @@ async function generateEPUB() {
     let spineItems = "";
     let globalImageCounter = 1;
 
-    // Cover Image ကြေညာခြင်း
     if (coverBase64 && coverBase64.includes("data:image")) {
         let coverExt = "jpg"; let coverMime = "image/jpeg";
         if (coverBase64.includes("image/png")) { coverExt = "png"; coverMime = "image/png"; }
@@ -280,7 +243,6 @@ async function generateEPUB() {
         }
     }
 
-    // အခန်းတစ်ခုချင်းစီအတွင်းရှိ ဓာတ်ပုံအားလုံးကို စနစ်တကျ Loop ပတ်သိမ်းဆည်းခြင်း
     for (let index = 0; index < bookChapters.length; index++) {
         let chap = bookChapters[index];
         let htmlString = chap.content || "";
@@ -298,7 +260,7 @@ async function generateEPUB() {
                 if (src.includes("image/png")) { ext = "png"; mediaType = "image/png"; }
                 
                 const filename = `image_${globalImageCounter}.${ext}`;
-                const imgBlob = await dataUrlToBlob(src); // Base64 သို့မဟုတ် Blob ဖြစ်ဖြစ် Blob အဖြစ် ပြောင်းထုတ်မည်
+                const imgBlob = await dataUrlToBlob(src);
                 
                 if (imgBlob) {
                     zip.file(`OEBPS/images/${filename}`, imgBlob);
@@ -345,7 +307,6 @@ async function generateEPUB() {
     const ncxXml = `<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE ncx PUBLIC "-//NISO//DTD ncx v2005-1//EN" "http://www.daisy.org/z3986/2005/ncx-2005-1.dtd"><ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1"><head><meta name="dtb:uid" content="${Date.now()}"/></head><docTitle><text>${title}</text></docTitle><navMap>${ncxNav}</navMap></ncx>`;
     zip.file("OEBPS/toc.ncx", ncxXml);
 
-    // Stable Download Flow 
     zip.generateAsync({ type: "blob", mimeType: "application/epub+zip" }).then(function (blob) {
         const filename = title.replace(/\s+/g, '_') + ".epub";
         const downloadUrl = window.URL.createObjectURL(blob);
@@ -364,7 +325,6 @@ async function generateEPUB() {
     });
 }
 
-// Backup စနစ်များ
 function exportToBackupFile() {
     const saved = localStorage.getItem('epub_creator_pro_state');
     if (!saved) return alert("⚠️ သိမ်းဆည်းရန် ဒေတာမရှိပါ။");
@@ -389,7 +349,6 @@ function importFromBackupFile(event) {
     reader.readAsText(file);
 }
 
-// Reset ချခြင်း
 function resetCurrentBookState() {
     if(confirm("စာအုပ်အသစ်ရေးရန် အချက်အလက်အားလုံးကို အကုန်ဖျက်မလား။")) {
         localStorage.removeItem('epub_creator_pro_state');
