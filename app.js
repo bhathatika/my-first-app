@@ -214,25 +214,28 @@ function loadBookState() {
     }
 }
 
-// 🔥 Chrome တွင် ဓာတ်ပုံပါက Security Block ဖြစ်ခြင်းကို ၁၀၀% ကျော်ဖြတ်ရန် သန့်စင်ပြီးသား ArrayBuffer သို့ ပြောင်းလဲသည့်စနစ်
-function base64ToArrayBuffer(base64Data) {
-    if (!base64Data || !base64Data.includes(",")) return null;
+// 🔥 Chrome Memory Limit ကျော်ပြီး Block ဖြစ်ခြင်းကို ကာကွယ်ရန် တိုက်ရိုက် Fetch Blob သုံးသည့် စနစ်သစ်
+async function dataUrlToBlob(dataUrl) {
+    if (!dataUrl || !dataUrl.startsWith("data:image")) return null;
     try {
-        const base64String = base64Data.split(',')[1];
-        const binaryString = atob(base64String);
-        const len = binaryString.length;
-        const bytes = new Uint8Array(len);
-        for (let i = 0; i < len; i++) {
-            bytes[i] = binaryString.charCodeAt(i);
-        }
-        return bytes.buffer;
+        const response = await fetch(dataUrl);
+        return await response.blob();
     } catch (e) {
-        console.error("ArrayBuffer conversion error:", e);
-        return null;
+        console.error("Fetch blob failed, fallback to slice method:", e);
+        // Fallback: Processing base64 in safe smaller chunks
+        const parts = dataUrl.split(',');
+        const contentType = parts[0].split(':')[1].split(';')[0];
+        const raw = window.atob(parts[1]);
+        const rawLength = raw.length;
+        const uInt8Array = new Uint8Array(rawLength);
+        for (let i = 0; i < rawLength; ++i) {
+            uInt8Array[i] = raw.charCodeAt(i);
+        }
+        return new Blob([uInt8Array], { type: contentType });
     }
 }
 
-// 🚀 Generate EPUB စနစ်ကြီးတစ်ခုလုံးကို Chrome တွင် ဓာတ်ပုံပါဝင်လည်း ရာနှုန်းပြည့် အလုပ်လုပ်အောင် ပြင်ဆင်ထားမှု
+// 🚀 Generate EPUB စနစ်ကြီးတစ်ခုလုံးကို တည်ငြိမ်အောင် ပြင်ဆင်ထားမှု
 async function generateEPUB() {
     saveCurrentBookState();
     const title = document.getElementById('book-title').value || "Untitled_Book";
@@ -244,7 +247,6 @@ async function generateEPUB() {
     }
 
     const zip = new JSZip();
-    // JSZip အား ပထမဆုံး ဖိုင်ဆောက်ခိုင်းခြင်း
     zip.file("mimetype", "application/epub+zip", { compression: "STORE" });
     
     const containerXml = `<?xml version="1.0" encoding="UTF-8"?><container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container"><rootfiles><rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/></rootfiles></container>`;
@@ -254,6 +256,7 @@ async function generateEPUB() {
     let spineItems = "";
     let imageCounter = 1;
 
+    // 🔥 Chrome ပိတ်မသွားစေရန် ပုံတစ်ပုံချင်းစီကို စနစ်တကျ စောင့်ဆိုင်းပြီး ပြောင်းလဲပေးခြင်း
     for (let index = 0; index < bookChapters.length; index++) {
         let chap = bookChapters[index];
         let htmlString = chap.content || "";
@@ -264,19 +267,17 @@ async function generateEPUB() {
         const container = doc.body.firstChild;
 
         const imgs = container.querySelectorAll('img');
-        
-        for (let j = 0; j < imgs.length; j++) {
-            const img = imgs[j];
+        for (let img of imgs) {
             const src = img.getAttribute('src');
             if (src && src.startsWith('data:image')) {
                 let ext = "jpg"; let mediaType = "image/jpeg";
                 if (src.includes("image/png")) { ext = "png"; mediaType = "image/png"; }
                 const filename = `image_${imageCounter}.${ext}`;
                 
-                // 🌟 ဤနေရာတွင် Chrome လုံခြုံရေး ကျော်ဖြတ်ရန် ArrayBuffer ဖြင့် တိုက်ရိုက်ထည့်သွင်းခြင်း
-                const imgBuffer = base64ToArrayBuffer(src);
-                if (imgBuffer) {
-                    zip.file(`OEBPS/images/${filename}`, imgBuffer, { binary: true });
+                // 🌟 ဤနေရာတွင် Async ဖြင့် ပုံတစ်ပုံချင်းစီကို သေချာစောင့်ပြီး Blob ပြောင်းပေးခြင်း
+                const imgBlob = await dataUrlToBlob(src);
+                if (imgBlob) {
+                    zip.file(`OEBPS/images/${filename}`, imgBlob);
                     manifestItems += `<item id="img_${imageCounter}" href="images/${filename}" media-type="${mediaType}"/>\n`;
                     img.setAttribute('src', `images/${filename}`);
                     imageCounter++;
@@ -304,9 +305,9 @@ async function generateEPUB() {
         let coverExt = "jpg"; let coverMime = "image/jpeg";
         if (coverBase64.includes("image/png")) { coverExt = "png"; coverMime = "image/png"; }
         
-        const coverBuffer = base64ToArrayBuffer(coverBase64);
-        if (coverBuffer) {
-            zip.file(`OEBPS/images/cover.${coverExt}`, coverBuffer, { binary: true });
+        const coverBlob = await dataUrlToBlob(coverBase64);
+        if (coverBlob) {
+            zip.file(`OEBPS/images/cover.${coverExt}`, coverBlob);
             manifestItems += `<item id="cover-img" href="images/cover.${coverExt}" media-type="${coverMime}"/>\n`;
         }
     }
@@ -331,14 +332,10 @@ async function generateEPUB() {
     const ncxXml = `<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE ncx PUBLIC "-//NISO//DTD ncx v2005-1//EN" "http://www.daisy.org/z3986/2005/ncx-2005-1.dtd"><ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1"><head><meta name="dtb:uid" content="${Date.now()}"/></head><docTitle><text>${title}</text></docTitle><navMap>${ncxNav}</navMap></ncx>`;
     zip.file("OEBPS/toc.ncx", ncxXml);
 
-    // 🌟 🌟 🌟 Chrome ရော Browser အားလုံးမှာပါ ဓာတ်ပုံကြောင့် ဒေါင်းလုဒ်မပိတ်နိုင်တော့မည့် Native Uint8Array Download System 🌟 🌟 🌟
-    zip.generateAsync({ type: "uint8array", mimeType: "application/epub+zip" }).then(function (content) {
+    // 🌟 Chrome တွင် ဒေါင်းလုဒ်တန်းကျစေရန် အသေချာဆုံး Blob စနစ်ဖြင့် ထုတ်ပေးခြင်း
+    zip.generateAsync({ type: "blob", mimeType: "application/epub+zip" }).then(function (blob) {
         const filename = title.replace(/\s+/g, '_') + ".epub";
-        
-        // Chrome မှ လုံးဝခွင့်ပြုသော စံသတ်မှတ်ချက် Blob ပြောင်းလဲခြင်း
-        const blob = new Blob([content], { type: "application/epub+zip" });
         const downloadUrl = window.URL.createObjectURL(blob);
-        
         const a = document.createElement('a');
         a.href = downloadUrl;
         a.download = filename;
