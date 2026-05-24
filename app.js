@@ -22,7 +22,7 @@ toolbar.addHandler('image', () => {
     const input = document.createElement('input');
     input.setAttribute('type', 'file');
     input.setAttribute('accept', 'image/*');
-    input.setAttribute('multiple', 'multiple'); // Enable multiple image selection
+    input.setAttribute('multiple', 'multiple');
     input.click();
 
     input.onchange = async () => {
@@ -43,20 +43,24 @@ toolbar.addHandler('image', () => {
     };
 });
 
-// App State (Load safely from LocalStorage)
+// App State
 let chapters = [{ title: 'Chapter 1', content: '' }];
 let currentChapterIndex = 0;
 
+// Load Everything SAFELY from LocalStorage
 try {
     const savedChapters = localStorage.getItem('epub_creator_chapters');
     if (savedChapters) {
         chapters = JSON.parse(savedChapters);
     }
+    const savedTitle = localStorage.getItem('epub_creator_book_title');
+    if (savedTitle) document.getElementById('bookTitle').value = savedTitle;
+    const savedAuthor = localStorage.getItem('epub_creator_book_author');
+    if (savedAuthor) document.getElementById('bookAuthor').value = savedAuthor;
 } catch (e) {
     console.error("Error loading from localStorage", e);
 }
 
-// Setup Elements and Night Mode Toggle
 document.addEventListener('DOMContentLoaded', () => {
     const modeToggle = document.getElementById('modeToggle');
     if (modeToggle) {
@@ -69,21 +73,17 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
-    
-    // Create and Append "All Clear" Button dynamically
     setupAllClearButton();
-    
-    // Initial Load Setup
+    setupBackupSystemEvents(); // Setup method B backup system
     loadChapterState();
 });
 
-// Dynamic UI Injection for "All Clear" Button
 function setupAllClearButton() {
     const chapterTitleInput = document.getElementById('chapterTitle');
     if (chapterTitleInput && !document.getElementById('allClearBtn')) {
         const clearBtn = document.createElement('button');
         clearBtn.id = 'allClearBtn';
-        clearBtn.innerHTML = '🧹 စာသားအားလုံးဖျက်ရန် (Clear All)';
+        clearBtn.innerHTML = '🧹 စာသားအားလုံးဖျက်ရန် (Clear All Content)';
         clearBtn.className = 'btn-danger';
         clearBtn.style.marginTop = '8px';
         clearBtn.style.marginBottom = '8px';
@@ -95,39 +95,91 @@ function setupAllClearButton() {
         
         clearBtn.onclick = () => {
             if (confirm('ယခု Chapter ထဲက စာသားနဲ့ ပုံအားလုံးကို အပြီးဖျက်ထုတ်မှာ သေချာပါသလား။')) {
-                quill.setText(''); // Instantly clear editor text
+                quill.setText('');
                 chapters[currentChapterIndex].content = '';
                 saveToLocalStorage();
             }
         };
-        // Insert right after the chapter title input field
         chapterTitleInput.parentNode.insertBefore(clearBtn, chapterTitleInput.nextSibling);
     }
 }
 
-// Optimization: Strips heavy base64 strings before saving text to LocalStorage to prevent 5MB crashes
-function getCleanedChaptersForStorage() {
-    return chapters.map(ch => {
-        // Strip out base64 image data just for LocalStorage, keeps the text and image placements safe
-        let strippedContent = ch.content.replace(/<img[^>]+src="data:image\/[^;]+;base64,[^"]+"[^>]*>/g, '<img src="" alt="Auto-saved Image Place" />');
-        return {
-            title: ch.title,
-            content: strippedContent
+// METHOD B: MULTI-BOOK BACKUP & LOGIC MANAGEMENT
+function setupBackupSystemEvents() {
+    // 1. Download Backup as JSON file
+    document.getElementById('backupBookBtn').onclick = () => {
+        saveCurrentChapterState();
+        const bookData = {
+            title: document.getElementById('bookTitle').value.trim(),
+            author: document.getElementById('bookAuthor').value.trim(),
+            chapters: chapters
         };
-    });
+        const blob = new Blob([JSON.stringify(bookData, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        const filename = (bookData.title || 'book_backup').replace(/\s+/g, '_') + '_backup.json';
+        a.href = url;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
+    };
+
+    // 2. Load Backup from file
+    document.getElementById('loadBackupFile').onchange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+            try {
+                const parsed = JSON.parse(evt.target.result);
+                if (parsed.chapters && Array.isArray(parsed.chapters)) {
+                    if (confirm('ဒီ Backup ဖိုင်ကို တင်သွင်းလိုက်ရင် လက်ရှိ App ပေါ်မှာ ပြသနေတဲ့စာတွေ အကုန်လုံး အစားထိုးလဲလှယ်သွားပါမယ်။ တင်သွင်းမှာ သေချာပါသလား။')) {
+                        chapters = parsed.chapters;
+                        document.getElementById('bookTitle').value = parsed.title || 'Untitled Book';
+                        document.getElementById('bookAuthor').value = parsed.author || 'Unknown Author';
+                        currentChapterIndex = 0;
+                        saveToLocalStorage();
+                        loadChapterState();
+                        alert('Backup ဖိုင်ကို အောင်မြင်စွာ ပြန်လည်တင်သွင်းပြီးပါပြီဗျာ။');
+                    }
+                } else {
+                    alert('မှားယွင်းနေသော ဖိုင်ပုံစံဖြစ်နေပါသည်။ စာအုပ် Backup JSON ဖိုင်သာ ဖြစ်ရပါမည်။');
+                }
+            } catch(err) {
+                alert('ဖိုင်ကို ဖတ်မရပါ။ ' + err.message);
+            }
+        };
+        reader.readAsText(file);
+        e.target.value = ''; // clear input cache
+    };
+
+    // 3. Reset App completely for a brand new book
+    document.getElementById('resetAppBtn').onclick = () => {
+        if (confirm('⚠️ သတိပေးချက်: လက်ရှိစာအုပ်ကို Backup ဖိုင်အရင်မသိမ်းထားရသေးရင် စာတွေအကုန် ပျက်သွားနိုင်ပါတယ်။ စာအုပ်အသစ်စရေးဖို့ App တစ်ခုလုံးကို Reset ချမှာ သေချာပါသလား။')) {
+            chapters = [{ title: 'Chapter 1', content: '' }];
+            currentChapterIndex = 0;
+            document.getElementById('bookTitle').value = 'Book Title New';
+            document.getElementById('bookAuthor').value = 'Author Name';
+            document.getElementById('coverImage').value = '';
+            quill.setText('');
+            saveToLocalStorage();
+            loadChapterState();
+            alert('App ကို Reset ချပေးပြီးပါပြီ။ စာအုပ်အသစ်တစ်အုပ်ကို အစကနေ စတင်ရေးသားနိုင်ပါပြီဗျာ။');
+        }
+    };
 }
 
-// Save text data safely to LocalStorage without heavy image payload
+// Save to local memory safely
 function saveToLocalStorage() {
     try {
-        const optimizedData = getCleanedChaptersForStorage();
-        localStorage.setItem('epub_creator_chapters', JSON.stringify(optimizedData));
+        localStorage.setItem('epub_creator_chapters', JSON.stringify(chapters));
+        localStorage.setItem('epub_creator_book_title', document.getElementById('bookTitle').value);
+        localStorage.setItem('epub_creator_book_author', document.getElementById('bookAuthor').value);
     } catch (e) {
-        console.warn("LocalStorage save skipped to protect memory:", e);
+        console.warn("Storage limit note: Data remains safe in current session.");
     }
 }
 
-// Clean and Validate HTML Content for XHTML/EPUB compatibility
 function cleanHtmlForEpub(htmlContent) {
     if (!htmlContent) return '';
     let cleaned = htmlContent.replace(/<br\s*>/gi, '<br />');
@@ -140,7 +192,6 @@ function cleanHtmlForEpub(htmlContent) {
     return cleaned;
 }
 
-// Render Sidebar Chapter List
 function renderChapterList() {
     const listContainer = document.getElementById('chapterList');
     if (!listContainer) return;
@@ -180,7 +231,6 @@ function saveCurrentChapterState() {
     }
 }
 
-// Load Chapter Data
 function loadChapterState() {
     if (chapters[currentChapterIndex]) {
         const titleInput = document.getElementById('chapterTitle');
@@ -211,7 +261,6 @@ function deleteChapter(index) {
     }
 }
 
-// Listen for typing/image insert changes in Quill Editor
 quill.on('text-change', () => {
     if (chapters[currentChapterIndex]) {
         chapters[currentChapterIndex].content = quill.root.innerHTML;
@@ -219,7 +268,6 @@ quill.on('text-change', () => {
     }
 });
 
-// Chapter Event Listeners
 document.getElementById('addChapterBtn').addEventListener('click', () => {
     saveCurrentChapterState();
     chapters.push({ title: `Chapter ${chapters.length + 1}`, content: '' });
@@ -238,7 +286,10 @@ document.getElementById('chapterTitle').addEventListener('input', (e) => {
     }
 });
 
-// PDF Text Extraction Logic
+// Sync Title and Author inputs with local storage real-time
+document.getElementById('bookTitle').addEventListener('input', () => saveToLocalStorage());
+document.getElementById('bookAuthor').addEventListener('input', () => saveToLocalStorage());
+
 document.getElementById('extractPdfBtn').addEventListener('click', async () => {
     const pdfFile = document.getElementById('pdfFile').files[0];
     const status = document.getElementById('pdfStatus');
@@ -246,23 +297,19 @@ document.getElementById('extractPdfBtn').addEventListener('click', async () => {
         alert('Please select a PDF file first.');
         return;
     }
-
     status.textContent = 'Extracting text from PDF... Please wait.';
-    
     try {
         const fileReader = new FileReader();
         fileReader.onload = async function () {
             const typedarray = new Uint8Array(this.result);
             const pdf = await pdfjsLib.getDocument(typedarray).promise;
             let fullText = '';
-            
             for (let i = 1; i <= pdf.numPages; i++) {
                 const page = await pdf.getPage(i);
                 const textContent = await page.getTextContent();
                 const pageText = textContent.items.map(item => item.str).join(' ');
                 fullText += `<h3>Page ${i}</h3><p>${pageText}</p><br />`;
             }
-            
             saveCurrentChapterState();
             chapters.push({ title: `PDF Extracted Content`, content: fullText });
             currentChapterIndex = chapters.length - 1;
@@ -270,17 +317,14 @@ document.getElementById('extractPdfBtn').addEventListener('click', async () => {
             quill.root.innerHTML = chapters[currentChapterIndex].content;
             saveToLocalStorage();
             renderChapterList();
-            
-            status.textContent = 'Text extracted successfully! Check below.';
+            status.textContent = 'Text extracted successfully!';
         };
         fileReader.readAsArrayBuffer(pdfFile);
     } catch (error) {
         status.textContent = 'Error loading or parsing PDF.';
-        console.error(error);
     }
 });
 
-// Helper for Image Base64 conversion
 function fileToBase64Complete(file) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -298,7 +342,7 @@ function fileToBase64(file) {
     });
 }
 
-// Generate and Download ePub (Robust Multi-Image Packager)
+// Generate and Download ePub
 document.getElementById('downloadEpub').addEventListener('click', async () => {
     saveCurrentChapterState();
     
@@ -320,6 +364,15 @@ document.getElementById('downloadEpub').addEventListener('click', async () => {
     const oebps = zip.folder("OEBPS");
     let imageCounter = 1;
 
+    function getAlphabetId(num) {
+        let ret = '';
+        while (num >= 0) {
+            ret = String.fromCharCode(97 + (num % 26)) + ret;
+            num = Math.floor(num / 26) - 1;
+        }
+        return ret;
+    }
+
     for (let index = 0; index < chapters.length; index++) {
         const ch = chapters[index];
         
@@ -338,8 +391,9 @@ document.getElementById('downloadEpub').addEventListener('click', async () => {
                     const ext = mimeType.split('/')[1] || 'jpeg';
                     const base64Data = parts[1];
                     
-                    const imgFileName = `img_${imageCounter}.${ext}`;
-                    const imgId = `inline_img_${imageCounter}`;
+                    const imgAlphaCode = getAlphabetId(imageCounter);
+                    const imgFileName = `image_file_${imgAlphaCode}.${ext}`;
+                    const imgId = `img_id_${imgAlphaCode}`;
                     
                     oebps.file(imgFileName, base64Data, { base64: true });
                     imageManifestItems += `<item id="${imgId}" href="${imgFileName}" media-type="${mimeType}"/>\n`;
@@ -355,24 +409,26 @@ document.getElementById('downloadEpub').addEventListener('click', async () => {
         }
         
         const processedContent = tempDiv.innerHTML;
-        const id = `chapter${index + 1}`;
-        manifestItems += `<item id="${id}" href="${id}.html" media-type="application/xhtml+xml"/>\n`;
-        spineItems += `<itemref idref="${id}"/>\n`;
-        tocNavPoints += `<navPoint id="navpoint-${index + 1}" playOrder="${index + 1}"><navLabel><text>${ch.title}</text></navLabel><content src="${id}.html"/></navPoint>\n`;
+        const alphaChapterCode = getAlphabetId(index);
+        const cleanFileId = `chapter_section_doc_${alphaChapterCode}`;
+        
+        manifestItems += `<item id="${cleanFileId}" href="${cleanFileId}.html" media-type="application/xhtml+xml"/>\n`;
+        spineItems += `<itemref idref="${cleanFileId}"/>\n`;
+        tocNavPoints += `<navPoint id="nav-${cleanFileId}" playOrder="${index + 1}"><navLabel><text>${ch.title}</text></navLabel><content src="${cleanFileId}.html"/></navPoint>\n`;
         
         const cleanedContent = cleanHtmlForEpub(processedContent);
-        const chapterHtml = `<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title>${ch.title}</title><style>body { font-family: sans-serif; padding: 10px; } h1 { text-align: center; } img { max-width: 100%; height: auto; display: block; margin: 10px auto; }</style></head><body><h1>${ch.title}</h1><div>${cleanedContent}</div></body></html>`;
-        oebps.file(`${id}.html`, chapterHtml);
+        const chapterHtml = `<?xml version="1.0" encoding="UTF-8"?><html xmlns="http://www.w3.org/1999/xhtml"><head><title>${ch.title}</title><style>body { font-family: sans-serif; padding: 10px; } h1 { text-align: center; } img { max-width: 100%; height: auto; display: block; margin: 10px auto; }</style></head><body><h1>${ch.title}</h1><div>${cleanedContent}</div></body></html>`;
+        oebps.file(`${cleanFileId}.html`, chapterHtml);
     }
     
     let manifestCoverItem = '';
     let metadataCoverMeta = '';
     if (coverFile) {
-        manifestCoverItem = `<item id="cover-image" href="cover.jpg" media-type="image/jpeg"/>`;
+        manifestCoverItem = `<item id="cover-image" href="cover_page_img.jpg" media-type="image/jpeg"/>`;
         metadataCoverMeta = `<meta name="cover" content="cover-image"/>`;
         try {
             const base64Data = await fileToBase64(coverFile);
-            oebps.file("cover.jpg", base64Data, { base64: true });
+            oebps.file("cover_page_img.jpg", base64Data, { base64: true });
         } catch (e) {
             alert("Error processing cover image: " + e.message);
             return;
