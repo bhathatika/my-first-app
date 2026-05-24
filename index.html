@@ -4,12 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Web ePub Creator Pro</title>
+    <!-- Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <script>
-    /*! JSZip v3.10.1 - Dual licensed under the MIT license or GPLv3. */
-    !function(e){if("object"==typeof exports&&"undefined"!=typeof module)module.exports=e();else if("function"==typeof define&&define.amd)define([],e);else{("undefined"!=typeof window?window:"undefined"!=typeof global?global:"undefined"!=typeof self?self:this).JSZip=e()}}(function(){return function e(t,n,r){function o(s,a){if(!n[s]){if(!t[s]){var id="function"==typeof require&&require;if(!a&&id)return id(s,!0);if(i)return i(s,!0);throw new Error("Cannot find module '"+s+"'")}var id=n[s]={exports:{}};t[s][0].call(id.exports,function(e){var n=t[s][1][e];return o(n?n:e)},id,id.exports,e,t,n,r)}return n[s].exports}for(var i="function"==typeof require&&require,s=0;s<r.length;s++)o(r[s]);return o}({1:[function(e,t,n){"use strict";var r=e("./utils"),o=e("./support"),i=e("./flate"),s=e("./stream/GenericStream");function a(e,t,n){this.name=e,this.dir=n.dir,this.date=n.date,this.comment=n.comment,this.unixPermissions=n.unixPermissions,this.dosPermissions=n.dosPermissions,this._data=t,this._dataBinary=n.binary,this.options={compression:n.compression,compressionOptions:n.compressionOptions}}a.prototype={internalStream:function(e){var t=null,n=this._data;if(n instanceof s)t=n;else if(n&&n.internalStream)t=n.internalStream(e);else{var a=r.getTypeOf(n);t=new s(function(){return o.nodebuffer&&"nodebuffer"!==a?r.transformTo("nodebuffer",n):r.transformTo("uint8array",n)})}return t=i.compressWorker(t,this.options.compression,this.options.compressionOptions)}};t.exports=a},{"./flate":3,"./stream/GenericStream":10,"./support":13,"./utils":15}],2:[function(e,t,n){"use strict";var r=e("./zipObject"),o=e("./utils");function i(){this.files={},this.comment=null}i.prototype={folder:function(e){e=e.replace(/\\/g,"/"),"/"!==e.slice(-1)&&(e+="/");var t=new r(e,null,{dir:!0,binary:!0,compression:"STORE",date:new Date});return this.files[e]=t,this},file:function(e,t,n){n=o.extend({binary:!1,dir:!1,compression:"STORE",date:new Date},n);var i=new r(e,t,n);return this.files[e]=i,this},generateAsync:function(e){e=o.extend({type:"base64",compression:"STORE"},e);var t=new(e.streamFiles?e.streamFiles:function(){var t=new(require("./stream/ZipStream"))(e);for(var n in this.files)this.files[n].dir||t.append(this.files[n]);return t.finalize()}).bind(this);return t.accumulate(e.type)}};t.exports=i},{"./stream/ZipStream":11,"./utils":15,"./zipObject":1}],3:[function(e,t,n){"use strict";var r=e("./stream/GenericStream");n.compressWorker=function(e,t,n){if("STORE"===t)return e;throw new Error("Unsupported compression "+t)}},Base64:{encode:function(e){for(var t,n,r,o,i,s,a="",c=0;c<e.length;)o=(t=e.charCodeAt(c++))>>2,i=(3&t)<<4|(n=e.charCodeAt(c++))>>4,s=(15&n)<<2|(r=e.charCodeAt(c++))>>6,a+=("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/".charAt(o)+"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/".charAt(i)+(isNaN(n)?"=":_base64Str.charAt(s))+(isNaN(r)?"=":_base64Str.charAt(63&r)));return a}}},{}],10:[function(e,t,n){"use strict";function r(e){this._chunks=[],this._isStarted=!1,this._isEnded=!1,this._init=e}r.prototype={start:function(){this._isStarted||(this._isStarted=!0,this._init())},append:function(e){this._chunks.push(e)},end:function(){this._isEnded=!0},accumulate:function(e){var t=this;return new Promise(function(n,r){t.start();var o=setInterval(function(){if(t._isEnded){clearInterval(o);var i=function(e,t){var n;if("string"===e)return t.join("");if("uint8array"===e){n=new Uint8Array(t.reduce(function(e,t){return e+t.length},0));var r=0;return t.forEach(function(e){n.set(e,r),r+=e.length}),n}return t}(e,t._chunks);n(i)}},10)})}};t.exports=r},{}],11:[function(e,t,n){"use strict";var r=e("./GenericStream"),o=e("../utils");function i(e){r.call(this,function(){}),this.options=e}o.inherits(i,r),i.prototype.append=function(e){var t=this;e.internalStream(this.options.compression).accumulate("uint8array").then(function(n){var r=function(e,t){var n=e.name,r=o.transformTo("uint8array",n),i=30+r.length,s=new Uint8Array(i+t.length);return s[0]=80,s[1]=75,s[2]=3,s[3]=4,s[10]=0,s[11]=0,s[26]=255&r.length,s[27]=r.length>>8,s.set(r,30),s.set(t,i),s}(e,n);t._chunks.push(r)})},i.prototype.finalize=function(){return this.end(),this},t.exports=i},{"../utils":15,"./GenericStream":10}],13:[function(e,t,n){"use strict";n.nodebuffer=!1,n.uint8array="undefined"!=typeof Uint8Array},{}],15:[function(e,t,n){"use strict";n.extend=function(e,t){for(var n in t)t.hasOwnProperty(n)&&(e[n]=t[n]);return e},n.getTypeOf=function(e){return"string"==typeof e?"string":e instanceof Uint8Array?"uint8array":"unknown"},n.transformTo=function(e,t){if(e===n.getTypeOf(t))return t;if("uint8array"===e&&"string"===t){for(var r=new Uint8Array(t.length),o=0;o<t.length;o++)r[o]=255&t.charCodeAt(o);return r}if("string"===e&&"uint8array"===t){for(var s="",a=0;a<t.length;a++)s+=String.fromCharCode(t[a]);return s}return t},n.inherits=function(e,t){e.prototype=Object.create(t.prototype),e.prototype.constructor=e}};return i()});
-    </script>
+    <!-- 🌟 GitHub Pages ပေါ်မှာ လုံခြုံရေးစိတ်ချရပြီး ကန့်သတ်ချက်ကျော်လွန်နိုင်သော JSZip Stable CDN 🌟 -->
+    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 
     <style>
         :root {
@@ -97,6 +96,7 @@
 
 <div class="app-container">
 
+    <!-- SIGN IN / SIGN UP SCREEN -->
     <div id="auth-screen">
         <div class="auth-toggle">
             <span id="tab-login" class="active" onclick="switchAuthTab('login')">Sign In</span>
@@ -113,6 +113,7 @@
         <button class="btn btn-blue" id="btn-auth" onclick="handleAuth()">Sign In</button>
     </div>
 
+    <!-- MAIN APP SCREEN -->
     <div id="main-app" class="hidden">
         <div class="header">
             <div class="brand">
@@ -126,6 +127,7 @@
         </div>
 
         <div class="content">
+            <!-- Backup Management -->
             <div class="panel">
                 <div class="panel-title" id="lbl-backup-title"><i class="fa-solid fa-floppy-disk"></i> စာအုပ် BACKUP စီမံခန့်ခွဲမှု</div>
                 <button class="btn btn-gray" onclick="exportBackup()" style="margin-bottom:8px;"><i class="fa-solid fa-floppy-disk"></i> <span id="lbl-btn-backup">လက်ရှိစာအုပ်ကို ဖိုင်သိမ်းဆည်းမည် (Backup)</span></button>
@@ -136,6 +138,7 @@
                 <button class="btn btn-red" onclick="resetForm()"><i class="fa-solid fa-paintbrush"></i> <span id="lbl-btn-reset">စာအုပ်အသစ်အတွက် အစကပြန်စမည် (Reset)</span></button>
             </div>
 
+            <!-- Meta Data -->
             <div class="form-group">
                 <label id="lbl-book-title">စာအုပ်အမည် (Book Title)</label>
                 <input type="text" id="book-title" placeholder="My Novel" oninput="saveCurrentBookState()">
@@ -152,12 +155,14 @@
                 <small id="cover-status" style="color: var(--btn-green); font-weight:bold; margin-top:2px;"></small>
             </div>
 
+            <!-- Chapters Management -->
             <div class="form-group">
                 <label id="lbl-chapters">အခန်းများ (Chapters)</label>
                 <button class="btn btn-blue" onclick="addNewChapter()"><i class="fa-solid fa-plus"></i> <span id="lbl-btn-addchapter">အခန်းတိုးမည် (Add Chapter)</span></button>
                 <div class="chapter-list-box" id="chapter-list"></div>
             </div>
 
+            <!-- PDF Optional -->
             <div class="pdf-box">
                 <div style="color: #10b981; font-weight: bold; font-size: 0.85rem; margin-bottom: 8px;">
                     <i class="fa-solid fa-file-pdf"></i> <span id="lbl-pdf-title">PDF မှ စာသားထုတ်ယူရန် (Optional)</span>
@@ -166,6 +171,7 @@
                 <button class="btn btn-green" style="padding:8px; font-size:0.85rem;"><i class="fa-solid fa-bolt"></i> <span id="lbl-btn-pdfextract">PDF မှ စာသားများကို ဆွဲထုတ်မည်</span></button>
             </div>
 
+            <!-- Chapter Editor Section -->
             <div class="form-group">
                 <label id="lbl-chap-title">အခန်းခေါင်းစဉ် (Chapter Title)</label>
                 <input type="text" id="chapter-title" placeholder="Chapter Title" oninput="updateActiveChapterTitle(this.value)">
@@ -173,6 +179,7 @@
 
             <button class="btn btn-red" onclick="clearContent()"><i class="fa-solid fa-broom"></i> <span id="lbl-btn-clear">စာသားအားလုံးဖျက်ရန် (Clear All Content)</span></button>
 
+            <!-- Text & Multiple Image Editor -->
             <div class="form-group">
                 <label id="lbl-chap-content">အခန်းတွင်းစာသား (Chapter Content)</label>
                 <div class="editor-container">
@@ -191,6 +198,7 @@
                 </div>
             </div>
 
+            <!-- Export ePub Button -->
             <button class="btn btn-green" onclick="generateEPUB()">
                 <i class="fa-solid fa-box"></i> <span id="lbl-btn-export">ePub ဖိုင် ထုတ်ယူမည်</span>
             </button>
@@ -418,92 +426,99 @@
             return;
         }
 
-        if (typeof JSZip === 'undefined') {
-            alert("စနစ်အတွင်း အမှားအယွင်းရှိနေပါသည်။ ဖိုင်ထုတ်၍မရပါ။");
+        // 🌟 Browser ရဲ့ Window Local Object ထဲက JSZip ကို တိုက်ရိုက်ခေါ်သုံးခြင်းဖြင့် Error ကို ဖြေရှင်းခြင်း 🌟
+        let JSZipEngine = window.JSZip;
+        
+        if (!JSZipEngine) {
+            alert("JSZip Engine ရှာမတွေ့ပါ။ အင်တာနက်ဖွင့်ပြီး Page ကို Refresh ပြန်လုပ်ပေးပါ။");
             return;
         }
 
-        const zip = new JSZip();
-        zip.file("mimetype", "application/epub+zip", { compression: "STORE" });
-        
-        const containerXml = `<?xml version="1.0" encoding="UTF-8"?>
-        <container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
-            <rootfiles>
-                <rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/>
-            </rootfiles>
-        </container>`;
-        zip.folder("META-INF").file("container.xml", containerXml);
-        
-        const oebps = zip.folder("OEBPS");
-        let manifestItems = "";
-        let spineItems = "";
-        
-        bookChapters.forEach((chap, index) => {
-            const fileName = `chapter_${index + 1}.xhtml`;
+        try {
+            const zip = new JSZipEngine();
+            zip.file("mimetype", "application/epub+zip", { compression: "STORE" });
             
-            const chapHtml = `<?xml version="1.0" encoding="utf-8"?>
-            <!DOCTYPE html>
-            <html xmlns="http://www.w3.org/1999/xhtml">
-            <head><title>${chap.title}</title></head>
-            <body>
-                <h1>${chap.title}</h1>
-                <div>${chap.content}</div>
-            </body>
-            </html>`;
+            const containerXml = `<?xml version="1.0" encoding="UTF-8"?>
+            <container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
+                <rootfiles>
+                    <rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/>
+                </rootfiles>
+            </container>`;
+            zip.folder("META-INF").file("container.xml", containerXml);
             
-            oebps.file(fileName, chapHtml);
-            manifestItems += `<item id="chap_${index+1}" href="${fileName}" media-type="application/xhtml+xml"/>\n`;
-            spineItems += `<itemref idref="chap_${index+1}"/>\n`;
-        });
-        
-        const opfXml = `<?xml version="1.0" encoding="UTF-8"?>
-        <package xmlns="http://www.idpf.org/2007/opf" unique-identifier="bookid" version="2.0">
-            <metadata xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:opf="http://www.idpf.org/2007/opf">
-                <dc:title>${title}</dc:title>
-                <dc:creator opf:role="aut">${author}</dc:creator>
-                <dc:language>my</dc:language>
-                <dc:identifier id="bookid">urn:uuid:${Date.now()}</dc:identifier>
-            </metadata>
-            <manifest>
-                <item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>
-                ${manifestItems}
-            </manifest>
-            <spine toc="ncx">
-                ${spineItems}
-            </spine>
-        </package>`;
-        oebps.file("content.opf", opfXml);
-        
-        let ncxNav = "";
-        bookChapters.forEach((chap, index) => {
-            ncxNav += `<navPoint id="nav_${index+1}" playOrder="${index+1}">
-                <navLabel><text>${chap.title}</text></navLabel>
-                <content src="chapter_${index+1}.xhtml"/>
-            </navPoint>\n`;
-        });
-        
-        const ncxXml = `<?xml version="1.0" encoding="UTF-8"?>
-        <!DOCTYPE ncx PUBLIC "-//NISO//DTD ncx v2005-1//EN" "http://www.daisy.org/z3986/2005/ncx-2005-1.dtd">
-        <ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1">
-            <head>
-                <meta name="dtb:uid" content="urn:uuid:12345"/>
-                <meta name="dtb:depth" content="1"/>
-            </head>
-            <docTitle><text>${title}</text></docTitle>
-            <navMap>
-                ${ncxNav}
-            </navMap>
-        </ncx>`;
-        oebps.file("toc.ncx", ncxXml);
-        
-        zip.generateAsync({ type: "blob" }).then(function(blob) {
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = title.replace(/\s+/g, '_') + ".epub";
-            a.click();
-            URL.revokeObjectURL(url);
-        });
+            const oebps = zip.folder("OEBPS");
+            let manifestItems = "";
+            let spineItems = "";
+            
+            bookChapters.forEach((chap, index) => {
+                const fileName = `chapter_${index + 1}.xhtml`;
+                
+                const chapHtml = `<?xml version="1.0" encoding="utf-8"?>
+                <!DOCTYPE html>
+                <html xmlns="http://www.w3.org/1999/xhtml">
+                <head><title>${chap.title}</title></head>
+                <body>
+                    <h1>${chap.title}</h1>
+                    <div>${chap.content}</div>
+                </body>
+                </html>`;
+                
+                oebps.file(fileName, chapHtml);
+                manifestItems += `<item id="chap_${index+1}" href="${fileName}" media-type="application/xhtml+xml"/>\n`;
+                spineItems += `<itemref idref="chap_${index+1}"/>\n`;
+            });
+            
+            const opfXml = `<?xml version="1.0" encoding="UTF-8"?>
+            <package xmlns="http://www.idpf.org/2007/opf" unique-identifier="bookid" version="2.0">
+                <metadata xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:opf="http://www.idpf.org/2007/opf">
+                    <dc:title>${title}</dc:title>
+                    <dc:creator opf:role="aut">${author}</dc:creator>
+                    <dc:language>my</dc:language>
+                    <dc:identifier id="bookid">urn:uuid:${Date.now()}</dc:identifier>
+                </metadata>
+                <manifest>
+                    <item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>
+                    ${manifestItems}
+                </manifest>
+                <spine toc="ncx">
+                    ${spineItems}
+                </spine>
+            </package>`;
+            oebps.file("content.opf", opfXml);
+            
+            let ncxNav = "";
+            bookChapters.forEach((chap, index) => {
+                ncxNav += `<navPoint id="nav_${index+1}" playOrder="${index+1}">
+                    <navLabel><text>${chap.title}</text></navLabel>
+                    <content src="chapter_${index+1}.xhtml"/>
+                </navPoint>\n`;
+            });
+            
+            const ncxXml = `<?xml version="1.0" encoding="UTF-8"?>
+            <!DOCTYPE ncx PUBLIC "-//NISO//DTD ncx v2005-1//EN" "http://www.daisy.org/z3986/2005/ncx-2005-1.dtd">
+            <ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1">
+                <head>
+                    <meta name="dtb:uid" content="urn:uuid:12345"/>
+                    <meta name="dtb:depth" content="1"/>
+                </head>
+                <docTitle><text>${title}</text></docTitle>
+                <navMap>
+                    ${ncxNav}
+                </navMap>
+            </ncx>`;
+            oebps.file("toc.ncx", ncxXml);
+            
+            zip.generateAsync({ type: "blob" }).then(function(blob) {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = title.replace(/\s+/g, '_') + ".epub";
+                a.click();
+                URL.revokeObjectURL(url);
+            });
+        } catch(err) {
+            alert("ePub တည်ဆောက်ရာတွင် အမှားအယွင်းရှိခဲ့သည်- " + err.message);
+        }
     }
 
     function formatDoc(cmd) { document.execCommand(cmd, false, null); }
