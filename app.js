@@ -1,4 +1,4 @@
-// 🚀 ၁။ ePub ဖိုင် ထုတ်ယူမည့် လုပ်ဆောင်ချက် (iOS Chrome/Firefox ပါ အလုပ်လုပ်အောင် ပြင်ဆင်ပြီး)
+// 🚀 ၁။ ePub ဖိုင် ထုတ်ယူမည့် လုပ်ဆောင်ချက် (Cover Image ဒေတာပမာဏကြီးပါက iOS Chrome/Firefox တွင် မပျက်ကျအောင် ပြင်ဆင်ပြီး)
 async function generateEPUB() {
     await saveCurrentBookState();
     const title = document.getElementById('book-title').value || "Untitled Book";
@@ -141,31 +141,23 @@ async function generateEPUB() {
 
     zip.generateAsync({ type: "blob", mimeType: "application/epub+zip" }).then(function (blob) {
         const filename = title.replace(/\s+/g, '_') + ".epub";
+        const fileURL = URL.createObjectURL(blob);
         
-        // 🌟 [ပြင်ဆင်ချက်] iOS Chrome (CriOS) နှင့် Firefox (FxiOS) စစ်ဆေးခြင်း
+        // 🌟 [ပြင်ဆင်ချက်အသစ်] ပုံကြီးလွန်းပါက ပျက်မကျစေရန် URL.createObjectURL သုံးပြီး Tab အသစ်တွင် လမ်းကြောင်းဖွင့်ခြင်း
         if (navigator.userAgent.match('CriOS') || navigator.userAgent.match('FxiOS')) {
-            const reader = new FileReader();
-            reader.onloadend = function() {
-                window.open(reader.result, '_blank');
-            };
-            reader.readAsDataURL(blob);
+            window.open(fileURL, '_blank');
         } else {
-            // Safari နှင့် တခြား Browser များအတွက် ပုံမှန်ဒေါင်းလုဒ်စနစ်
-            const reader = new FileReader();
-            reader.onloadend = function() {
-                const a = document.createElement('a');
-                a.href = reader.result;
-                a.download = filename;
-                document.body.appendChild(a);
-                a.click();
-                setTimeout(() => { document.body.removeChild(a); }, 500);
-            };
-            reader.readAsDataURL(blob);
+            const a = document.createElement('a');
+            a.href = fileURL;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(fileURL); }, 500);
         }
     }).catch(function (err) { alert("ePub Error: " + err.message); });
 }
 
-// 📦 ၂။ စာအုပ် BACKUP ဖိုင်ထုတ်ယူမည့် လုပ်ဆောင်ချက် (iOS Chrome/Firefox ပါ အလုပ်လုပ်အောင် ပြင်ဆင်ပြီး)
+// 📦 ၂။ စာအုပ် BACKUP ဖိုင်ထုတ်ယူမည့် လုပ်ဆောင်ချက် (Cover Image ဒေတာပမာဏကြီးပါက iOS Chrome/Firefox တွင် မပျက်ကျအောင် ပြင်ဆင်ပြီး)
 async function exportToBackupFile() {
     try {
         await saveCurrentBookState();
@@ -183,26 +175,18 @@ async function exportToBackupFile() {
             const jsonString = JSON.stringify(state);
             const blob = new Blob([jsonString], { type: "application/json" });
             const filename = (state.title || "My_Novel").replace(/\s+/g, '_') + "_backup.json";
+            const fileURL = URL.createObjectURL(blob);
 
-            // 🌟 [ပြင်ဆင်ချက်] iOS Chrome (CriOS) နှင့် Firefox (FxiOS) စစ်ဆေးခြင်း
+            // 🌟 [ပြင်ဆင်ချက်အသစ်] ပုံကြီးလွန်းပါက ပျက်မကျစေရန် URL.createObjectURL သုံးပြီး Tab အသစ်တွင် လမ်းကြောင်းဖွင့်ခြင်း
             if (navigator.userAgent.match('CriOS') || navigator.userAgent.match('FxiOS')) {
-                const reader = new FileReader();
-                reader.onloadend = function() {
-                    window.open(reader.result, '_blank');
-                };
-                reader.readAsDataURL(blob);
+                window.open(fileURL, '_blank');
             } else {
-                // Safari နှင့် တခြား Browser များအတွက် ပုံမှန်ဒေါင်းလုဒ်စနစ်
-                const reader = new FileReader();
-                reader.onloadend = function() {
-                    const a = document.createElement('a');
-                    a.href = reader.result;
-                    a.download = filename;
-                    document.body.appendChild(a);
-                    a.click();
-                    setTimeout(() => { document.body.removeChild(a); }, 500);
-                };
-                reader.readAsDataURL(blob);
+                const a = document.createElement('a');
+                a.href = fileURL;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(fileURL); }, 500);
             }
         };
     } catch (error) {
