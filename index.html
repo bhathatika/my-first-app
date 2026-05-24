@@ -6,8 +6,6 @@
     <title>Web ePub Creator Pro</title>
     <!-- Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- 🌟 GitHub Security ကန့်သတ်ချက်အားလုံးကို ကျော်လွှားရန်အတွက် ဤနေရာတွင် မည်သည့်ပြင်ပ Script မှ ထပ်မံခေါ်ယူမထားပါ။ 🌟 -->
 
     <style>
         :root {
@@ -413,7 +411,7 @@
         reader.readAsText(file);
     }
 
-    // --- 🌟 ၁၀၀% သီးသန့် အလုပ်လုပ်မည့် စွမ်းဆောင်ရည်မြင့် EPUB COMPILER ENGINE 🌟 ---
+    // --- 🌟 APPLE BOOKS COMPLIANT STANDARD EPUB ENGINE 🌟 ---
     function generateEPUB() {
         saveCurrentBookState();
         
@@ -426,100 +424,40 @@
         }
 
         try {
-            // 🌟 ပြင်ပလင့်ခ် လုံးဝမလိုအပ်သော ရိုးရှင်းပြီး အစွမ်းထက်သည့် Client-Side Zip Builder စနစ် 🌟
-            const Base64ZipEncoder = {
-                createZipBlob: function(filesArray) {
-                    let totalSize = 0;
-                    filesArray.forEach(f => { totalSize += f.content.length + f.name.length + 100; });
-                    
-                    const buffer = new ArrayBuffer(totalSize * 2 + 1024);
-                    const view = new DataView(buffer);
-                    let offset = 0;
-                    const localHeaders = [];
-
-                    function writeString(str) {
-                        for (let i = 0; i < str.length; i++) {
-                            view.setUint8(offset++, str.charCodeAt(i));
-                        }
+            // CRC32 Generator for Standard Zip Verification
+            function makeCRCTable(){
+                let c;
+                let crcTable = [];
+                for(let n =0; n < 256; n++){
+                    c = n;
+                    for(let k =0; k < 8; k++){
+                        c = ((c&1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1));
                     }
-
-                    // 1. Write Local File Headers
-                    filesArray.forEach((file) => {
-                        const localHeaderOffset = offset;
-                        // Signatures
-                        view.setUint32(offset, 0x04034b50, true); offset += 4;
-                        view.setUint16(offset, 10, true); offset += 2; // version
-                        view.setUint16(offset, 0, true); offset += 2;  // flags
-                        view.setUint16(offset, file.compress ? 0 : 0, true); offset += 2; // method
-                        view.setUint16(offset, 0x5421, true); offset += 2; // time
-                        view.setUint16(offset, 0x5421, true); offset += 2; // date
-                        
-                        // CRC32 calculations placeholder (Simplified for EPUB)
-                        view.setUint32(offset, 0, true); offset += 4; 
-                        view.setUint32(offset, file.content.length, true); offset += 4; // compressed size
-                        view.setUint32(offset, file.content.length, true); offset += 4; // uncompressed size
-                        view.setUint16(offset, file.name.length, true); offset += 2;
-                        view.setUint16(offset, 0, true); offset += 2; // extra field
-                        
-                        writeString(file.name);
-                        writeString(file.content);
-
-                        localHeaders.push({
-                            offset: localHeaderOffset,
-                            name: file.name,
-                            size: file.content.length
-                        });
-                    });
-
-                    const centralDirectoryOffset = offset;
-
-                    // 2. Write Central Directory
-                    localHeaders.forEach((header) => {
-                        view.setUint32(offset, 0x02014b50, true); offset += 4;
-                        view.setUint16(offset, 10, true); offset += 2;
-                        view.setUint16(offset, 10, true); offset += 2;
-                        view.setUint16(offset, 0, true); offset += 2;
-                        view.setUint16(offset, 0, true); offset += 2;
-                        view.setUint16(offset, 0x5421, true); offset += 2;
-                        view.setUint16(offset, 0x5421, true); offset += 2;
-                        view.setUint32(offset, 0, true); offset += 4;
-                        view.setUint32(offset, header.size, true); offset += 4;
-                        view.setUint32(offset, header.size, true); offset += 4;
-                        view.setUint16(offset, header.name.length, true); offset += 2;
-                        view.setUint16(offset, 0, true); offset += 2;
-                        view.setUint16(offset, 0, true); offset += 2;
-                        view.setUint16(offset, 0, true); offset += 2;
-                        view.setUint16(offset, 0, true); offset += 2;
-                        view.setUint32(offset, 0, true); offset += 4;
-                        view.setUint32(offset, header.offset, true); offset += 4;
-                        writeString(header.name);
-                    });
-
-                    const centralDirectorySize = offset - centralDirectoryOffset;
-
-                    // 3. End of central directory record
-                    view.setUint32(offset, 0x06054b50, true); offset += 4;
-                    view.setUint16(offset, 0, true); offset += 2;
-                    view.setUint16(offset, 0, true); offset += 2;
-                    view.setUint16(offset, localHeaders.length, true); offset += 2;
-                    view.setUint16(offset, localHeaders.length, true); offset += 2;
-                    view.setUint32(offset, centralDirectorySize, true); offset += 4;
-                    view.setUint32(offset, centralDirectoryOffset, true); offset += 4;
-                    view.setUint16(offset, 0, true); offset += 2;
-
-                    return new Blob([buffer.slice(0, offset)], { type: "application/epub+zip" });
+                    crcTable[n] = c;
                 }
-            };
+                return crcTable;
+            }
+            const crcTable = makeCRCTable();
+            function calculateCRC32(str) {
+                let crc = 0 ^ (-1);
+                for (let i = 0; i < str.length; i++ ) {
+                    crc = (crc >>> 8) ^ crcTable[(crc ^ str.charCodeAt(i)) & 0xFF];
+                }
+                return (crc ^ (-1)) >>> 0;
+            }
+
+            // UTF-8 Custom Encoder for Perfect Binary Generation
+            const textEncoder = new TextEncoder();
 
             const files = [];
             
-            // EPUB standard fixed files
-            files.push({ name: "mimetype", content: "application/epub+zip", compress: false });
+            // 🌟 Rule 1: mimetype file MUST NOT have any extra newline or space characters.
+            files.push({ name: "mimetype", content: "application/epub+zip", method: 0 });
             
             files.push({
                 name: "META-INF/container.xml",
                 content: `<?xml version="1.0" encoding="UTF-8"?><container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container"><rootfiles><rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/></rootfiles></container>`,
-                compress: false
+                method: 0
             });
 
             let manifestItems = "";
@@ -527,9 +465,9 @@
 
             bookChapters.forEach((chap, index) => {
                 const fileName = `OEBPS/chapter_${index + 1}.xhtml`;
-                const chapHtml = `<?xml version="1.0" encoding="utf-8"?><!DOCTYPE html><html xmlns="http://www.w3.org/1999/xhtml"><head><title>${chap.title}</title><style>body{padding:15px;font-family:sans-serif;line-height:1.6;}img{max-width:100%;height:auto;}</style></head><body><h1>${chap.title}</h1><div>${chap.content}</div></body></html>`;
+                const chapHtml = `<?xml version="1.0" encoding="utf-8"?><!DOCTYPE html><html xmlns="http://www.w3.org/1999/xhtml"><head><title>${chap.title}</title><style>body{padding:20px;font-family:sans-serif;line-height:1.6;color:#111111;background-color:#ffffff;}img{max-width:100%;height:auto;display:block;margin:10px 0;}</style></head><body><h1>${chap.title}</h1><div>${chap.content}</div></body></html>`;
                 
-                files.push({ name: fileName, content: chapHtml, compress: false });
+                files.push({ name: fileName, content: chapHtml, method: 0 });
                 manifestItems += `<item id="chap_${index+1}" href="chapter_${index+1}.xhtml" media-type="application/xhtml+xml"/>\n`;
                 spineItems += `<itemref idref="chap_${index+1}"/>\n`;
             });
@@ -550,7 +488,7 @@
                     ${spineItems}
                 </spine>
             </package>`;
-            files.push({ name: "OEBPS/content.opf", content: opfXml, compress: false });
+            files.push({ name: "OEBPS/content.opf", content: opfXml, method: 0 });
 
             let ncxNav = "";
             bookChapters.forEach((chap, index) => {
@@ -567,10 +505,83 @@
                 <docTitle><text>${title}</text></docTitle>
                 <navMap>${ncxNav}</navMap>
             </ncx>`;
-            files.push({ name: "OEBPS/toc.ncx", content: ncxXml, compress: false });
+            files.push({ name: "OEBPS/toc.ncx", content: ncxXml, method: 0 });
 
-            // Compile Zip completely inside pure JS
-            const finalBlob = Base64ZipEncoder.createZipBlob(files);
+            // 🌟 Strict Binary Structuring for Apple Validation 🌟
+            let totalBytesNeeded = 0;
+            const preparedFiles = files.map(file => {
+                const nameBytes = textEncoder.encode(file.name);
+                const contentBytes = textEncoder.encode(file.content);
+                const crc = calculateCRC32(file.content);
+                totalBytesNeeded += 30 + nameBytes.length + contentBytes.length + 46 + nameBytes.length + 30;
+                return { nameBytes, contentBytes, crc, name: file.name };
+            });
+
+            const buffer = new ArrayBuffer(totalBytesNeeded + 2048);
+            const view = new DataView(buffer);
+            let offset = 0;
+            const headers = [];
+
+            // 1. Local File Headers
+            preparedFiles.forEach(file => {
+                const localOffset = offset;
+                view.setUint32(offset, 0x04034b50, true); offset += 4; // signature
+                view.setUint16(offset, 10, true); offset += 2;        // version
+                view.setUint16(offset, 0, true); offset += 2;         // flags
+                view.setUint16(offset, 0, true); offset += 2;         // compression method (0 = STORE)
+                view.setUint16(offset, 0x5421, true); offset += 2;    // mod time
+                view.setUint16(offset, 0x5421, true); offset += 2;    // mod date
+                view.setUint32(offset, file.crc, true); offset += 4;   // crc32
+                view.setUint32(offset, file.contentBytes.length, true); offset += 4; // compressed size
+                view.setUint32(offset, file.contentBytes.length, true); offset += 4; // uncompressed size
+                view.setUint16(offset, file.nameBytes.length, true); offset += 2;    // name length
+                view.setUint16(offset, 0, true); offset += 2;        // extra field length
+                
+                file.nameBytes.forEach(b => view.setUint8(offset++, b));
+                file.contentBytes.forEach(b => view.setUint8(offset++, b));
+
+                headers.push({ offset: localOffset, file });
+            });
+
+            const centralDirOffset = offset;
+
+            // 2. Central Directory Record
+            headers.forEach(h => {
+                view.setUint32(offset, 0x02014b50, true); offset += 4; // signature
+                view.setUint16(offset, 10, true); offset += 2;        // version made by
+                view.setUint16(offset, 10, true); offset += 2;        // version needed
+                view.setUint16(offset, 0, true); offset += 2;         // flags
+                view.setUint16(offset, 0, true); offset += 2;         // compression method
+                view.setUint16(offset, 0x5421, true); offset += 2;    // mod time
+                view.setUint16(offset, 0x5421, true); offset += 2;    // mod date
+                view.setUint32(offset, h.file.crc, true); offset += 4; // crc32
+                view.setUint32(offset, h.file.contentBytes.length, true); offset += 4;
+                view.setUint32(offset, h.file.contentBytes.length, true); offset += 4;
+                view.setUint16(offset, h.file.nameBytes.length, true); offset += 2;
+                view.setUint16(offset, 0, true); offset += 2; // extra
+                view.setUint16(offset, 0, true); offset += 2; // comment
+                view.setUint16(offset, 0, true); offset += 2; // disk start
+                view.setUint16(offset, 0, true); offset += 2; // internal attr
+                view.setUint32(offset, 0, true); offset += 4; // external attr
+                view.setUint32(offset, h.offset, true); offset += 4; // local header offset
+                
+                h.file.nameBytes.forEach(b => view.setUint8(offset++, b));
+            });
+
+            const centralDirSize = offset - centralDirOffset;
+
+            // 3. End of Central Directory
+            view.setUint32(offset, 0x06054b50, true); offset += 4;
+            view.setUint16(offset, 0, true); offset += 2;
+            view.setUint16(offset, 0, true); offset += 2;
+            view.setUint16(offset, headers.length, true); offset += 2;
+            view.setUint16(offset, headers.length, true); offset += 2;
+            view.setUint32(offset, centralDirSize, true); offset += 4;
+            view.setUint32(offset, centralDirOffset, true); offset += 4;
+            view.setUint16(offset, 0, true); offset += 2;
+
+            // Build blob and trigger download
+            const finalBlob = new Blob([buffer.slice(0, offset)], { type: "application/epub+zip" });
             const url = URL.createObjectURL(finalBlob);
             const a = document.createElement('a');
             a.href = url;
@@ -580,7 +591,7 @@
             setTimeout(() => URL.revokeObjectURL(url), 2000);
 
         } catch(err) {
-            alert("အမှားအယွင်း ဖြစ်ပေါ်ခဲ့သည်- " + err.message);
+            alert("ePub တည်ဆောက်မှု မအောင်မြင်ပါ- " + err.message);
         }
     }
 
