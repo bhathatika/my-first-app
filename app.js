@@ -1,28 +1,27 @@
-// 🛡️ နှောင့်ယှက်နေသော Custom Alert ပေါ့ပ်အပ်များအား လုံးဝအလုပ်မလုပ်အောင် ကြားကဖြတ်ပိတ်ခြင်း
-window.alert = function(message) {
-    if (message && (message.includes("Ready") || message.includes("Production"))) {
-        console.log("Blocked popup: " + message);
-        return false;
-    }
-    console.log("Alert: " + message);
-};
-
 let bookChapters = [];
 let currentChapterId = null;
 let coverBase64 = "";
 
-// TinyMCE အယ်ဒီတာ စတင်ခြင်း
-tinymce.init({
-    selector: '#editor',
-    height: 400,
-    plugins: 'advlist autolink lists link image charmap preview anchor searchreplace visualblocks code fullscreen insertdatetime media table code help wordcount',
-    toolbar: 'undo redo | formatselect | bold italic backcolor | alignleft aligncenter alignright alignjustify | lists | image | removeformat',
-    setup: function (editor) {
-        editor.on('change keyup', function () {
+// Text Format Function များ
+function execCmd(command) {
+    document.execCommand(command, false, null);
+    saveCurrentChapterContentLive();
+}
+
+// Editor ထဲသို့ ဓာတ်ပုံ ထည့်သွင်းခြင်း
+function insertImageToEditor(event) {
+    const file = event.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const imgHtml = `<img src="${e.target.result}" alt="inserted_image" />`;
+            document.getElementById('editor').focus();
+            document.execCommand('insertHTML', false, imgHtml);
             saveCurrentChapterContentLive();
-        });
+        };
+        reader.readAsDataURL(file);
     }
-});
+}
 
 // အခန်းခေါင်းစဉ် Live ပြောင်းလဲခြင်း
 function updateChapterTitleLive() {
@@ -40,7 +39,7 @@ function saveCurrentChapterContentLive() {
     if (!currentChapterId) return;
     const chap = bookChapters.find(c => c.id === currentChapterId);
     if (chap) {
-        chap.content = tinymce.get('editor').getContent();
+        chap.content = document.getElementById('editor').innerHTML;
         saveCurrentBookState();
     }
 }
@@ -83,7 +82,7 @@ function selectChapter(id) {
     const chap = bookChapters.find(c => c.id === id);
     if (chap) {
         document.getElementById('current-chapter-title').value = chap.title;
-        tinymce.get('editor').setContent(chap.content || "");
+        document.getElementById('editor').innerHTML = chap.content || "";
         renderChapterList();
     }
 }
@@ -98,7 +97,7 @@ function deleteChapter(id) {
     if (currentChapterId) selectChapter(currentChapterId);
     else {
         document.getElementById('current-chapter-title').value = "";
-        tinymce.get('editor').setContent("");
+        document.getElementById('editor').innerHTML = "";
     }
     saveCurrentBookState();
 }
@@ -119,7 +118,7 @@ function handleCoverImage(event) {
 // စာသားအားလုံး ဖျက်ထုတ်ခြင်း
 function clearAllContent() {
     if(confirm("စာသားအားလုံးကို ဖျက်ပစ်ရန် သေချာပါသလား။")) {
-        tinymce.get('editor').setContent("");
+        document.getElementById('editor').innerHTML = "";
         saveCurrentChapterContentLive();
     }
 }
@@ -165,7 +164,7 @@ function base64ToBlob(base64Str) {
     return new Blob([ab], { type: mimeString });
 }
 
-// 🚀 ePub ထုတ်ယူ၍ တိုက်ရိုက်ဒေါင်းလုဒ်ဆွဲသည့် အဓိက Function (Popup Blocker လုံးဝကျော်ဖြတ်စနစ်)
+// 🚀 ePub ထုတ်ယူ၍ တိုက်ရိုက်ဒေါင်းလုဒ်ဆွဲသည့် အဓိက Function
 async function generateEPUB() {
     saveCurrentBookState();
     const title = document.getElementById('book-title').value || "Untitled_Book";
@@ -194,13 +193,6 @@ async function generateEPUB() {
         const parser = new DOMParser();
         const doc = parser.parseFromString(`<div>${htmlString}</div>`, 'text/html');
         const container = doc.body.firstChild;
-
-        const brs = container.querySelectorAll('br');
-        brs.forEach(br => {
-            const pBr = doc.createElement('p');
-            pBr.innerHTML = '&#160;';
-            br.replaceWith(pBr);
-        });
 
         const imgs = container.querySelectorAll('img');
         for (let img of imgs) {
@@ -265,7 +257,7 @@ async function generateEPUB() {
     const ncxXml = `<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE ncx PUBLIC "-//NISO//DTD ncx v2005-1//EN" "http://www.daisy.org/z3986/2005/ncx-2005-1.dtd"><ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1"><head><meta name="dtb:uid" content="${Date.now()}"/></head><docTitle><text>${title}</text></docTitle><navMap>${ncxNav}</navMap></ncx>`;
     zip.file("OEBPS/toc.ncx", ncxXml);
 
-    // 🌟 [iOS/Safari Force Direct Download]
+    // iOS/Safari Direct Force Download
     zip.generateAsync({ type: "blob", mimeType: "application/epub+zip" }).then(function (blob) {
         const filename = title.replace(/\s+/g, '_') + ".epub";
         const reader = new FileReader();
@@ -281,7 +273,7 @@ async function generateEPUB() {
     });
 }
 
-// Backup သိမ်းဆည်းရန်
+// Backup စနစ်များ
 function exportToBackupFile() {
     const saved = localStorage.getItem('epub_creator_pro_state');
     if (!saved) return alert("⚠️ သိမ်းဆည်းရန် ဒေတာမရှိပါ။");
@@ -292,7 +284,6 @@ function exportToBackupFile() {
     a.click();
 }
 
-// Backup ဖိုင် ပြန်တင်ရန်
 function importFromBackupFile(event) {
     const file = event.target.files[0];
     if (!file) return;
@@ -304,7 +295,6 @@ function importFromBackupFile(event) {
     reader.readAsText(file);
 }
 
-// အကုန်ပြန်စရန်
 function resetCurrentBookState() {
     if(confirm("စာအုပ်အသစ်ရေးရန် အချက်အလက်အားလုံးကို အကုန်ဖျက်မလား။")) {
         localStorage.removeItem('epub_creator_pro_state');
