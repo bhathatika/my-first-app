@@ -214,15 +214,13 @@ function loadBookState() {
     }
 }
 
-// 🔥 Chrome Memory Limit ကျော်ပြီး Block ဖြစ်ခြင်းကို ကာကွယ်ရန် တိုက်ရိုက် Fetch Blob သုံးသည့် စနစ်သစ်
+// Base64 မှ Safe Blob ပြောင်းလဲပေးသည့် စနစ်
 async function dataUrlToBlob(dataUrl) {
     if (!dataUrl || !dataUrl.startsWith("data:image")) return null;
     try {
         const response = await fetch(dataUrl);
         return await response.blob();
     } catch (e) {
-        console.error("Fetch blob failed, fallback to slice method:", e);
-        // Fallback: Processing base64 in safe smaller chunks
         const parts = dataUrl.split(',');
         const contentType = parts[0].split(':')[1].split(';')[0];
         const raw = window.atob(parts[1]);
@@ -256,7 +254,19 @@ async function generateEPUB() {
     let spineItems = "";
     let imageCounter = 1;
 
-    // 🔥 Chrome ပိတ်မသွားစေရန် ပုံတစ်ပုံချင်းစီကို စနစ်တကျ စောင့်ဆိုင်းပြီး ပြောင်းလဲပေးခြင်း
+    // Cover Image ကို Manifest ထဲတွင် တရားဝင် ထည့်သွင်းကြေညာခြင်း (Fix Bug)
+    if (coverBase64 && coverBase64.includes("data:image")) {
+        let coverExt = "jpg"; let coverMime = "image/jpeg";
+        if (coverBase64.includes("image/png")) { coverExt = "png"; coverMime = "image/png"; }
+        
+        const coverBlob = await dataUrlToBlob(coverBase64);
+        if (coverBlob) {
+            zip.file(`OEBPS/images/cover.${coverExt}`, coverBlob);
+            // 🌟 ဒီကုဒ်လိုင်း ကျန်ခဲ့လို့ ဒေါင်းလုဒ်မရဘဲ Crash ဖြစ်သွားရခြင်းဖြစ်လို့ အသစ်ဖြည့်သွင်းပေးလိုက်ပါတယ် 🌟
+            manifestItems += `<item id="cover-img" href="images/cover.${coverExt}" media-type="${coverMime}"/>\n`;
+        }
+    }
+
     for (let index = 0; index < bookChapters.length; index++) {
         let chap = bookChapters[index];
         let htmlString = chap.content || "";
@@ -274,7 +284,6 @@ async function generateEPUB() {
                 if (src.includes("image/png")) { ext = "png"; mediaType = "image/png"; }
                 const filename = `image_${imageCounter}.${ext}`;
                 
-                // 🌟 ဤနေရာတွင် Async ဖြင့် ပုံတစ်ပုံချင်းစီကို သေချာစောင့်ပြီး Blob ပြောင်းပေးခြင်း
                 const imgBlob = await dataUrlToBlob(src);
                 if (imgBlob) {
                     zip.file(`OEBPS/images/${filename}`, imgBlob);
@@ -301,17 +310,6 @@ async function generateEPUB() {
         spineItems += `<itemref idref="chap_${index + 1}"/>\n`;
     }
 
-    if (coverBase64 && coverBase64.includes("data:image")) {
-        let coverExt = "jpg"; let coverMime = "image/jpeg";
-        if (coverBase64.includes("image/png")) { coverExt = "png"; coverMime = "image/png"; }
-        
-        const coverBlob = await dataUrlToBlob(coverBase64);
-        if (coverBlob) {
-            zip.file(`OEBPS/images/cover.${coverExt}`, coverBlob);
-            manifestItems += `<item id="cover-img" href="images/cover.${coverExt}" media-type="${coverMime}"/>\n`;
-        }
-    }
-
     const opfXml = `<?xml version="1.0" encoding="UTF-8"?>
     <package xmlns="http://www.idpf.org/2007/opf" unique-identifier="bookid" version="2.0">
         <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
@@ -332,7 +330,7 @@ async function generateEPUB() {
     const ncxXml = `<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE ncx PUBLIC "-//NISO//DTD ncx v2005-1//EN" "http://www.daisy.org/z3986/2005/ncx-2005-1.dtd"><ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1"><head><meta name="dtb:uid" content="${Date.now()}"/></head><docTitle><text>${title}</text></docTitle><navMap>${ncxNav}</navMap></ncx>`;
     zip.file("OEBPS/toc.ncx", ncxXml);
 
-    // 🌟 Chrome တွင် ဒေါင်းလုဒ်တန်းကျစေရန် အသေချာဆုံး Blob စနစ်ဖြင့် ထုတ်ပေးခြင်း
+    // Chrome နှင့် အခြား Browser အားလုံးတွင် ရာနှုန်းပြည့် အလုပ်လုပ်မည့် Blob Generator
     zip.generateAsync({ type: "blob", mimeType: "application/epub+zip" }).then(function (blob) {
         const filename = title.replace(/\s+/g, '_') + ".epub";
         const downloadUrl = window.URL.createObjectURL(blob);
@@ -376,6 +374,7 @@ function importFromBackupFile(event) {
     reader.readAsText(file);
 }
 
+// Reset ချခြင်း
 function resetCurrentBookState() {
     if(confirm("စာအုပ်အသစ်ရေးရန် အချက်အလက်အားလုံးကို အကုန်ဖျက်မလား။")) {
         localStorage.removeItem('epub_creator_pro_state');
