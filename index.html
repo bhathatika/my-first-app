@@ -4,17 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Web ePub Creator Pro</title>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com/"></script>
-    <!-- FontAwesome Font Icon -->
+    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- JSZip Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
         body { font-family: sans-serif; background-color: #1e293b; }
-        /* API Key မလိုသော Standard Rich Text Editor Component */
         .custom-editor {
-            min-height: 350px;
+            min-height: 400px;
             background-color: #ffffff;
             color: #111111;
             border-radius: 8px;
@@ -30,22 +26,21 @@
             max-width: 100%;
             height: auto;
             display: block;
-            margin: 10px auto;
+            margin: 12px auto;
             border-radius: 6px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
     </style>
 </head>
 <body class="bg-slate-900 text-gray-100">
 
     <div class="max-w-5xl mx-auto p-4 md:p-6">
-        <!-- Header Title Bar -->
         <header class="flex justify-between items-center mb-6 bg-slate-800 text-white p-4 rounded-xl shadow-md border border-slate-700">
             <h1 class="text-xl font-bold flex items-center gap-2">
                 <i class="fa-solid fa-book-open text-yellow-400"></i> Web ePub Creator Pro
             </h1>
         </header>
 
-        <!-- စာအုပ် BACKUP စီမံခန့်ခွဲမှု အပိုင်း -->
         <section class="bg-slate-800 p-4 rounded-xl shadow-sm mb-6 border border-slate-700">
             <h2 class="text-md font-semibold text-gray-300 mb-3 flex items-center gap-2">
                 <i class="fa-solid fa-database text-blue-400"></i> စာအုပ် BACKUP စီမံခန့်ခွဲမှု
@@ -64,9 +59,7 @@
             </div>
         </section>
 
-        <!-- Main Content Area -->
         <main class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <!-- Left Sidebar -->
             <div class="md:col-span-1 space-y-4">
                 <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
                     <label class="block text-sm font-semibold text-gray-300 mb-1">စာအုပ်အမည် (Book Title)</label>
@@ -79,7 +72,6 @@
                     <input type="file" id="cover-image-input" onchange="handleCoverImage(event)" accept="image/*" class="w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-slate-700 file:text-gray-200 hover:file:bg-slate-600 cursor-pointer">
                 </div>
 
-                <!-- အခန်းများ စာရင်း -->
                 <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
                     <div class="flex justify-between items-center mb-3">
                         <h3 class="font-bold text-gray-300">အခန်းများ (Chapters)</h3>
@@ -88,12 +80,10 @@
                         </button>
                     </div>
                     <ul id="chapter-list" class="space-y-2 max-h-64 overflow-y-auto pr-1">
-                        <!-- Dynamic Chapters List -->
-                    </ul>
+                        </ul>
                 </div>
             </div>
 
-            <!-- Right Editor Area -->
             <div class="md:col-span-2 space-y-4">
                 <div class="p-4 border border-slate-700 bg-slate-800 rounded-xl">
                     <div class="mb-3">
@@ -101,13 +91,12 @@
                         <input type="text" id="current-chapter-title" oninput="updateChapterTitleLive()" placeholder="အခန်းခေါင်းစဉ် ထည့်ပါ..." class="w-full p-2 bg-slate-700 border border-slate-600 rounded-lg text-white">
                     </div>
                     
-                    <!-- Editor Toolbar (စာလုံးအထူ၊ စောင်း၊ ပုံထည့်ခလုတ်များ) -->
                     <div class="flex flex-wrap gap-2 p-2 bg-slate-700 rounded-t-lg border-b border-slate-600">
-                        <button type="button" onclick="execCmd('bold')" class="px-3 py-1 bg-slate-600 hover:bg-slate-500 rounded font-bold" title="Bold">B</button>
-                        <button type="button" onclick="execCmd('italic')" class="px-3 py-1 bg-slate-600 hover:bg-slate-500 rounded italic" title="Italic">I</button>
-                        <button type="button" onclick="execCmd('underline')" class="px-3 py-1 bg-slate-600 hover:bg-slate-500 rounded underline" title="Underline">U</button>
-                        <button type="button" onclick="document.getElementById('editor-image-input').click()" class="px-3 py-1 bg-blue-600 hover:bg-blue-500 rounded flex items-center gap-1 text-xs" title="Insert Image">
-                            <i class="fa-solid fa-image"></i> ပုံထည့်ရန်
+                        <button type="button" onclick="execCmd('bold')" class="px-3 py-1 bg-slate-600 hover:bg-slate-500 rounded font-bold">B</button>
+                        <button type="button" onclick="execCmd('italic')" class="px-3 py-1 bg-slate-600 hover:bg-slate-500 rounded italic">I</button>
+                        <button type="button" onclick="execCmd('underline')" class="px-3 py-1 bg-slate-600 hover:bg-slate-500 rounded underline">U</button>
+                        <button type="button" onclick="document.getElementById('editor-image-input').click()" class="px-3 py-1 bg-blue-600 hover:bg-blue-500 rounded flex items-center gap-1 text-xs">
+                            <i class="fa-solid fa-image"></i> + ဓာတ်ပုံထည့်ရန်
                         </button>
                         <input type="file" id="editor-image-input" onchange="insertImageToEditor(event)" accept="image/*" class="hidden">
                         <button type="button" onclick="clearAllContent()" class="ml-auto px-3 py-1 bg-rose-700 hover:bg-rose-600 rounded text-xs flex items-center gap-1">
@@ -115,11 +104,9 @@
                         </button>
                     </div>
                     
-                    <!-- 🌟 Core Text Editor Box (API Key မလိုဘဲ စာရေးလို့ရ၊ ပုံထည့်လို့ရသော အကွက်) -->
                     <div id="editor" class="custom-editor" contenteditable="true" oninput="saveCurrentChapterContentLive()"></div>
                 </div>
 
-                <!-- Final Export Button -->
                 <button onclick="generateEPUB()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white p-3 rounded-xl shadow-md flex items-center justify-center gap-2 font-bold text-lg transition-all">
                     <i class="fa-solid fa-file-arrow-down text-xl"></i> ePub ဖိုင် ထုတ်ယူမည်
                 </button>
