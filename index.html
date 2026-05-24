@@ -29,12 +29,34 @@
     <!-- 🌐 Main Container -->
     <div class="max-w-xl mx-auto px-4 pt-6">
         
-        <!-- 🎯 Header Title -->
-        <div class="flex justify-between items-center mb-6">
-            <h1 class="text-2xl font-bold text-amber-400 flex items-center gap-2">
-                <i class="fa-solid fa-book-open"></i> Web ePub Creator Pro
-            </h1>
-            <span class="bg-amber-500/20 text-amber-300 text-xs px-2.5 py-1 rounded-full border border-amber-500/30 font-medium">Premium</span>
+        <!-- 🎯 HEADER SECTION WITH SIGN IN / SIGN UP -->
+        <div class="flex flex-col gap-4 mb-6 pb-4 border-b border-slate-800">
+            <!-- Top Row: Logo & Profile Buttons -->
+            <div class="flex justify-between items-center">
+                <h1 class="text-2xl font-bold text-amber-400 flex items-center gap-2">
+                    <i class="fa-solid fa-book-open"></i> Web ePub Creator Pro
+                </h1>
+                
+                <!-- Authentication Buttons (Sign In / Sign Up) -->
+                <div class="flex items-center gap-2 text-xs">
+                    <button onclick="handleSignIn()" class="text-slate-400 hover:text-slate-200 px-2.5 py-1.5 font-medium transition">
+                        Sign In
+                    </button>
+                    <button onclick="handleSignUp()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg border border-slate-700 transition font-medium active:scale-95">
+                        Sign Up
+                    </button>
+                </div>
+            </div>
+
+            <!-- Bottom Row: Account Status / Premium Badge -->
+            <div class="flex justify-between items-center bg-slate-800/40 px-3 py-2 rounded-lg border border-slate-800/60">
+                <span class="text-xs text-slate-400 flex items-center gap-1.5">
+                    <i class="fa-solid fa-circle-user text-emerald-400 text-sm"></i> အကောင့်ဝင်ထားပြီးသားဖြစ်သည်
+                </span>
+                <span class="bg-amber-500/20 text-amber-300 text-xs px-2.5 py-1 rounded-full border border-amber-500/30 font-medium flex items-center gap-1">
+                    <i class="fa-solid fa-crown text-[10px]"></i> Premium
+                </span>
+            </div>
         </div>
 
         <!-- 📦 BACKUP & RESET SECTION -->
@@ -44,7 +66,7 @@
             </h2>
             <div class="grid grid-cols-1 gap-2.5">
                 <button onclick="exportToBackupFile()" class="w-full bg-slate-700 hover:bg-slate-600 text-slate-200 py-3 px-4 rounded-lg flex items-center justify-center gap-2 font-medium transition active:scale-95 border border-slate-600">
-                    <i class="fa-solid fa-file-export text-emerald-400"></i> လက်ရှိစာအုပ်ကို ဖိုင်သိမ်းဆည်းမည် (Backup)
+                    <i class="fa-solid fa-file-export text-emerald-400"></i>  လက်ရှိစာအုပ်ကို ဖိုင်သိမ်းဆည်းမည် (Backup)
                 </button>
                 
                 <label class="w-full bg-slate-700 hover:bg-slate-600 text-slate-200 py-3 px-4 rounded-lg flex items-center justify-center gap-2 font-medium transition active:scale-95 border border-slate-600 cursor-pointer text-center">
@@ -138,6 +160,15 @@
             });
         }
 
+        // Placeholder Auth Functions (အစ်ကို့ရဲ့ Backend Sign In စနစ်ရှိရင် ဒီနေရာမှာ ချိတ်ဆက်နိုင်ပါတယ်)
+        function handleSignIn() {
+            alert("Sign In စနစ်သို့ ချိတ်ဆက်နေပါသည်...");
+        }
+
+        function handleSignUp() {
+            alert("Sign Up စနစ်သို့ ချိတ်ဆက်နေပါသည်...");
+        }
+
         // TinyMCE Init
         tinymce.init({
             selector: '#editor',
@@ -166,27 +197,21 @@
             }
         });
 
-        // 🖼️ ဓာတ်ပုံအများကြီးကို တပြိုင်နက် ဖတ်ပြီး Editor ထဲ စီထည့်ပေးမည့် စနစ်သစ်
         function handleInlineImageUpload(event) {
             const files = event.target.files;
             if (!files || files.length === 0) return;
 
-            // ရွေးချယ်လိုက်သော ဖိုင်အားလုံးကို Loop ပတ်ပြီး တစ်ပုံချင်း ဖတ်ခိုင်းခြင်း
             Array.from(files).forEach(file => {
                 const reader = new FileReader();
                 reader.onload = function (e) {
                     const base64Data = e.target.result;
-                    
                     if (tinymce.activeEditor) {
-                        // ပုံတွေကို အောက်ကနေ ဆင့်ကာဆင့်ကာ တန်းစီဝင်သွားအောင် ထည့်ပေးခြင်း
                         tinymce.activeEditor.insertContent(`<img src="${base64Data}" alt="${file.name}" style="max-w-full; height:auto; display:block; margin:12px auto;"/>`);
                         tinymce.activeEditor.fire('change');
                     }
                 };
                 reader.readAsDataURL(file);
             });
-
-            // နောက်တစ်ကြိမ် ပြန်ရွေးလို့ရအောင် Reset လုပ်ခြင်း
             document.getElementById('hidden-editor-image-picker').value = "";
         }
 
@@ -371,7 +396,6 @@
                         alert("⚠️ သိမ်းဆည်းထားသည့် ဒေတာမရှိသေးပါ။");
                         return;
                     }
-
                     const jsonString = JSON.stringify(state);
                     const blob = new Blob([jsonString], { type: "application/json" });
                     const filename = (state.title || "My_Novel").replace(/\s+/g, '_') + "_backup.json";
@@ -418,7 +442,6 @@
         // Base64 to Blob Parser
         function base64ToBlob(base64Str) {
             if (!base64Str || typeof base64Str !== 'string') return null;
-            
             let contentType = "image/jpeg";
             let rawData = base64Str;
 
@@ -426,15 +449,12 @@
                 const parts = base64Str.split(';base64,');
                 contentType = parts[0].split(':')[1];
                 rawData = parts[1];
-            } else {
-                return null;
-            }
+            } else { return null; }
 
             try {
                 const raw = window.atob(rawData);
                 const rawLength = raw.length;
                 const uInt8Array = new Uint8Array(rawLength);
-
                 for (let i = 0; i < rawLength; ++i) {
                     uInt8Array[i] = raw.charCodeAt(i);
                 }
@@ -448,7 +468,6 @@
         // 🚀 CORE EPUB GENERATOR
         async function generateEPUB() {
             await saveCurrentBookState();
-            
             const title = document.getElementById('book-title').value || "Untitled Book";
             const author = document.getElementById('author').value || "Unknown Author";
             
@@ -491,7 +510,6 @@
                 const imgs = container.querySelectorAll('img');
                 for (let img of imgs) {
                     const src = img.getAttribute('src');
-                    
                     if (src && src.startsWith('data:image')) {
                         let ext = "jpg";
                         let mediaType = "image/jpeg";
@@ -507,9 +525,7 @@
                             img.setAttribute('src', `images/${filename}`);
                             if (!img.getAttribute('alt')) img.setAttribute('alt', `photo_${imageCounter}`);
                             imageCounter++;
-                        } else {
-                            img.remove();
-                        }
+                        } else { img.remove(); }
                     }
                 }
 
@@ -544,7 +560,6 @@
                 let coverExt = "jpg";
                 let coverMime = "image/jpeg";
                 if (coverBase64.includes("image/png")) { coverExt = "png"; coverMime = "image/png"; }
-                
                 const coverBlob = base64ToBlob(coverBase64);
                 if (coverBlob) {
                     zip.file(`OEBPS/images/cover.${coverExt}`, coverBlob);
@@ -603,9 +618,7 @@
                     setTimeout(() => { document.body.removeChild(a); }, 500);
                 };
                 reader.readAsDataURL(blob);
-            }).catch(function (err) {
-                alert("ePub Error: " + err.message);
-            });
+            }).catch(function (err) { alert("ePub Error: " + err.message); });
         }
     </script>
 </body>
