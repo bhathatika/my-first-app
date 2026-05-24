@@ -173,7 +173,7 @@ async function handleCoverImage(event) {
     }
 }
 
-// စာသားအားလုံး ဖျက်ထုတ်ခြင်း
+// สာသားအားလုံး ဖျက်ထုတ်ခြင်း
 function clearAllContent() {
     if(confirm("စာသားအားလုံးကို ဖျက်ပစ်ရန် သေချာပါသလား။")) {
         document.getElementById('editor').innerHTML = "";
@@ -233,7 +233,7 @@ async function dataUrlToBlob(dataUrl) {
     }
 }
 
-// 🚀 ဓာတ်ပုံအများကြီးထည့်ပါက ဒေါင်းလုဒ်မရသည့်ပြဿနာကို အပြီးတိုင်ဖြေရှင်းထားသော စနစ် (Fix Multiple Images Bug)
+// 🚀 ဓာတ်ပုံ ဘယ်နှပုံပဲဖြစ်ဖြစ် အားလုံးကို ePub Manifest ထဲ စနစ်တကျ Compile လုပ်ပေးမည့် Function အသစ်
 async function generateEPUB() {
     saveCurrentBookState();
     const title = document.getElementById('book-title').value || "Untitled_Book";
@@ -252,7 +252,9 @@ async function generateEPUB() {
 
     let manifestItems = "";
     let spineItems = "";
-    let imageCounter = 1;
+    
+    // 🌟 အရေးကြီးဆုံးပြင်ဆင်မှု - Image Counter ကို တစ်ကမ္ဘာလုံးဆိုင်ရာ အဆင့်သတ်မှတ်ပြီး ပုံအားလုံးအတွက် ID ကို သီးသန့်ဖြစ်စေရန် နေရာချထားခြင်း
+    let globalImageCounter = 1;
 
     // Cover Image ကြေညာခြင်း
     if (coverBase64 && coverBase64.includes("data:image")) {
@@ -282,15 +284,16 @@ async function generateEPUB() {
             if (src && src.startsWith('data:image')) {
                 let ext = "jpg"; let mediaType = "image/jpeg";
                 if (src.includes("image/png")) { ext = "png"; mediaType = "image/png"; }
-                const filename = `image_${imageCounter}.${ext}`;
                 
+                const filename = `image_${globalImageCounter}.${ext}`;
                 const imgBlob = await dataUrlToBlob(src);
+                
                 if (imgBlob) {
                     zip.file(`OEBPS/images/${filename}`, imgBlob);
-                    // 🌟 ဤနေရာတွင် Manifest Items ထဲသို့ ပုံအားလုံးကို အသေအချာ တစ်ခါတည်းထည့်သွင်းပေးရန် ကုဒ်ကို ပြင်ဆင်ထားပါသည် 🌟
-                    manifestItems += `<item id="img_${imageCounter}" href="images/${filename}" media-type="${mediaType}"/>\n`;
+                    // 🌟 ဤနေရာတွင် Manifest ထဲသို့ ပုံအားလုံးရဲ့ ID (img_1, img_2, img_3, ...) ကို စာရင်းသွင်းပေးသွားမည်ဖြစ်သည်
+                    manifestItems += `<item id="img_${globalImageCounter}" href="images/${filename}" media-type="${mediaType}"/>\n`;
                     img.setAttribute('src', `images/${filename}`);
-                    imageCounter++;
+                    globalImageCounter++; // ပုံတစ်ပုံပြီးတိုင်း စနစ်တကျ နံပါတ် တိုးပေးသွားမည်။
                 }
             }
         }
