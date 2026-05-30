@@ -35,7 +35,7 @@
 
         /* 🌙 Night Mode (Pure Black) Class အမည်းရောင်အတွက် Custom Variables */
         body.night-mode {
-            background-color: #030712 !important; /* Pure Black-ish Gray */
+            background-color: #030712 !important;
         }
         body.night-mode .bg-slate-800 {
             background-color: #111827 !important;
@@ -71,7 +71,7 @@
                     <i class="fa-solid fa-book-open"></i>
                 </div>
                 <h2 class="text-2xl font-bold text-slate-100">Web ePub Creator Pro</h2>
-                <p class="text-sm text-slate-400">ဆက်လက်အသုံးပြုရန် အကောင့်ဝင်ပေးပါ</p>
+                <p id="lang-auth-subtitle" class="text-sm text-slate-400">ဆက်လက်အသုံးပြုရန် အကောင့်ဝင်ပေးပါ</p>
             </div>
 
             <div class="flex bg-slate-900 p-1 rounded-xl border border-slate-800">
@@ -81,11 +81,11 @@
 
             <div class="space-y-4">
                 <div>
-                    <label class="block text-xs font-medium text-slate-400 mb-1.5">အီးမေးလ် (Email Address)</label>
+                    <label id="lang-auth-email" class="block text-xs font-medium text-slate-400 mb-1.5">အီးမေးလ် (Email Address)</label>
                     <input type="email" id="auth-email" placeholder="example@email.com" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3.5 py-2.5 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-amber-500 transition shadow-inner">
                 </div>
                 <div>
-                    <label class="block text-xs font-medium text-slate-400 mb-1.5">စကားဝှက် (Password)</label>
+                    <label id="lang-auth-password" class="block text-xs font-medium text-slate-400 mb-1.5">စကားဝှက် (Password)</label>
                     <input type="password" id="auth-password" placeholder="••••••••" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3.5 py-2.5 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-amber-500 transition shadow-inner">
                 </div>
                 
@@ -95,7 +95,7 @@
             </div>
             
             <div class="text-center">
-                <span class="text-xs text-amber-400/60 font-medium">👑 Premium စနစ်ဖြင့် အသုံးပြုနိုင်ပါပြီ</span>
+                <span id="lang-premium-badge" class="text-xs text-amber-400/60 font-medium">👑 Premium စနစ်ဖြင့် အသုံးပြုနိုင်ပါပြီ</span>
             </div>
         </div>
     </div>
@@ -112,11 +112,14 @@
                 </h1>
                 
                 <div class="flex items-center gap-2">
+                    <button onclick="toggleLanguage()" id="lang-btn" class="bg-slate-800 hover:bg-slate-700 text-sky-400 text-xs px-3 py-1.5 rounded-lg border border-slate-700 transition font-medium active:scale-95 flex items-center gap-1">
+                        <i class="fa-solid fa-earth-asia"></i> <span id="lang-btn-text">English</span>
+                    </button>
                     <button onclick="toggleNightMode()" id="night-mode-btn" class="bg-slate-800 hover:bg-slate-700 text-amber-400 text-xs px-3 py-1.5 rounded-lg border border-slate-700 transition font-medium active:scale-95 flex items-center gap-1">
                         <i id="night-mode-icon" class="fa-solid fa-moon"></i> <span id="night-mode-text">Night Mode</span>
                     </button>
-                    <button onclick="handleSignOut()" class="bg-slate-800 hover:bg-slate-700 text-rose-400 hover:text-rose-300 text-xs px-3 py-1.5 rounded-lg border border-slate-700 transition font-medium active:scale-95 flex items-center gap-1">
-                        <i class="fa-solid fa-right-from-bracket"></i> ထွက်မည်
+                    <button onclick="handleSignOut()" id="lang-signout-btn" class="bg-slate-800 hover:bg-slate-700 text-rose-400 hover:text-rose-300 text-xs px-3 py-1.5 rounded-lg border border-slate-700 transition font-medium active:scale-95 flex items-center gap-1">
+                        <i class="fa-solid fa-right-from-bracket"></i> <span>ထွက်မည်</span>
                     </button>
                 </div>
             </div>
@@ -132,20 +135,20 @@
         </div>
 
         <div class="bg-slate-800 rounded-xl p-4 border border-slate-700/60 shadow-xl mb-6">
-            <h2 class="text-sm font-semibold text-slate-400 mb-3 flex items-center gap-1.5">
+            <h2 id="lang-backup-title" class="text-sm font-semibold text-slate-400 mb-3 flex items-center gap-1.5">
                 <i class="fa-solid fa-database text-amber-400"></i> စာအုပ် BACKUP စီမံခန့်ခွဲမှု
             </h2>
             <div class="grid grid-cols-1 gap-2.5">
-                <button onclick="exportToBackupFile()" class="w-full bg-slate-700 hover:bg-slate-600 text-slate-200 py-3 px-4 rounded-lg flex items-center justify-center gap-2 font-medium transition active:scale-95 border border-slate-600">
+                <button onclick="exportToBackupFile()" id="lang-backup-export" class="w-full bg-slate-700 hover:bg-slate-600 text-slate-200 py-3 px-4 rounded-lg flex items-center justify-center gap-2 font-medium transition active:scale-95 border border-slate-600">
                     <i class="fa-solid fa-file-export text-emerald-400"></i> လက်ရှိစာအုပ်ကို ဖိုင်သိမ်းဆည်းမည် (Backup)
                 </button>
                 
-                <label class="w-full bg-slate-700 hover:bg-slate-600 text-slate-200 py-3 px-4 rounded-lg flex items-center justify-center gap-2 font-medium transition active:scale-95 border border-slate-600 cursor-pointer text-center">
-                    <i class="fa-solid fa-file-import text-sky-400"></i> စာအုပ်ဖောင်း ပြန်တင်မည် (Load Backup)
+                <label id="lang-backup-import" class="w-full bg-slate-700 hover:bg-slate-600 text-slate-200 py-3 px-4 rounded-lg flex items-center justify-center gap-2 font-medium transition active:scale-95 border border-slate-600 cursor-pointer text-center">
+                    <i class="fa-solid fa-file-import text-sky-400"></i> <span>စာအုပ်ဖောင်း ပြန်တင်မည် (Load Backup)</span>
                     <input type="file" id="backup-upload" accept=".json" onchange="loadFromBackupFile(event)" class="hidden">
                 </label>
                 
-                <button onclick="resetAllData()" class="w-full bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 py-3 px-4 rounded-lg flex items-center justify-center gap-2 font-medium transition active:scale-95 border border-rose-800/50">
+                <button onclick="resetAllData()" id="lang-backup-reset" class="w-full bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 py-3 px-4 rounded-lg flex items-center justify-center gap-2 font-medium transition active:scale-95 border border-rose-800/50">
                     <i class="fa-solid fa-trash-can text-rose-400"></i> စာအုပ်အသစ်အတွက် အစကပြန်စမည် (Reset)
                 </button>
             </div>
@@ -153,19 +156,19 @@
 
         <div class="space-y-4 mb-6">
             <div>
-                <label class="block text-sm font-medium text-slate-400 mb-1.5">စာအုပ်အမည် (Book Title)</label>
+                <label id="lang-meta-title" class="block text-sm font-medium text-slate-400 mb-1.5">စာအုပ်အမည် (Book Title)</label>
                 <input type="text" id="book-title" oninput="saveCurrentBookState()" placeholder="သူမ... ဖြစ်တည်မှု အပိုင်းအစများ" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3.5 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500 transition shadow-inner">
             </div>
             <div>
-                <label class="block text-sm font-medium text-slate-400 mb-1.5">စာရေးဆရာ (Author)</label>
+                <label id="lang-meta-author" class="block text-sm font-medium text-slate-400 mb-1.5">စာရေးဆရာ (Author)</label>
                 <input type="text" id="author" oninput="saveCurrentBookState()" placeholder="သဘောတရား ဆရာလေးတစ်ရွာ" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3.5 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500 transition shadow-inner">
             </div>
             
             <div>
-                <label class="block text-sm font-medium text-slate-400 mb-1.5">မျက်နှာဖုံးပုံ (Cover Image)</label>
+                <label id="lang-meta-cover" class="block text-sm font-medium text-slate-400 mb-1.5">မျက်နှာဖုံးပုံ (Cover Image)</label>
                 <div class="flex items-center gap-3 bg-slate-800 border border-slate-700 rounded-lg p-2">
-                    <label class="bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-md cursor-pointer text-sm font-medium border border-slate-600 transition active:scale-95">
-                        Choose File
+                    <label id="lang-cover-btn" class="bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-md cursor-pointer text-sm font-medium border border-slate-600 transition active:scale-95">
+                        <span>Choose File</span>
                         <input type="file" id="cover-upload" accept="image/*" onchange="handleCoverUpload(event)" class="hidden">
                     </label>
                     <span id="cover-status" class="text-sm text-slate-400 truncate">No file selected</span>
@@ -177,27 +180,27 @@
         </div>
 
         <div class="bg-slate-800/60 border border-slate-700/60 rounded-xl p-4 mb-6">
-            <label class="block text-sm font-medium text-slate-400 mb-3">အခန်းများ (Chapters)</label>
-            <button onclick="addNewChapter()" class="w-full bg-sky-600 hover:bg-sky-500 text-white py-3 rounded-lg font-medium flex items-center justify-center gap-1.5 transition active:scale-95 mb-3 shadow-lg shadow-sky-950/20">
-                <i class="fa-solid fa-plus"></i> အခန်းတိုးမည် (Add Chapter)
+            <label id="lang-chap-title" class="block text-sm font-medium text-slate-400 mb-3">အခန်းများ (Chapters)</label>
+            <button onclick="addNewChapter()" id="lang-chap-add-btn" class="w-full bg-sky-600 hover:bg-sky-500 text-white py-3 rounded-lg font-medium flex items-center justify-center gap-1.5 transition active:scale-95 mb-3 shadow-lg shadow-sky-950/20">
+                <i class="fa-solid fa-plus"></i> <span>အခန်းတိုးမည် (Add Chapter)</span>
             </button>
             <div id="chapters-list" class="space-y-2 max-h-48 overflow-y-auto pr-1"></div>
         </div>
 
         <div id="editor-section" class="space-y-4 hidden">
             <div>
-                <label class="block text-sm font-medium text-slate-400 mb-1.5">အခန်းခေါင်းစဉ် (Chapter Title)</label>
+                <label id="lang-editor-chaptitle" class="block text-sm font-medium text-slate-400 mb-1.5">အခန်းခေါင်းစဉ် (Chapter Title)</label>
                 <input type="text" id="chapter-title" oninput="updateChapterTitle()" placeholder="အခန်းခေါင်းစဉ် ရိုက်ပါ..." class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3.5 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500 transition shadow-inner">
             </div>
             <div class="w-full block min-h-[350px]">
-                <label class="block text-sm font-medium text-slate-400 mb-1.5">အခန်းတွင်းစာသား (Chapter Content)</label>
+                <label id="lang-editor-content" class="block text-sm font-medium text-slate-400 mb-1.5">အခန်းတွင်းစာသား (Chapter Content)</label>
                 <textarea id="editor" class="w-full"></textarea>
             </div>
         </div>
 
         <div class="mt-6">
-            <button onclick="generateEPUB()" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-4 rounded-xl flex items-center justify-center gap-2 text-lg shadow-lg shadow-amber-950/30 transition active:scale-98">
-                <i class="fa-solid fa-download text-xl"></i> ePub ဖိုင် ထုတ်ယူမည်
+            <button onclick="generateEPUB()" id="lang-download-btn" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-4 rounded-xl flex items-center justify-center gap-2 text-lg shadow-lg shadow-amber-950/30 transition active:scale-98">
+                <i class="fa-solid fa-download text-xl"></i> <span>ePub ဖိုင် ထုတ်ယူမည်</span>
             </button>
         </div>
 
@@ -208,10 +211,71 @@
         let currentChapterIndex = 0;
         let coverBase64 = "";
         let authMode = "login";
+        let currentLang = "my"; // Default Language
 
         const DB_NAME = 'WebEpubCreatorDB';
         const DB_VERSION = 1;
         const STORE_NAME = 'bookState';
+
+        // ਬਹੁ-ਭਾਸ਼ਾਈ ਸ਼ਬਦਕੋਸ਼ Dictionary
+        const languages = {
+            my: {
+                authSubtitle: "ဆက်လက်အသုံးပြုရန် အကောင့်ဝင်ပေးပါ",
+                authEmail: "အီးမေးလ် (Email Address)",
+                authPassword: "စကားဝှက် (Password)",
+                authSignIn: "အကောင့်ဝင်မည် (Sign In)",
+                authSignUp: "အကောင့်သစ်ဖွင့်မည် (Sign Up)",
+                premiumBadge: "👑 Premium စနစ်ဖြင့် အသုံးပြုနိုင်ပါပြီ",
+                signout: "ထွက်မည်",
+                backupTitle: "စာအုပ် BACKUP စီမံခန့်ခွဲမှု",
+                backupExport: "လက်ရှိစာအုပ်ကို ဖိုင်သိမ်းဆည်းမည် (Backup)",
+                backupImport: "စာအုပ်ဖောင်း ပြန်တင်မည် (Load Backup)",
+                backupReset: "စာအုပ်အသစ်အတွက် အစကပြန်စမည် (Reset)",
+                metaTitle: "စာအုပ်အမည် (Book Title)",
+                metaAuthor: "စာရေးဆရာ (Author)",
+                metaCover: "မျက်နှာဖုံးပုံ (Cover Image)",
+                chooseFile: "Choose File",
+                chapters: "အခန်းများ (Chapters)",
+                addChapter: "အခန်းတိုးမည် (Add Chapter)",
+                editorChapTitle: "အခန်းခေါင်းစဉ် (Chapter Title)",
+                editorContent: "အခန်းတွင်းစာသား (Chapter Content)",
+                downloadBtn: "ePub ဖိုင် ထုတ်ယူမည်",
+                noFile: "ရွေးချယ်ထားသော ဖိုင်မရှိပါ",
+                coverLoaded: "မျက်နှာဖုံး တင်ပြီး ✓",
+                alertNoChapters: "⚠️ သတိပေးချက်: အခန်းမရှိသေးပါ။ '+ အခန်းတိုးမည်' ကို နှိပ်ပေးပါ။",
+                alertConfirmDelete: "ဒီအခန်းကို ဖျက်ပစ်ရန် သေချာပါသလား?",
+                alertConfirmReset: "⚠️ သတိပေးချက်: စာအုပ်ဒေတာအားလုံးကို ဖျက်ပစ်ပြီး အစက ပြန်စမှာ သေချာပါသလား?",
+                untitledChapter: "ခေါင်းစဉ်မရှိသေးသော အခန်း"
+            },
+            en: {
+                authSubtitle: "Please sign in to continue",
+                authEmail: "Email Address",
+                authPassword: "Password",
+                authSignIn: "Sign In",
+                authSignUp: "Sign Up",
+                premiumBadge: "👑 Premium Mode Active",
+                signout: "Sign Out",
+                backupTitle: "Book Backup Management",
+                backupExport: "Export Book Data (Backup)",
+                backupImport: "Import Book Data (Load Backup)",
+                backupReset: "Reset and Start New Book",
+                metaTitle: "Book Title",
+                metaAuthor: "Author",
+                metaCover: "Cover Image",
+                chooseFile: "Choose File",
+                chapters: "Chapters",
+                addChapter: "Add New Chapter",
+                editorChapTitle: "Chapter Title",
+                editorContent: "Chapter Content",
+                downloadBtn: "Generate & Download ePub",
+                noFile: "No file selected",
+                coverLoaded: "Cover Loaded ✓",
+                alertNoChapters: "⚠️ Warning: No chapters found. Please click '+ Add New Chapter' first.",
+                alertConfirmDelete: "Are you sure you want to delete this chapter?",
+                alertConfirmReset: "⚠️ Warning: Are you sure you want to clear all data and reset?",
+                untitledChapter: "Untitled Chapter"
+            }
+        };
 
         function initDB() {
             return new Promise((resolve, reject) => {
@@ -225,6 +289,56 @@
                 request.onsuccess = (e) => resolve(e.target.result);
                 request.onerror = (e) => reject(e.target.error);
             });
+        }
+
+        // 🌐 LANGUAGE SWITCHER FUNCTION
+        function toggleLanguage() {
+            currentLang = (currentLang === "my") ? "en" : "my";
+            localStorage.setItem('epub_language', currentLang);
+            applyLanguage();
+        }
+
+        function applyLanguage() {
+            const l = languages[currentLang];
+            
+            // Apply texts
+            document.getElementById('lang-btn-text').innerText = (currentLang === "my") ? "English" : "မြန်မာ";
+            document.getElementById('lang-auth-subtitle').innerText = l.authSubtitle;
+            document.getElementById('lang-auth-email').innerText = l.authEmail;
+            document.getElementById('lang-auth-password').innerText = l.authPassword;
+            document.getElementById('lang-premium-badge').innerText = l.premiumBadge;
+            document.getElementById('lang-signout-btn').querySelector('span').innerText = l.signout;
+            document.getElementById('lang-backup-title').innerHTML = `<i class="fa-solid fa-database text-amber-400"></i> ${l.backupTitle}`;
+            document.getElementById('lang-backup-export').innerHTML = `<i class="fa-solid fa-file-export text-emerald-400"></i> ${l.backupExport}`;
+            document.getElementById('lang-backup-import').querySelector('span').innerText = l.backupImport;
+            document.getElementById('lang-backup-reset').innerHTML = `<i class="fa-solid fa-trash-can text-rose-400"></i> ${l.backupReset}`;
+            document.getElementById('lang-meta-title').innerText = l.metaTitle;
+            document.getElementById('lang-meta-author').innerText = l.metaAuthor;
+            document.getElementById('lang-meta-cover').innerText = l.metaCover;
+            document.getElementById('lang-cover-btn').querySelector('span').innerText = l.chooseFile;
+            document.getElementById('lang-chap-title').innerText = l.chapters;
+            document.getElementById('lang-chap-add-btn').querySelector('span').innerText = l.addChapter;
+            document.getElementById('lang-editor-chaptitle').innerText = l.editorChapTitle;
+            document.getElementById('lang-editor-content').innerText = l.editorContent;
+            document.getElementById('lang-download-btn').innerHTML = `<i class="fa-solid fa-download text-xl"></i> <span>${l.downloadBtn}</span>`;
+            
+            // Adjust Auth Submit Button text
+            const submitBtn = document.getElementById('auth-submit-btn');
+            if (authMode === 'login') {
+                submitBtn.innerText = l.authSignIn;
+            } else {
+                submitBtn.innerText = l.authSignUp;
+            }
+
+            // Adjust Cover Status text
+            const statusBox = document.getElementById('cover-status');
+            if (coverBase64) {
+                statusBox.innerText = l.coverLoaded;
+            } else {
+                statusBox.innerText = l.noFile;
+            }
+
+            renderChaptersList();
         }
 
         // 🌙 NIGHT MODE FUNCTION
@@ -263,16 +377,23 @@
         // 🔐 AUTHENTICATION SYSTEM
         function checkUserAuth() {
             const loggedInUser = localStorage.getItem('epub_user_session');
+            
+            // Load language configuration
+            const savedLang = localStorage.getItem('epub_language');
+            if (savedLang) currentLang = savedLang;
+
             if (loggedInUser) {
                 document.getElementById('auth-screen').classList.add('hidden');
                 document.getElementById('main-app-screen').classList.remove('hidden');
                 document.getElementById('user-display-email').innerHTML = `<i class="fa-solid fa-circle-user text-emerald-400 text-sm"></i> ${loggedInUser}`;
                 initTinyMCE();
                 loadBookDataFromDB();
-                applySavedNightMode(); // Night Mode အခြေအနေ ပြန်စစ်ခြင်း
+                applySavedNightMode();
+                applyLanguage(); 
             } else {
                 document.getElementById('main-app-screen').classList.add('hidden');
                 document.getElementById('auth-screen').classList.remove('hidden');
+                applyLanguage();
             }
         }
 
@@ -280,16 +401,16 @@
             authMode = mode;
             const loginTab = document.getElementById('tab-login');
             const registerTab = document.getElementById('tab-register');
-            const submitBtn = document.getElementById('auth-submit-btn');
+            const l = languages[currentLang];
 
             if (mode === 'login') {
                 loginTab.className = "w-full text-sm font-medium py-2.5 rounded-lg bg-amber-500 text-slate-950 transition";
                 registerTab.className = "w-full text-sm font-medium py-2.5 rounded-lg text-slate-400 hover:text-slate-200 transition";
-                submitBtn.innerText = "အကောင့်ဝင်မည် (Sign In)";
+                document.getElementById('auth-submit-btn').innerText = l.authSignIn;
             } else {
                 registerTab.className = "w-full text-sm font-medium py-2.5 rounded-lg bg-amber-500 text-slate-950 transition";
                 loginTab.className = "w-full text-sm font-medium py-2.5 rounded-lg text-slate-400 hover:text-slate-200 transition";
-                submitBtn.innerText = "အကောင့်သစ်ဖွင့်မည် (Sign Up)";
+                document.getElementById('auth-submit-btn').innerText = l.authSignUp;
             }
         }
 
@@ -298,7 +419,7 @@
             const password = document.getElementById('auth-password').value.trim();
 
             if (!email || !password) {
-                alert("⚠️ ကျေးဇူးပြု၍ အီးမေးလ်နှင့် စကားဝှက်ကို ရိုက်ထည့်ပေးပါဗျာ။");
+                alert(currentLang === 'my' ? "⚠️ ကျေးဇူးပြု၍ အီးမေးလ်နှင့် စကားဝှက်ကို ရိုက်ထည့်ပေးပါဗျာ।" : "⚠️ Please enter both email and password.");
                 return;
             }
 
@@ -306,13 +427,14 @@
                 localStorage.setItem('epub_user_session', email);
                 checkUserAuth();
             } else {
-                alert("🎉 အကောင့်သစ်ကို အောင်မြင်စွာ တည်ဆောက်ပြီးပါပြီ။ Sign In ဝင်နိုင်ပါပြီ။");
+                alert(currentLang === 'my' ? "🎉 အကောင့်သစ်ကို အောင်မြင်စွာ တည်ဆောက်ပြီးပါပြီ။ Sign In ဝင်နိုင်ပါပြီ।" : "🎉 Account created successfully. You can now Sign In.");
                 switchAuthTab('login');
             }
         }
 
         function handleSignOut() {
-            if (confirm("အကောင့်ထဲမှ ထွက်ရန် သေချာပါသလား?")) {
+            const confirmMsg = currentLang === 'my' ? "အကောင့်ထဲမှ ထွက်ရန် သေချာပါသလား?" : "Are you sure you want to sign out?";
+            if (confirm(confirmMsg)) {
                 localStorage.removeItem('epub_user_session');
                 if (tinymce.activeEditor) {
                     tinymce.remove('#editor');
@@ -373,7 +495,7 @@
             document.getElementById('hidden-editor-image-picker').value = "";
         }
 
-        // App Initial Load
+        // App Book Data Load
         async function loadBookDataFromDB() {
             try {
                 const db = await initDB();
@@ -390,8 +512,9 @@
                         currentChapterIndex = savedData.currentIndex || 0;
                         coverBase64 = savedData.cover || "";
 
+                        const l = languages[currentLang];
                         if (coverBase64) {
-                            document.getElementById('cover-status').innerText = "Cover Loaded ✓";
+                            document.getElementById('cover-status').innerText = l.coverLoaded;
                             document.getElementById('cover-preview').src = coverBase64;
                             document.getElementById('cover-preview-box').classList.remove('hidden');
                         }
@@ -444,7 +567,7 @@
             const reader = new FileReader();
             reader.onload = function(event) {
                 coverBase64 = event.target.result;
-                document.getElementById('cover-status').innerText = "Cover Loaded ✓";
+                document.getElementById('cover-status').innerText = languages[currentLang].coverLoaded;
                 document.getElementById('cover-preview').src = coverBase64;
                 document.getElementById('cover-preview-box').classList.remove('hidden');
                 saveCurrentBookState();
@@ -455,16 +578,20 @@
         // Chapters UI rendering
         function renderChaptersList() {
             const listContainer = document.getElementById('chapters-list');
+            if(!listContainer) return;
             listContainer.innerHTML = "";
+
+            const l = languages[currentLang];
 
             bookChapters.forEach((chap, idx) => {
                 const div = document.createElement('div');
                 div.className = `flex justify-between items-center p-2.5 rounded-lg border transition text-sm cursor-pointer ${idx === currentChapterIndex ? 'bg-slate-700 border-sky-500 text-sky-300' : 'bg-slate-800/40 border-slate-700 text-slate-300 hover:bg-slate-700/50'}`;
                 div.setAttribute('onclick', `selectChapter(${idx})`);
 
+                const defTitle = currentLang === 'my' ? `အခန်း (${idx+1})` : `${l.untitledChapter} ${idx+1}`;
                 div.innerHTML = `
                     <span class="truncate font-medium flex items-center gap-2">
-                        <i class="fa-solid fa-file-lines opacity-60"></i> ${chap.title || `Untitled Chapter ${idx+1}`}
+                        <i class="fa-solid fa-file-lines opacity-60"></i> ${chap.title || defTitle}
                     </span>
                     <button onclick="deleteChapter(${idx}, event)" class="text-slate-500 hover:text-rose-400 p-1 transition">
                         <i class="fa-solid fa-trash-can"></i>
@@ -476,8 +603,9 @@
 
         function addNewChapter() {
             const newIndex = bookChapters.length + 1;
+            const titlePrefix = currentLang === 'my' ? `အခန်း (${newIndex})` : `Chapter (${newIndex})`;
             bookChapters.push({
-                title: `အခန်း (${newIndex})`,
+                title: titlePrefix,
                 content: ""
             });
             currentChapterIndex = bookChapters.length - 1;
@@ -512,7 +640,7 @@
 
         function deleteChapter(idx, event) {
             event.stopPropagation();
-            if (!confirm("ဒီအခန်းကို ဖျက်ပစ်ရန် သေချာပါသလား?")) return;
+            if (!confirm(languages[currentLang].alertConfirmDelete)) return;
 
             bookChapters.splice(idx, 1);
             if (currentChapterIndex >= bookChapters.length) {
@@ -530,16 +658,15 @@
 
         // Reset Data
         async function resetAllData() {
-            if (!confirm("⚠️ သတိပေးချက်: စာအုပ်ဒေတာအားလုံးကို ဖျက်ပစ်ပြီး အစက ပြန်စမှာ သေချာပါသလား?")) return;
+            if (!confirm(languages[currentLang].alertConfirmReset)) return;
             try {
                 const db = await initDB();
                 const transaction = db.transaction([STORE_NAME], 'readwrite');
                 const store = transaction.objectStore(STORE_NAME);
                 await store.delete('currentBook');
-                alert("🗑️ ဒေတာဟောင်းများအားလုံးကို ရှင်းလင်းပြီးပါပြီ။");
                 location.reload();
             } catch (err) {
-                alert("Reset ပြုလုပ်ရာတွင် အမှားအယွင်းရှိခဲ့ပါသည်");
+                alert("Reset Error");
             }
         }
 
@@ -554,10 +681,7 @@
                 
                 getRequest.onsuccess = function() {
                     const state = getRequest.result;
-                    if (!state) {
-                        alert("⚠️ သိမ်းဆည်းထားသည့် ဒေတာမရှိသေးပါ။");
-                        return;
-                    }
+                    if (!state) return;
                     const jsonString = JSON.stringify(state);
                     const blob = new Blob([jsonString], { type: "application/json" });
                     const filename = (state.title || "My_Novel").replace(/\s+/g, '_') + "_backup.json";
@@ -574,7 +698,7 @@
                     }, 1000);
                 };
             } catch (error) {
-                alert("Backup ဖိုင်ထုတ်ယူမှု မအောင်မြင်ပါ: " + error.message);
+                alert("Backup Error: " + error.message);
             }
         }
 
@@ -591,10 +715,9 @@
                     const transaction = db.transaction([STORE_NAME], 'readwrite');
                     const store = transaction.objectStore(STORE_NAME);
                     await store.put(state, 'currentBook');
-                    alert("🎉 Backup ဒေတာများကို အောင်မြင်စွာ ထည့်သွင်းပြီးပါပြီ။");
                     location.reload(); 
                 } catch (error) {
-                    alert("⚠️ Backup ဖိုင် ဖတ်၍မရပါ၊ ဖိုင်အမှန်ဖြစ်မဖြစ် ပြန်စစ်ပေးပါဗျာ။");
+                    alert("JSON File Error");
                 }
             };
             reader.readAsText(file);
@@ -630,7 +753,7 @@
             const author = document.getElementById('author').value || "Unknown Author";
             
             if(!bookChapters || bookChapters.length === 0) {
-                alert("⚠️ သတိပေးချက်: အခန်းမရှိသေးပါ။ '+ အခန်းတိုးမည်' ကို နှိပ်ပေးပါ။");
+                alert(languages[currentLang].alertNoChapters);
                 return;
             }
 
@@ -730,7 +853,7 @@
                 <metadata xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:opf="http://www.idpf.org/2007/opf">
                     <dc:title>${title}</dc:title>
                     <dc:creator opf:role="aut">${author}</dc:creator>
-                    <dc:language>my</dc:language>
+                    <dc:language>${currentLang}</dc:language>
                     <dc:identifier id="bookid">urn:uuid:${Date.now()}</dc:identifier>
                      ${coverBase64 ? '<meta name="cover" content="cover-img"/>' : ''}
                 </metadata>
@@ -764,7 +887,7 @@
             </ncx>`;
             zip.file("OEBPS/toc.ncx", ncxXml);
 
-            // Downloader စနစ်
+            // Downloader
             zip.generateAsync({ type: "blob", mimeType: "application/epub+zip" }).then(function (blob) {
                 const filename = title.replace(/\s+/g, '_') + ".epub";
                 const downloadUrl = window.URL.createObjectURL(blob);
