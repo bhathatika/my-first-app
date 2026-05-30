@@ -23,7 +23,7 @@
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen pb-12">
 
-    <!-- 🔐 1. SIGN IN / SIGN UP SCREEN (လင့်ခ်နှိပ်လျှင် အရင်ဆုံး ပေါ်လာမည့် နေရာ) -->
+    <!-- 🔐 1. SIGN IN / SIGN UP SCREEN -->
     <div id="auth-screen" class="max-w-md mx-auto px-4 pt-24 hidden">
         <div class="bg-slate-800 rounded-2xl p-6 border border-slate-700/80 shadow-2xl space-y-6">
             
@@ -65,7 +65,7 @@
     </div>
 
 
-    <!-- 🌐 2. MAIN APP SCREEN (အကောင့်ဝင်ပြီးမှသာ လှမ်းပြမည့် နေရာ) -->
+    <!-- 🌐 2. MAIN APP SCREEN -->
     <div id="main-app-screen" class="max-w-xl mx-auto px-4 pt-6 hidden">
         
         <!-- Hidden Input For Multiple Image Picker -->
@@ -177,7 +177,7 @@
         let bookChapters = [];
         let currentChapterIndex = 0;
         let coverBase64 = "";
-        let authMode = "login"; // login သို့မဟုတ် register
+        let authMode = "login";
 
         const DB_NAME = 'WebEpubCreatorDB';
         const DB_VERSION = 1;
@@ -197,20 +197,16 @@
             });
         }
 
-        // 🔐 AUTHENTICATION SYSTEM (အကောင့်စနစ် ထိန်းချုပ်ခြင်း)
+        // 🔐 AUTHENTICATION SYSTEM
         function checkUserAuth() {
-            // Browser ရဲ့ Session ထဲမှာ အကောင့်ဝင်ထားသလား စစ်ဆေးခြင်း
             const loggedInUser = localStorage.getItem('epub_user_session');
-            
             if (loggedInUser) {
-                // အကောင့်ဝင်ပြီးသားဆိုလျှင် App ကြီးကို တန်းဖွင့်ပြသည်
                 document.getElementById('auth-screen').classList.add('hidden');
                 document.getElementById('main-app-screen').classList.remove('hidden');
                 document.getElementById('user-display-email').innerHTML = `<i class="fa-solid fa-circle-user text-emerald-400 text-sm"></i> ${loggedInUser}`;
-                initTinyMCE(); // Editor ကို စတင်ဖွင့်လှစ်သည်
-                loadBookDataFromDB(); // စာအုပ်ဒေတာ ဆွဲတင်သည်
+                initTinyMCE();
+                loadBookDataFromDB();
             } else {
-                // အကောင့်မဝင်ရသေးလျှင် Sign In Box ကို အရင်ပြသည်
                 document.getElementById('main-app-screen').classList.add('hidden');
                 document.getElementById('auth-screen').classList.remove('hidden');
             }
@@ -243,11 +239,9 @@
             }
 
             if (authMode === 'login') {
-                // Sign In လုပ်ခြင်း (နမူနာအနေဖြင့် ရိုက်သမျှကို လက်ခံပေးထားပါသည်)
                 localStorage.setItem('epub_user_session', email);
                 checkUserAuth();
             } else {
-                // Sign Up လုပ်ခြင်း
                 alert("🎉 အကောင့်သစ်ကို အောင်မြင်စွာ တည်ဆောက်ပြီးပါပြီ။ Sign In ဝင်နိုင်ပါပြီ။");
                 switchAuthTab('login');
             }
@@ -257,15 +251,15 @@
             if (confirm("အကောင့်ထဲမှ ထွက်ရန် သေချာပါသလား?")) {
                 localStorage.removeItem('epub_user_session');
                 if (tinymce.activeEditor) {
-                    tinymce.remove('#editor'); // Editor ဖြုတ်ချခြင်း
+                    tinymce.remove('#editor');
                 }
-                location.reload(); // App ကို အစက ပြန်ပတ်ခြင်း
+                location.reload();
             }
         }
 
         // TinyMCE Init Function
         function initTinyMCE() {
-            if (tinymce.get('editor')) return; // ရှိပြီးသားဆို ထပ်မဖွင့်ရန်
+            if (tinymce.get('editor')) return;
             
             tinymce.init({
                 selector: '#editor',
@@ -313,7 +307,7 @@
             document.getElementById('hidden-editor-image-picker').value = "";
         }
 
-        // App Initial Load (ဒေတာဆွဲတင်မည့် အပိုင်း)
+        // App Initial Load
         async function loadBookDataFromDB() {
             try {
                 const db = await initDB();
@@ -347,7 +341,6 @@
             }
         }
 
-        // ဝင်ဝင်ချင်းမှာ အကောင့်စစ်ဆေးမှုကို အရင်ဦးဆုံး လုပ်ခိုင်းခြင်း
         window.addEventListener('DOMContentLoaded', () => {
             checkUserAuth();
         });
@@ -503,16 +496,16 @@
                     const blob = new Blob([jsonString], { type: "application/json" });
                     const filename = (state.title || "My_Novel").replace(/\s+/g, '_') + "_backup.json";
 
-                    const reader = new FileReader();
-                    reader.onloadend = function() {
-                        const a = document.createElement('a');
-                        a.href = reader.result;
-                        a.download = filename;
-                        document.body.appendChild(a);
-                        a.click();
-                        setTimeout(() => { document.body.removeChild(a); }, 500);
-                    };
-                    reader.readAsDataURL(blob);
+                    const downloadUrl = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = downloadUrl;
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    setTimeout(() => {
+                        document.body.removeChild(a);
+                        window.URL.revokeObjectURL(downloadUrl);
+                    }, 1000);
                 };
             } catch (error) {
                 alert("Backup ဖိုင်ထုတ်ယူမှု မအောင်မြင်ပါ: " + error.message);
@@ -564,7 +557,7 @@
             } catch (e) { return null; }
         }
 
-        // 🚀 CORE EPUB GENERATOR
+        // 🚀 CORE EPUB GENERATOR (Chrome, Firefox & Safari Compatible)
         async function generateEPUB() {
             await saveCurrentBookState();
             const title = document.getElementById('book-title').value || "Untitled Book";
@@ -705,23 +698,29 @@
             </ncx>`;
             zip.file("OEBPS/toc.ncx", ncxXml);
 
+            // 🔥 အဓိက ပြင်ဆင်ထားသည့် Chrome/Firefox Downloader စနစ်ကြီး
             zip.generateAsync({ type: "blob", mimeType: "application/epub+zip" }).then(function (blob) {
                 const filename = title.replace(/\s+/g, '_') + ".epub";
-                const reader = new FileReader();
-                reader.onloadend = function() {
-                    const a = document.createElement('a');
-                    a.href = reader.result;
-                    a.download = filename;
-                    document.body.appendChild(a);
-                    a.click();
-                    setTimeout(() => { document.body.removeChild(a); }, 500);
-                };
-                reader.readAsDataURL(blob);
+                
+                // Base64 အစား သန့်ရှင်းမြန်ဆန်ပြီး Secure ဖြစ်တဲ့ Object URL ကို ပြောင်းသုံးလိုက်ပါတယ်
+                const downloadUrl = window.URL.createObjectURL(blob);
+                
+                const a = document.createElement('a');
+                a.href = downloadUrl;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                
+                // Memory Leak မဖြစ်အောင် သန့်ရှင်းရေးလုပ်ခြင်း
+                setTimeout(() => { 
+                    document.body.removeChild(a); 
+                    window.URL.revokeObjectURL(downloadUrl);
+                }, 1000);
             }).catch(function (err) { alert("ePub Error: " + err.message); });
         }
     </script>
-    <footer class="app-footer">
-    <p>Developed with ❤️ by <span class="designer-name">Nanda</span></p>
-</footer>
+    <footer class="app-footer text-center text-xs text-slate-500 mt-8">
+        <p>Developed with ❤️ by <span class="designer-name">Nanda</span></p>
+    </footer>
 </body>
 </html>
