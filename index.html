@@ -5,11 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Web ePub Creator Pro</title>
     
+    <!-- Tailwind CSS & FontAwesome Icons -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
+    <!-- TinyMCE Editor -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tinymce/6.7.0/tinymce.min.js"></script>
     
+    <!-- JSZip -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
     <style>
@@ -19,178 +22,225 @@
         /* 🔥 iPad Layout ပျက်ခြင်းမှ ကာကွယ်ရန် တင်းကျပ်သော Custom Style များ */
         .tox-tinymce { 
             border-radius: 0.5rem !important; 
-            border: 1px solid #334155 !important; 
+            border: 1px solid #cbd5e1 !important; /* Default Light Border */
             width: 100% !important;
             min-height: 350px !important;
             transition: border-color 0.3s;
         }
-        #editor {
-            width: 100% !important;
-            min-height: 350px !important;
-            background-color: #1e293b;
-            color: #f1f5f9;
-            border-radius: 0.5rem;
-            padding: 12px;
+
+        /* ☀️ DEFAULT: NORMAL MODE (LIGHT MODE - လင်းလင်းချင်းချင်းဒီဇိုင်း) */
+        body {
+            background-color: #f8fafc !important; /* Slate 50 */
+            color: #0f172a !important; /* Slate 900 */
+        }
+        .app-card {
+            background-color: #ffffff !important;
+            border-color: #e2e8f0 !important;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+        }
+        .app-card-sub {
+            background-color: #f1f5f9 !important;
+            border-color: #e2e8f0 !important;
+        }
+        .input-box {
+            background-color: #ffffff !important;
+            border-color: #cbd5e1 !important;
+            color: #0f172a !important;
+        }
+        .input-box::placeholder {
+            color: #94a3b8 !important;
+        }
+        .nav-btn {
+            background-color: #ffffff !important;
+            border-color: #cbd5e1 !important;
+            color: #334155 !important;
+        }
+        .nav-btn:hover {
+            background-color: #f1f5f9 !important;
         }
 
-        /* 🌙 Night Mode (Pure Black) Class အမည်းရောင်အတွက် Custom Variables */
+        /* 🌙 NIGHT MODE (PURE BLACK - မူရင်းအတိုင်း ကာကွယ်ထားသော စနစ်) */
         body.night-mode {
-            background-color: #030712 !important;
+            background-color: #030712 !important; /* Pure Black */
+            color: #f1f5f9 !important; /* Slate 100 */
         }
-        body.night-mode .bg-slate-800 {
+        body.night-mode .app-card {
             background-color: #111827 !important;
             border-color: #1f2937 !important;
+            box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.3);
         }
-        body.night-mode .bg-slate-800\/60 {
+        body.night-mode .app-card-sub {
             background-color: rgba(17, 24, 39, 0.6) !important;
             border-color: rgba(31, 41, 55, 0.6) !important;
         }
-        body.night-mode .bg-slate-800\/40 {
-            background-color: rgba(17, 24, 39, 0.4) !important;
-            border-color: rgba(31, 41, 55, 0.4) !important;
-        }
-        body.night-mode input, body.night-mode p, body.night-mode label {
-            transition: background-color 0.3s, border-color 0.3s;
-        }
-        body.night-mode input[type="text"] {
+        body.night-mode .input-box {
             background-color: #030712 !important;
             border-color: #374151 !important;
+            color: #f1f5f9 !important;
+        }
+        body.night-mode .input-box::placeholder {
+            color: #4b5563 !important;
+        }
+        body.night-mode .text-slate-400 {
+            color: #9ca3af !important; /* Dark Mode မှာ စာသားမှိန်လေးတွေ မြင်သာအောင် */
+        }
+        body.night-mode .nav-btn {
+            background-color: #111827 !important;
+            border-color: #1f2937 !important;
+            color: #f1f5f9 !important;
+        }
+        body.night-mode .nav-btn:hover {
+            background-color: #1f2937 !important;
         }
         body.night-mode .tox-tinymce {
             border-color: #374151 !important;
         }
     </style>
 </head>
-<body class="bg-slate-900 text-slate-100 min-h-screen pb-12">
+<body class="min-h-screen pb-12">
 
+    <!-- 🔐 1. SIGN IN / SIGN UP SCREEN -->
     <div id="auth-screen" class="max-w-md mx-auto px-4 pt-24 hidden">
-        <div class="bg-slate-800 rounded-2xl p-6 border border-slate-700/80 shadow-2xl space-y-6">
+        <div class="app-card rounded-2xl p-6 border shadow-2xl space-y-6">
             
+            <!-- Logo / Title -->
             <div class="text-center space-y-2">
-                <div class="inline-flex bg-amber-500/10 p-4 rounded-full text-amber-400 text-3xl mb-1">
+                <div class="inline-flex bg-amber-500/10 p-4 rounded-full text-amber-500 text-3xl mb-1">
                     <i class="fa-solid fa-book-open"></i>
                 </div>
-                <h2 class="text-2xl font-bold text-slate-100">Web ePub Creator Pro</h2>
+                <h2 class="text-2xl font-bold">Web ePub Creator Pro</h2>
                 <p id="lang-auth-subtitle" class="text-sm text-slate-400">ဆက်လက်အသုံးပြုရန် အကောင့်ဝင်ပေးပါ</p>
             </div>
 
-            <div class="flex bg-slate-900 p-1 rounded-xl border border-slate-800">
+            <!-- Tabs (Sign In / Sign Up) -->
+            <div class="flex app-card-sub p-1 rounded-xl border">
                 <button id="tab-login" onclick="switchAuthTab('login')" class="w-full text-sm font-medium py-2.5 rounded-lg bg-amber-500 text-slate-950 transition">Sign In</button>
-                <button id="tab-register" onclick="switchAuthTab('register')" class="w-full text-sm font-medium py-2.5 rounded-lg text-slate-400 hover:text-slate-200 transition">Sign Up</button>
+                <button id="tab-register" onclick="switchAuthTab('register')" class="w-full text-sm font-medium py-2.5 rounded-lg text-slate-400 hover:text-slate-600 transition">Sign Up</button>
             </div>
 
+            <!-- Form -->
             <div class="space-y-4">
                 <div>
                     <label id="lang-auth-email" class="block text-xs font-medium text-slate-400 mb-1.5">အီးမေးလ် (Email Address)</label>
-                    <input type="email" id="auth-email" placeholder="example@email.com" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3.5 py-2.5 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-amber-500 transition shadow-inner">
+                    <input type="email" id="auth-email" placeholder="example@email.com" class="input-box w-full border rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:border-amber-500 transition shadow-inner">
                 </div>
                 <div>
                     <label id="lang-auth-password" class="block text-xs font-medium text-slate-400 mb-1.5">စကားဝှက် (Password)</label>
-                    <input type="password" id="auth-password" placeholder="••••••••" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3.5 py-2.5 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-amber-500 transition shadow-inner">
+                    <input type="password" id="auth-password" placeholder="••••••••" class="input-box w-full border rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:border-amber-500 transition shadow-inner">
                 </div>
                 
-                <button id="auth-submit-btn" onclick="submitAuthForm()" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-3 rounded-lg text-sm transition active:scale-95 shadow-lg shadow-amber-950/20">
+                <button id="auth-submit-btn" onclick="submitAuthForm()" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-3 rounded-lg text-sm transition active:scale-95 shadow-lg">
                     အကောင့်ဝင်မည် (Sign In)
                 </button>
             </div>
             
             <div class="text-center">
-                <span id="lang-premium-badge" class="text-xs text-amber-400/60 font-medium">👑 Premium စနစ်ဖြင့် အသုံးပြုနိုင်ပါပြီ</span>
+                <span id="lang-premium-badge" class="text-xs text-amber-600 font-medium">👑 Premium စနစ်ဖြင့် အသုံးပြုနိုင်ပါပြီ</span>
             </div>
         </div>
     </div>
 
 
+    <!-- 🌐 2. MAIN APP SCREEN -->
     <div id="main-app-screen" class="max-w-xl mx-auto px-4 pt-6 hidden">
         
+        <!-- Hidden Input For Multiple Image Picker -->
         <input type="file" id="hidden-editor-image-picker" accept="image/*" multiple class="hidden" onchange="handleInlineImageUpload(event)">
         
-        <div class="flex flex-col gap-4 mb-6 pb-4 border-b border-slate-800">
+        <!-- 🎯 HEADER SECTION -->
+        <div class="flex flex-col gap-4 mb-6 pb-4 border-b border-slate-200 dark:border-slate-800">
             <div class="flex justify-between items-center">
-                <h1 class="text-2xl font-bold text-amber-400 flex items-center gap-2">
+                <h1 class="text-2xl font-bold text-amber-500 flex items-center gap-2">
                     <i class="fa-solid fa-book-open"></i> Web ePub Creator Pro
                 </h1>
                 
+                <!-- 🌐 Language, 🌙 Night Mode & Sign Out Buttons -->
                 <div class="flex items-center gap-2">
-                    <button onclick="toggleLanguage()" id="lang-btn" class="bg-slate-800 hover:bg-slate-700 text-sky-400 text-xs px-3 py-1.5 rounded-lg border border-slate-700 transition font-medium active:scale-95 flex items-center gap-1">
+                    <button onclick="toggleLanguage()" id="lang-btn" class="nav-btn text-sky-600 text-xs px-3 py-1.5 rounded-lg border transition font-medium active:scale-95 flex items-center gap-1">
                         <i class="fa-solid fa-earth-asia"></i> <span id="lang-btn-text">English</span>
                     </button>
-                    <button onclick="toggleNightMode()" id="night-mode-btn" class="bg-slate-800 hover:bg-slate-700 text-amber-400 text-xs px-3 py-1.5 rounded-lg border border-slate-700 transition font-medium active:scale-95 flex items-center gap-1">
+                    <button onclick="toggleNightMode()" id="night-mode-btn" class="nav-btn text-amber-600 text-xs px-3 py-1.5 rounded-lg border transition font-medium active:scale-95 flex items-center gap-1">
                         <i id="night-mode-icon" class="fa-solid fa-moon"></i> <span id="night-mode-text">Night Mode</span>
                     </button>
-                    <button onclick="handleSignOut()" id="lang-signout-btn" class="bg-slate-800 hover:bg-slate-700 text-rose-400 hover:text-rose-300 text-xs px-3 py-1.5 rounded-lg border border-slate-700 transition font-medium active:scale-95 flex items-center gap-1">
+                    <button onclick="handleSignOut()" id="lang-signout-btn" class="nav-btn text-rose-500 hover:text-rose-600 text-xs px-3 py-1.5 rounded-lg border transition font-medium active:scale-95 flex items-center gap-1">
                         <i class="fa-solid fa-right-from-bracket"></i> <span>ထွက်မည်</span>
                     </button>
                 </div>
             </div>
 
-            <div class="flex justify-between items-center bg-slate-800/40 px-3 py-2 rounded-lg border border-slate-800/60">
-                <span id="user-display-email" class="text-xs text-slate-400 flex items-center gap-1.5">
-                    <i class="fa-solid fa-circle-user text-emerald-400 text-sm"></i> loading...
+            <!-- Account Status / Premium Badge -->
+            <div class="flex justify-between items-center app-card-sub px-3 py-2 rounded-lg border">
+                <span id="user-display-email" class="text-xs text-slate-500 flex items-center gap-1.5">
+                    <i class="fa-solid fa-circle-user text-emerald-500 text-sm"></i> loading...
                 </span>
-                <span class="bg-amber-500/20 text-amber-300 text-xs px-2.5 py-1 rounded-full border border-amber-500/30 font-medium flex items-center gap-1">
+                <span class="bg-amber-500/20 text-amber-700 dark:text-amber-300 text-xs px-2.5 py-1 rounded-full border border-amber-500/30 font-medium flex items-center gap-1">
                     <i class="fa-solid fa-crown text-[10px]"></i> Premium
                 </span>
             </div>
         </div>
 
-        <div class="bg-slate-800 rounded-xl p-4 border border-slate-700/60 shadow-xl mb-6">
+        <!-- 📦 BACKUP & RESET SECTION -->
+        <div class="app-card rounded-xl p-4 border shadow-xl mb-6">
             <h2 id="lang-backup-title" class="text-sm font-semibold text-slate-400 mb-3 flex items-center gap-1.5">
-                <i class="fa-solid fa-database text-amber-400"></i> စာအုပ် BACKUP စီမံခန့်ခွဲမှု
+                <i class="fa-solid fa-database text-amber-500"></i> စာအုပ် BACKUP စီမံခန့်ခွဲမှု
             </h2>
             <div class="grid grid-cols-1 gap-2.5">
-                <button onclick="exportToBackupFile()" id="lang-backup-export" class="w-full bg-slate-700 hover:bg-slate-600 text-slate-200 py-3 px-4 rounded-lg flex items-center justify-center gap-2 font-medium transition active:scale-95 border border-slate-600">
-                    <i class="fa-solid fa-file-export text-emerald-400"></i> လက်ရှိစာအုပ်ကို ဖိုင်သိမ်းဆည်းမည် (Backup)
+                <button onclick="exportToBackupFile()" id="lang-backup-export" class="w-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 py-3 px-4 rounded-lg flex items-center justify-center gap-2 font-medium transition active:scale-95 border border-slate-300 dark:border-slate-600">
+                    <i class="fa-solid fa-file-export text-emerald-500"></i> လက်ရှိစာအုပ်ကို ဖိုင်သိမ်းဆည်းမည် (Backup)
                 </button>
                 
-                <label id="lang-backup-import" class="w-full bg-slate-700 hover:bg-slate-600 text-slate-200 py-3 px-4 rounded-lg flex items-center justify-center gap-2 font-medium transition active:scale-95 border border-slate-600 cursor-pointer text-center">
-                    <i class="fa-solid fa-file-import text-sky-400"></i> <span>စာအုပ်ဖောင်း ပြန်တင်မည် (Load Backup)</span>
+                <label id="lang-backup-import" class="w-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 py-3 px-4 rounded-lg flex items-center justify-center gap-2 font-medium transition active:scale-95 border border-slate-300 dark:border-slate-600 cursor-pointer text-center">
+                    <i class="fa-solid fa-file-import text-sky-500"></i> <span>စာအုပ်ဖောင်း ပြန်တင်မည် (Load Backup)</span>
                     <input type="file" id="backup-upload" accept=".json" onchange="loadFromBackupFile(event)" class="hidden">
                 </label>
                 
-                <button onclick="resetAllData()" id="lang-backup-reset" class="w-full bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 py-3 px-4 rounded-lg flex items-center justify-center gap-2 font-medium transition active:scale-95 border border-rose-800/50">
-                    <i class="fa-solid fa-trash-can text-rose-400"></i> စာအုပ်အသစ်အတွက် အစကပြန်စမည် (Reset)
+                <button onclick="resetAllData()" id="lang-backup-reset" class="w-full bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 text-rose-600 dark:text-rose-300 py-3 px-4 rounded-lg flex items-center justify-center gap-2 font-medium transition active:scale-95 border border-rose-200 dark:border-rose-800/50">
+                    <i class="fa-solid fa-trash-can text-rose-500"></i> စာအုပ်အသစ်အတွက် အစကပြန်စမည် (Reset)
                 </button>
             </div>
         </div>
 
+        <!-- 📝 BOOK META INPUTS -->
         <div class="space-y-4 mb-6">
             <div>
                 <label id="lang-meta-title" class="block text-sm font-medium text-slate-400 mb-1.5">စာအုပ်အမည် (Book Title)</label>
-                <input type="text" id="book-title" oninput="saveCurrentBookState()" placeholder="သူမ... ဖြစ်တည်မှု အပိုင်းအစများ" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3.5 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500 transition shadow-inner">
+                <input type="text" id="book-title" oninput="saveCurrentBookState()" placeholder="သူမ... ဖြစ်တည်မှု အပိုင်းအစများ" class="input-box w-full border rounded-lg px-3.5 py-2.5 focus:outline-none focus:border-amber-500 transition shadow-inner">
             </div>
             <div>
                 <label id="lang-meta-author" class="block text-sm font-medium text-slate-400 mb-1.5">စာရေးဆရာ (Author)</label>
-                <input type="text" id="author" oninput="saveCurrentBookState()" placeholder="သဘောတရား ဆရာလေးတစ်ရွာ" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3.5 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500 transition shadow-inner">
+                <input type="text" id="author" oninput="saveCurrentBookState()" placeholder="သဘောတရား ဆရာလေးတစ်ရွာ" class="input-box w-full border rounded-lg px-3.5 py-2.5 focus:outline-none focus:border-amber-500 transition shadow-inner">
             </div>
             
+            <!-- 🖼️ COVER IMAGE UPLOAD -->
             <div>
                 <label id="lang-meta-cover" class="block text-sm font-medium text-slate-400 mb-1.5">မျက်နှာဖုံးပုံ (Cover Image)</label>
-                <div class="flex items-center gap-3 bg-slate-800 border border-slate-700 rounded-lg p-2">
-                    <label id="lang-cover-btn" class="bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-md cursor-pointer text-sm font-medium border border-slate-600 transition active:scale-95">
+                <div class="flex items-center gap-3 input-box border rounded-lg p-2">
+                    <label id="lang-cover-btn" class="bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 px-4 py-2 rounded-md cursor-pointer text-sm font-medium border border-slate-300 dark:border-slate-600 transition active:scale-95 text-slate-700 dark:text-slate-200">
                         <span>Choose File</span>
                         <input type="file" id="cover-upload" accept="image/*" onchange="handleCoverUpload(event)" class="hidden">
                     </label>
                     <span id="cover-status" class="text-sm text-slate-400 truncate">No file selected</span>
                 </div>
                 <div id="cover-preview-box" class="mt-2 hidden">
-                    <img id="cover-preview" src="" class="w-24 h-auto rounded border border-slate-600 shadow-md">
+                    <img id="cover-preview" src="" class="w-24 h-auto rounded border border-slate-300 dark:border-slate-600 shadow-md">
                 </div>
             </div>
         </div>
 
-        <div class="bg-slate-800/60 border border-slate-700/60 rounded-xl p-4 mb-6">
+        <!-- 📑 CHAPTERS MANAGEMENT -->
+        <div class="app-card-sub border rounded-xl p-4 mb-6">
             <label id="lang-chap-title" class="block text-sm font-medium text-slate-400 mb-3">အခန်းများ (Chapters)</label>
-            <button onclick="addNewChapter()" id="lang-chap-add-btn" class="w-full bg-sky-600 hover:bg-sky-500 text-white py-3 rounded-lg font-medium flex items-center justify-center gap-1.5 transition active:scale-95 mb-3 shadow-lg shadow-sky-950/20">
+            <button onclick="addNewChapter()" id="lang-chap-add-btn" class="w-full bg-sky-600 hover:bg-sky-500 text-white py-3 rounded-lg font-medium flex items-center justify-center gap-1.5 transition active:scale-95 mb-3 shadow-lg">
                 <i class="fa-solid fa-plus"></i> <span>အခန်းတိုးမည် (Add Chapter)</span>
             </button>
             <div id="chapters-list" class="space-y-2 max-h-48 overflow-y-auto pr-1"></div>
         </div>
 
+        <!-- ✍️ EDITOR SECTION -->
         <div id="editor-section" class="space-y-4 hidden">
             <div>
                 <label id="lang-editor-chaptitle" class="block text-sm font-medium text-slate-400 mb-1.5">အခန်းခေါင်းစဉ် (Chapter Title)</label>
-                <input type="text" id="chapter-title" oninput="updateChapterTitle()" placeholder="အခန်းခေါင်းစဉ် ရိုက်ပါ..." class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3.5 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500 transition shadow-inner">
+                <input type="text" id="chapter-title" oninput="updateChapterTitle()" placeholder="အခန်းခေါင်းစဉ် ရိုက်ပါ..." class="input-box w-full border rounded-lg px-3.5 py-2.5 focus:outline-none focus:border-amber-500 transition shadow-inner">
             </div>
             <div class="w-full block min-h-[350px]">
                 <label id="lang-editor-content" class="block text-sm font-medium text-slate-400 mb-1.5">အခန်းတွင်းစာသား (Chapter Content)</label>
@@ -198,8 +248,9 @@
             </div>
         </div>
 
+        <!-- 🚀 DOWNLOAD BUTTON -->
         <div class="mt-6">
-            <button onclick="generateEPUB()" id="lang-download-btn" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-4 rounded-xl flex items-center justify-center gap-2 text-lg shadow-lg shadow-amber-950/30 transition active:scale-98">
+            <button onclick="generateEPUB()" id="lang-download-btn" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-4 rounded-xl flex items-center justify-center gap-2 text-lg shadow-lg transition active:scale-98">
                 <i class="fa-solid fa-download text-xl"></i> <span>ePub ဖိုင် ထုတ်ယူမည်</span>
             </button>
         </div>
@@ -211,13 +262,12 @@
         let currentChapterIndex = 0;
         let coverBase64 = "";
         let authMode = "login";
-        let currentLang = "my"; // Default Language
+        let currentLang = "my"; 
 
         const DB_NAME = 'WebEpubCreatorDB';
         const DB_VERSION = 1;
         const STORE_NAME = 'bookState';
 
-        // ਬਹੁ-ਭਾਸ਼ਾਈ ਸ਼ਬਦਕੋਸ਼ Dictionary
         const languages = {
             my: {
                 authSubtitle: "ဆက်လက်အသုံးပြုရန် အကောင့်ဝင်ပေးပါ",
@@ -291,7 +341,6 @@
             });
         }
 
-        // 🌐 LANGUAGE SWITCHER FUNCTION
         function toggleLanguage() {
             currentLang = (currentLang === "my") ? "en" : "my";
             localStorage.setItem('epub_language', currentLang);
@@ -301,17 +350,16 @@
         function applyLanguage() {
             const l = languages[currentLang];
             
-            // Apply texts
             document.getElementById('lang-btn-text').innerText = (currentLang === "my") ? "English" : "မြန်မာ";
             document.getElementById('lang-auth-subtitle').innerText = l.authSubtitle;
             document.getElementById('lang-auth-email').innerText = l.authEmail;
             document.getElementById('lang-auth-password').innerText = l.authPassword;
             document.getElementById('lang-premium-badge').innerText = l.premiumBadge;
             document.getElementById('lang-signout-btn').querySelector('span').innerText = l.signout;
-            document.getElementById('lang-backup-title').innerHTML = `<i class="fa-solid fa-database text-amber-400"></i> ${l.backupTitle}`;
-            document.getElementById('lang-backup-export').innerHTML = `<i class="fa-solid fa-file-export text-emerald-400"></i> ${l.backupExport}`;
+            document.getElementById('lang-backup-title').innerHTML = `<i class="fa-solid fa-database text-amber-500"></i> ${l.backupTitle}`;
+            document.getElementById('lang-backup-export').innerHTML = `<i class="fa-solid fa-file-export text-emerald-500"></i> ${l.backupExport}`;
             document.getElementById('lang-backup-import').querySelector('span').innerText = l.backupImport;
-            document.getElementById('lang-backup-reset').innerHTML = `<i class="fa-solid fa-trash-can text-rose-400"></i> ${l.backupReset}`;
+            document.getElementById('lang-backup-reset').innerHTML = `<i class="fa-solid fa-trash-can text-rose-500"></i> ${l.backupReset}`;
             document.getElementById('lang-meta-title').innerText = l.metaTitle;
             document.getElementById('lang-meta-author').innerText = l.metaAuthor;
             document.getElementById('lang-meta-cover').innerText = l.metaCover;
@@ -322,7 +370,6 @@
             document.getElementById('lang-editor-content').innerText = l.editorContent;
             document.getElementById('lang-download-btn').innerHTML = `<i class="fa-solid fa-download text-xl"></i> <span>${l.downloadBtn}</span>`;
             
-            // Adjust Auth Submit Button text
             const submitBtn = document.getElementById('auth-submit-btn');
             if (authMode === 'login') {
                 submitBtn.innerText = l.authSignIn;
@@ -330,7 +377,6 @@
                 submitBtn.innerText = l.authSignUp;
             }
 
-            // Adjust Cover Status text
             const statusBox = document.getElementById('cover-status');
             if (coverBase64) {
                 statusBox.innerText = l.coverLoaded;
@@ -341,7 +387,7 @@
             renderChaptersList();
         }
 
-        // 🌙 NIGHT MODE FUNCTION
+        // 🌙 NIGHT MODE / NORMAL MODE SWITCHER
         function toggleNightMode() {
             const body = document.body;
             const icon = document.getElementById('night-mode-icon');
@@ -353,10 +399,12 @@
                 localStorage.setItem('epub_night_mode', 'enabled');
                 icon.className = "fa-solid fa-sun";
                 text.innerText = "Normal Mode";
+                updateTinyMCESkin(true);
             } else {
                 localStorage.setItem('epub_night_mode', 'disabled');
                 icon.className = "fa-solid fa-moon";
                 text.innerText = "Night Mode";
+                updateTinyMCESkin(false);
             }
         }
 
@@ -371,22 +419,37 @@
                     icon.className = "fa-solid fa-sun";
                     text.innerText = "Normal Mode";
                 }
+            } else {
+                document.body.classList.remove('night-mode');
+                if(icon && text) {
+                    icon.className = "fa-solid fa-moon";
+                    text.innerText = "Night Mode";
+                }
+            }
+        }
+
+        function updateTinyMCESkin(isDark) {
+            if (tinymce.activeEditor) {
+                // Editor ကို ဖျက်ပြီး Mode အလိုက် Skin အသစ်နဲ့ ပြန်ပွင့်စေခြင်း
+                tinymce.remove('#editor');
+                initTinyMCE(isDark);
             }
         }
 
         // 🔐 AUTHENTICATION SYSTEM
         function checkUserAuth() {
             const loggedInUser = localStorage.getItem('epub_user_session');
-            
-            // Load language configuration
             const savedLang = localStorage.getItem('epub_language');
             if (savedLang) currentLang = savedLang;
 
             if (loggedInUser) {
                 document.getElementById('auth-screen').classList.add('hidden');
                 document.getElementById('main-app-screen').classList.remove('hidden');
-                document.getElementById('user-display-email').innerHTML = `<i class="fa-solid fa-circle-user text-emerald-400 text-sm"></i> ${loggedInUser}`;
-                initTinyMCE();
+                document.getElementById('user-display-email').innerHTML = `<i class="fa-solid fa-circle-user text-emerald-500 text-sm"></i> ${loggedInUser}`;
+                
+                const nightModeSetting = localStorage.getItem('epub_night_mode');
+                initTinyMCE(nightModeSetting === 'enabled');
+                
                 loadBookDataFromDB();
                 applySavedNightMode();
                 applyLanguage(); 
@@ -405,11 +468,11 @@
 
             if (mode === 'login') {
                 loginTab.className = "w-full text-sm font-medium py-2.5 rounded-lg bg-amber-500 text-slate-950 transition";
-                registerTab.className = "w-full text-sm font-medium py-2.5 rounded-lg text-slate-400 hover:text-slate-200 transition";
+                registerTab.className = "w-full text-sm font-medium py-2.5 rounded-lg text-slate-400 hover:text-slate-600 transition";
                 document.getElementById('auth-submit-btn').innerText = l.authSignIn;
             } else {
                 registerTab.className = "w-full text-sm font-medium py-2.5 rounded-lg bg-amber-500 text-slate-950 transition";
-                loginTab.className = "w-full text-sm font-medium py-2.5 rounded-lg text-slate-400 hover:text-slate-200 transition";
+                loginTab.className = "w-full text-sm font-medium py-2.5 rounded-lg text-slate-400 hover:text-slate-600 transition";
                 document.getElementById('auth-submit-btn').innerText = l.authSignUp;
             }
         }
@@ -443,8 +506,8 @@
             }
         }
 
-        // TinyMCE Init Function
-        function initTinyMCE() {
+        // TinyMCE Init Function with Dynamic Skins
+        function initTinyMCE(isDark) {
             if (tinymce.get('editor')) return;
             
             tinymce.init({
@@ -452,8 +515,8 @@
                 height: 380,
                 width: '100%',
                 menubar: false,
-                skin: 'oxide-dark',
-                content_css: 'dark',
+                skin: isDark ? 'oxide-dark' : 'oxide',
+                content_css: isDark ? 'dark' : 'default',
                 plugins: 'lists link charmap',
                 toolbar: 'bold italic underline | numlist bullist | custom_image link | removeformat',
                 autoresize_bottom_margin: 10,
@@ -495,7 +558,6 @@
             document.getElementById('hidden-editor-image-picker').value = "";
         }
 
-        // App Book Data Load
         async function loadBookDataFromDB() {
             try {
                 const db = await initDB();
@@ -534,7 +596,6 @@
             checkUserAuth();
         });
 
-        // Auto Save
         async function saveCurrentBookState() {
             try {
                 const db = await initDB();
@@ -559,7 +620,6 @@
             }
         }
 
-        // Cover Handler
         function handleCoverUpload(e) {
             const file = e.target.files[0];
             if (!file) return;
@@ -575,17 +635,24 @@
             reader.readAsDataURL(file);
         }
 
-        // Chapters UI rendering
         function renderChaptersList() {
             const listContainer = document.getElementById('chapters-list');
             if(!listContainer) return;
             listContainer.innerHTML = "";
 
             const l = languages[currentLang];
+            const isDark = document.body.classList.contains('night-mode');
 
             bookChapters.forEach((chap, idx) => {
                 const div = document.createElement('div');
-                div.className = `flex justify-between items-center p-2.5 rounded-lg border transition text-sm cursor-pointer ${idx === currentChapterIndex ? 'bg-slate-700 border-sky-500 text-sky-300' : 'bg-slate-800/40 border-slate-700 text-slate-300 hover:bg-slate-700/50'}`;
+                
+                // Color Style Config for Light/Dark Chapter list
+                if (idx === currentChapterIndex) {
+                    div.className = `flex justify-between items-center p-2.5 rounded-lg border transition text-sm cursor-pointer bg-sky-50 dark:bg-slate-700 border-sky-500 text-sky-600 dark:text-sky-300`;
+                } else {
+                    div.className = `flex justify-between items-center p-2.5 rounded-lg border transition text-sm cursor-pointer bg-white dark:bg-slate-800/40 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50`;
+                }
+                
                 div.setAttribute('onclick', `selectChapter(${idx})`);
 
                 const defTitle = currentLang === 'my' ? `အခန်း (${idx+1})` : `${l.untitledChapter} ${idx+1}`;
@@ -593,7 +660,7 @@
                     <span class="truncate font-medium flex items-center gap-2">
                         <i class="fa-solid fa-file-lines opacity-60"></i> ${chap.title || defTitle}
                     </span>
-                    <button onclick="deleteChapter(${idx}, event)" class="text-slate-500 hover:text-rose-400 p-1 transition">
+                    <button onclick="deleteChapter(${idx}, event)" class="text-slate-400 hover:text-rose-500 p-1 transition">
                         <i class="fa-solid fa-trash-can"></i>
                     </button>
                 `;
@@ -656,7 +723,6 @@
             saveCurrentBookState();
         }
 
-        // Reset Data
         async function resetAllData() {
             if (!confirm(languages[currentLang].alertConfirmReset)) return;
             try {
@@ -670,7 +736,6 @@
             }
         }
 
-        // Export Backup JSON
         async function exportToBackupFile() {
             try {
                 await saveCurrentBookState();
@@ -702,7 +767,6 @@
             }
         }
 
-        // Load Backup JSON
         function loadFromBackupFile(e) {
             const file = e.target.files[0];
             if (!file) return;
@@ -723,7 +787,6 @@
             reader.readAsText(file);
         }
 
-        // Base64 to Blob Parser
         function base64ToBlob(base64Str) {
             if (!base64Str || typeof base64Str !== 'string') return null;
             let contentType = "image/jpeg";
@@ -746,7 +809,6 @@
             } catch (e) { return null; }
         }
 
-        // CORE EPUB GENERATOR
         async function generateEPUB() {
             await saveCurrentBookState();
             const title = document.getElementById('book-title').value || "Untitled Book";
@@ -887,7 +949,6 @@
             </ncx>`;
             zip.file("OEBPS/toc.ncx", ncxXml);
 
-            // Downloader
             zip.generateAsync({ type: "blob", mimeType: "application/epub+zip" }).then(function (blob) {
                 const filename = title.replace(/\s+/g, '_') + ".epub";
                 const downloadUrl = window.URL.createObjectURL(blob);
@@ -905,7 +966,7 @@
             }).catch(function (err) { alert("ePub Error: " + err.message); });
         }
     </script>
-    <footer class="app-footer text-center text-xs text-slate-500 mt-8">
+    <footer class="app-footer text-center text-xs text-slate-400 mt-8">
         <p>Developed with ❤️ by <span class="designer-name">Nanda</span></p>
     </footer>
 </body>
