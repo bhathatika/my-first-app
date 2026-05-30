@@ -5,29 +5,67 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Web ePub Creator Pro</title>
     
-    <!-- Tailwind CSS & FontAwesome Icons -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- TinyMCE Editor -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tinymce/6.7.0/tinymce.min.js"></script>
     
-    <!-- JSZip -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Padauk:wght@400;700&display=swap');
-        body { font-family: 'Padauk', sans-serif; }
-        .tox-tinymce { border-radius: 0.5rem !important; border: 1px solid #334155 !important; }
+        body { font-family: 'Padauk', sans-serif; transition: background-color 0.3s, color 0.3s; }
+        
+        /* 🔥 iPad Layout ပျက်ခြင်းမှ ကာကွယ်ရန် တင်းကျပ်သော Custom Style များ */
+        .tox-tinymce { 
+            border-radius: 0.5rem !important; 
+            border: 1px solid #334155 !important; 
+            width: 100% !important;
+            min-height: 350px !important;
+            transition: border-color 0.3s;
+        }
+        #editor {
+            width: 100% !important;
+            min-height: 350px !important;
+            background-color: #1e293b;
+            color: #f1f5f9;
+            border-radius: 0.5rem;
+            padding: 12px;
+        }
+
+        /* 🌙 Night Mode (Pure Black) Class အမည်းရောင်အတွက် Custom Variables */
+        body.night-mode {
+            background-color: #030712 !important; /* Pure Black-ish Gray */
+        }
+        body.night-mode .bg-slate-800 {
+            background-color: #111827 !important;
+            border-color: #1f2937 !important;
+        }
+        body.night-mode .bg-slate-800\/60 {
+            background-color: rgba(17, 24, 39, 0.6) !important;
+            border-color: rgba(31, 41, 55, 0.6) !important;
+        }
+        body.night-mode .bg-slate-800\/40 {
+            background-color: rgba(17, 24, 39, 0.4) !important;
+            border-color: rgba(31, 41, 55, 0.4) !important;
+        }
+        body.night-mode input, body.night-mode p, body.night-mode label {
+            transition: background-color 0.3s, border-color 0.3s;
+        }
+        body.night-mode input[type="text"] {
+            background-color: #030712 !important;
+            border-color: #374151 !important;
+        }
+        body.night-mode .tox-tinymce {
+            border-color: #374151 !important;
+        }
     </style>
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen pb-12">
 
-    <!-- 🔐 1. SIGN IN / SIGN UP SCREEN -->
     <div id="auth-screen" class="max-w-md mx-auto px-4 pt-24 hidden">
         <div class="bg-slate-800 rounded-2xl p-6 border border-slate-700/80 shadow-2xl space-y-6">
             
-            <!-- Logo / Title -->
             <div class="text-center space-y-2">
                 <div class="inline-flex bg-amber-500/10 p-4 rounded-full text-amber-400 text-3xl mb-1">
                     <i class="fa-solid fa-book-open"></i>
@@ -36,13 +74,11 @@
                 <p class="text-sm text-slate-400">ဆက်လက်အသုံးပြုရန် အကောင့်ဝင်ပေးပါ</p>
             </div>
 
-            <!-- Tabs (Sign In / Sign Up) -->
             <div class="flex bg-slate-900 p-1 rounded-xl border border-slate-800">
                 <button id="tab-login" onclick="switchAuthTab('login')" class="w-full text-sm font-medium py-2.5 rounded-lg bg-amber-500 text-slate-950 transition">Sign In</button>
                 <button id="tab-register" onclick="switchAuthTab('register')" class="w-full text-sm font-medium py-2.5 rounded-lg text-slate-400 hover:text-slate-200 transition">Sign Up</button>
             </div>
 
-            <!-- Form -->
             <div class="space-y-4">
                 <div>
                     <label class="block text-xs font-medium text-slate-400 mb-1.5">အီးမေးလ် (Email Address)</label>
@@ -65,26 +101,26 @@
     </div>
 
 
-    <!-- 🌐 2. MAIN APP SCREEN -->
     <div id="main-app-screen" class="max-w-xl mx-auto px-4 pt-6 hidden">
         
-        <!-- Hidden Input For Multiple Image Picker -->
         <input type="file" id="hidden-editor-image-picker" accept="image/*" multiple class="hidden" onchange="handleInlineImageUpload(event)">
         
-        <!-- 🎯 HEADER SECTION -->
         <div class="flex flex-col gap-4 mb-6 pb-4 border-b border-slate-800">
             <div class="flex justify-between items-center">
                 <h1 class="text-2xl font-bold text-amber-400 flex items-center gap-2">
                     <i class="fa-solid fa-book-open"></i> Web ePub Creator Pro
                 </h1>
                 
-                <!-- Sign Out Button -->
-                <button onclick="handleSignOut()" class="bg-slate-800 hover:bg-slate-700 text-rose-400 hover:text-rose-300 text-xs px-3 py-1.5 rounded-lg border border-slate-700 transition font-medium active:scale-95 flex items-center gap-1">
-                    <i class="fa-solid fa-right-from-bracket"></i> ထွက်မည်
-                </button>
+                <div class="flex items-center gap-2">
+                    <button onclick="toggleNightMode()" id="night-mode-btn" class="bg-slate-800 hover:bg-slate-700 text-amber-400 text-xs px-3 py-1.5 rounded-lg border border-slate-700 transition font-medium active:scale-95 flex items-center gap-1">
+                        <i id="night-mode-icon" class="fa-solid fa-moon"></i> <span id="night-mode-text">Night Mode</span>
+                    </button>
+                    <button onclick="handleSignOut()" class="bg-slate-800 hover:bg-slate-700 text-rose-400 hover:text-rose-300 text-xs px-3 py-1.5 rounded-lg border border-slate-700 transition font-medium active:scale-95 flex items-center gap-1">
+                        <i class="fa-solid fa-right-from-bracket"></i> ထွက်မည်
+                    </button>
+                </div>
             </div>
 
-            <!-- Account Status / Premium Badge -->
             <div class="flex justify-between items-center bg-slate-800/40 px-3 py-2 rounded-lg border border-slate-800/60">
                 <span id="user-display-email" class="text-xs text-slate-400 flex items-center gap-1.5">
                     <i class="fa-solid fa-circle-user text-emerald-400 text-sm"></i> loading...
@@ -95,7 +131,6 @@
             </div>
         </div>
 
-        <!-- 📦 BACKUP & RESET SECTION -->
         <div class="bg-slate-800 rounded-xl p-4 border border-slate-700/60 shadow-xl mb-6">
             <h2 class="text-sm font-semibold text-slate-400 mb-3 flex items-center gap-1.5">
                 <i class="fa-solid fa-database text-amber-400"></i> စာအုပ် BACKUP စီမံခန့်ခွဲမှု
@@ -116,7 +151,6 @@
             </div>
         </div>
 
-        <!-- 📝 BOOK META INPUTS -->
         <div class="space-y-4 mb-6">
             <div>
                 <label class="block text-sm font-medium text-slate-400 mb-1.5">စာအုပ်အမည် (Book Title)</label>
@@ -127,7 +161,6 @@
                 <input type="text" id="author" oninput="saveCurrentBookState()" placeholder="သဘောတရား ဆရာလေးတစ်ရွာ" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3.5 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500 transition shadow-inner">
             </div>
             
-            <!-- 🖼️ COVER IMAGE UPLOAD -->
             <div>
                 <label class="block text-sm font-medium text-slate-400 mb-1.5">မျက်နှာဖုံးပုံ (Cover Image)</label>
                 <div class="flex items-center gap-3 bg-slate-800 border border-slate-700 rounded-lg p-2">
@@ -143,7 +176,6 @@
             </div>
         </div>
 
-        <!-- 📑 CHAPTERS MANAGEMENT -->
         <div class="bg-slate-800/60 border border-slate-700/60 rounded-xl p-4 mb-6">
             <label class="block text-sm font-medium text-slate-400 mb-3">အခန်းများ (Chapters)</label>
             <button onclick="addNewChapter()" class="w-full bg-sky-600 hover:bg-sky-500 text-white py-3 rounded-lg font-medium flex items-center justify-center gap-1.5 transition active:scale-95 mb-3 shadow-lg shadow-sky-950/20">
@@ -152,19 +184,17 @@
             <div id="chapters-list" class="space-y-2 max-h-48 overflow-y-auto pr-1"></div>
         </div>
 
-        <!-- ✍️ EDITOR SECTION -->
         <div id="editor-section" class="space-y-4 hidden">
             <div>
                 <label class="block text-sm font-medium text-slate-400 mb-1.5">အခန်းခေါင်းစဉ် (Chapter Title)</label>
                 <input type="text" id="chapter-title" oninput="updateChapterTitle()" placeholder="အခန်းခေါင်းစဉ် ရိုက်ပါ..." class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3.5 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500 transition shadow-inner">
             </div>
-            <div>
+            <div class="w-full block min-h-[350px]">
                 <label class="block text-sm font-medium text-slate-400 mb-1.5">အခန်းတွင်းစာသား (Chapter Content)</label>
-                <textarea id="editor"></textarea>
+                <textarea id="editor" class="w-full"></textarea>
             </div>
         </div>
 
-        <!-- 🚀 DOWNLOAD BUTTON -->
         <div class="mt-6">
             <button onclick="generateEPUB()" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-4 rounded-xl flex items-center justify-center gap-2 text-lg shadow-lg shadow-amber-950/30 transition active:scale-98">
                 <i class="fa-solid fa-download text-xl"></i> ePub ဖိုင် ထုတ်ယူမည်
@@ -197,6 +227,39 @@
             });
         }
 
+        // 🌙 NIGHT MODE FUNCTION
+        function toggleNightMode() {
+            const body = document.body;
+            const icon = document.getElementById('night-mode-icon');
+            const text = document.getElementById('night-mode-text');
+            
+            body.classList.toggle('night-mode');
+            
+            if (body.classList.contains('night-mode')) {
+                localStorage.setItem('epub_night_mode', 'enabled');
+                icon.className = "fa-solid fa-sun";
+                text.innerText = "Normal Mode";
+            } else {
+                localStorage.setItem('epub_night_mode', 'disabled');
+                icon.className = "fa-solid fa-moon";
+                text.innerText = "Night Mode";
+            }
+        }
+
+        function applySavedNightMode() {
+            const nightModeSetting = localStorage.getItem('epub_night_mode');
+            const icon = document.getElementById('night-mode-icon');
+            const text = document.getElementById('night-mode-text');
+            
+            if (nightModeSetting === 'enabled') {
+                document.body.classList.add('night-mode');
+                if(icon && text) {
+                    icon.className = "fa-solid fa-sun";
+                    text.innerText = "Normal Mode";
+                }
+            }
+        }
+
         // 🔐 AUTHENTICATION SYSTEM
         function checkUserAuth() {
             const loggedInUser = localStorage.getItem('epub_user_session');
@@ -206,6 +269,7 @@
                 document.getElementById('user-display-email').innerHTML = `<i class="fa-solid fa-circle-user text-emerald-400 text-sm"></i> ${loggedInUser}`;
                 initTinyMCE();
                 loadBookDataFromDB();
+                applySavedNightMode(); // Night Mode အခြေအနေ ပြန်စစ်ခြင်း
             } else {
                 document.getElementById('main-app-screen').classList.add('hidden');
                 document.getElementById('auth-screen').classList.remove('hidden');
@@ -263,12 +327,14 @@
             
             tinymce.init({
                 selector: '#editor',
-                height: 350,
+                height: 380,
+                width: '100%',
                 menubar: false,
                 skin: 'oxide-dark',
                 content_css: 'dark',
                 plugins: 'lists link charmap',
                 toolbar: 'bold italic underline | numlist bullist | custom_image link | removeformat',
+                autoresize_bottom_margin: 10,
                 
                 setup: function(editor) {
                     editor.ui.registry.addButton('custom_image', {
@@ -557,7 +623,7 @@
             } catch (e) { return null; }
         }
 
-        // 🚀 CORE EPUB GENERATOR (Chrome, Firefox & Safari Compatible)
+        // CORE EPUB GENERATOR
         async function generateEPUB() {
             await saveCurrentBookState();
             const title = document.getElementById('book-title').value || "Untitled Book";
@@ -698,11 +764,9 @@
             </ncx>`;
             zip.file("OEBPS/toc.ncx", ncxXml);
 
-            // 🔥 အဓိက ပြင်ဆင်ထားသည့် Chrome/Firefox Downloader စနစ်ကြီး
+            // Downloader စနစ်
             zip.generateAsync({ type: "blob", mimeType: "application/epub+zip" }).then(function (blob) {
                 const filename = title.replace(/\s+/g, '_') + ".epub";
-                
-                // Base64 အစား သန့်ရှင်းမြန်ဆန်ပြီး Secure ဖြစ်တဲ့ Object URL ကို ပြောင်းသုံးလိုက်ပါတယ်
                 const downloadUrl = window.URL.createObjectURL(blob);
                 
                 const a = document.createElement('a');
@@ -711,7 +775,6 @@
                 document.body.appendChild(a);
                 a.click();
                 
-                // Memory Leak မဖြစ်အောင် သန့်ရှင်းရေးလုပ်ခြင်း
                 setTimeout(() => { 
                     document.body.removeChild(a); 
                     window.URL.revokeObjectURL(downloadUrl);
