@@ -5,10 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Web ePub Creator Pro</title>
     
+    <!-- Tailwind CSS & FontAwesome Icons -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <script src="https://cdn.tiny.cloud/1/i3ieo82b06v40p3icj09du349gffyt4mu1j/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+    <!-- TinyMCE Editor (Open-Source Public CDN - No API Key Required) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tinymce/6.8.3/tinymce.min.js" referrerpolicy="origin"></script>
+    <!-- JSZip -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
     <style>
@@ -73,9 +76,11 @@
         }
     </style>
 </head>
-<body class="min-h-screen pb-12 always-dark-auth" id="body-ctx"> <div id="auth-screen" class="max-w-md mx-auto px-4 pt-24 hidden">
+<body class="min-h-screen pb-12 always-dark-auth" id="body-ctx">
+
+    <!-- 🔐 1. SIGN IN / SIGN UP SCREEN -->
+    <div id="auth-screen" class="max-w-md mx-auto px-4 pt-24 hidden">
         <div class="auth-card rounded-2xl p-6 shadow-2xl space-y-6">
-            
             <div class="text-center space-y-2">
                 <div class="inline-flex bg-amber-500/10 p-4 rounded-full text-amber-500 text-3xl mb-1">
                     <i class="fa-solid fa-book-open"></i>
@@ -83,12 +88,10 @@
                 <h2 class="text-2xl font-bold text-slate-100">Web ePub Creator Pro</h2>
                 <p id="lang-auth-subtitle" class="text-sm text-slate-400">ဆက်လက်အသုံးပြုရန် အကောင့်ဝင်ပေးပါ</p>
             </div>
-
             <div class="flex auth-tab-bg p-1 rounded-xl">
                 <button id="tab-login" onclick="switchAuthTab('login')" class="w-full text-sm font-medium py-2.5 rounded-lg bg-amber-500 text-slate-950 transition">Sign In</button>
                 <button id="tab-register" onclick="switchAuthTab('register')" class="w-full text-sm font-medium py-2.5 rounded-lg text-slate-400 hover:text-slate-200 transition">Sign Up</button>
             </div>
-
             <div class="space-y-4">
                 <div>
                     <label id="lang-auth-email" class="block text-xs font-medium text-slate-400 mb-1.5">အီးမေးလ် (Email Address)</label>
@@ -98,21 +101,18 @@
                     <label id="lang-auth-password" class="block text-xs font-medium text-slate-400 mb-1.5">စကားဝှက် (Password)</label>
                     <input type="password" id="auth-password" placeholder="••••••••" class="auth-input w-full rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:border-amber-500 transition shadow-inner">
                 </div>
-                
                 <button id="auth-submit-btn" onclick="submitAuthForm()" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-3 rounded-lg text-sm transition active:scale-95 shadow-lg">
                     အကောင့်ဝင်မည် (Sign In)
                 </button>
             </div>
-            
             <div class="text-center">
                 <span id="lang-premium-badge" class="text-xs text-amber-400 font-medium">👑 Premium စနစ်ဖြင့် အသုံးပြုနိုင်ပါပြီ</span>
             </div>
         </div>
     </div>
 
-
+    <!-- 🌐 2. MAIN APP SCREEN -->
     <div id="main-app-screen" class="max-w-xl mx-auto px-4 pt-6 hidden">
-        
         <input type="file" id="hidden-editor-image-picker" accept="image/*" multiple class="hidden" onchange="handleInlineImageUpload(event)">
         
         <div class="flex flex-col gap-4 mb-6 pb-4 border-b border-slate-200 dark:border-slate-800">
@@ -120,7 +120,6 @@
                 <h1 class="text-2xl font-bold text-amber-500 flex items-center gap-2">
                     <i class="fa-solid fa-book-open"></i> Web ePub Creator Pro
                 </h1>
-                
                 <div class="flex items-center gap-2">
                     <button onclick="toggleLanguage()" id="lang-btn" class="nav-btn text-sky-600 text-xs px-3 py-1.5 rounded-lg border transition font-medium active:scale-95 flex items-center gap-1">
                         <i class="fa-solid fa-earth-asia"></i> <span id="lang-btn-text">English</span>
@@ -133,7 +132,6 @@
                     </button>
                 </div>
             </div>
-
             <div class="flex justify-between items-center app-card-sub px-3 py-2 rounded-lg border">
                 <span id="user-display-email" class="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
                     <i class="fa-solid fa-circle-user text-emerald-500 text-sm"></i> loading...
@@ -144,6 +142,7 @@
             </div>
         </div>
 
+        <!-- BACKUP SECTION -->
         <div class="app-card rounded-xl p-4 border shadow-xl mb-6">
             <h2 id="lang-backup-title" class="text-sm font-semibold text-slate-400 mb-3 flex items-center gap-1.5">
                 <i class="fa-solid fa-database text-amber-500"></i> စာအုပ် BACKUP စီမံခန့်ခွဲမှု
@@ -152,18 +151,17 @@
                 <button onclick="exportToBackupFile()" id="lang-backup-export" class="w-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 py-3 px-4 rounded-lg flex items-center justify-center gap-2 font-medium transition active:scale-95 border border-slate-300 dark:border-slate-600">
                     <i class="fa-solid fa-file-export text-emerald-500"></i> လက်ရှိစာအုပ်ကို ဖိုင်သိမ်းဆည်းမည် (Backup)
                 </button>
-                
                 <label id="lang-backup-import" class="w-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 py-3 px-4 rounded-lg flex items-center justify-center gap-2 font-medium transition active:scale-95 border border-slate-300 dark:border-slate-600 cursor-pointer text-center">
                     <i class="fa-solid fa-file-import text-sky-500"></i> <span>စာအုပ်ဖောင်း ပြန်တင်မည် (Load Backup)</span>
                     <input type="file" id="backup-upload" accept=".json" onchange="loadFromBackupFile(event)" class="hidden">
                 </label>
-                
                 <button onclick="resetAllData()" id="lang-backup-reset" class="w-full bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 text-rose-600 dark:text-rose-300 py-3 px-4 rounded-lg flex items-center justify-center gap-2 font-medium transition active:scale-95 border border-rose-200 dark:border-rose-800/50">
                     <i class="fa-solid fa-trash-can text-rose-500"></i> စာအုပ်အသစ်အတွက် အစကပြန်စမည် (Reset)
                 </button>
             </div>
         </div>
 
+        <!-- BOOK META INPUTS -->
         <div class="space-y-4 mb-6">
             <div>
                 <label id="lang-meta-title" class="block text-sm font-medium text-slate-400 mb-1.5">စာအုပ်အမည် (Book Title)</label>
@@ -173,7 +171,6 @@
                 <label id="lang-meta-author" class="block text-sm font-medium text-slate-400 mb-1.5">စာရေးဆရာ (Author)</label>
                 <input type="text" id="author" oninput="saveCurrentBookState()" placeholder="သဘောတရား ဆရာလေးတစ်ရွာ" class="input-box w-full border rounded-lg px-3.5 py-2.5 focus:outline-none focus:border-amber-500 transition shadow-inner">
             </div>
-            
             <div>
                 <label id="lang-meta-cover" class="block text-sm font-medium text-slate-400 mb-1.5">မျက်နှာဖုံးပုံ (Cover Image)</label>
                 <div class="flex items-center gap-3 input-box border rounded-lg p-2">
@@ -189,6 +186,7 @@
             </div>
         </div>
 
+        <!-- CHAPTERS MANAGEMENT -->
         <div class="app-card-sub border rounded-xl p-4 mb-6">
             <label id="lang-chap-title" class="block text-sm font-medium text-slate-400 mb-3">အခန်းများ (Chapters)</label>
             <button onclick="addNewChapter()" id="lang-chap-add-btn" class="w-full bg-sky-600 hover:bg-sky-500 text-white py-3 rounded-lg font-medium flex items-center justify-center gap-1.5 transition active:scale-95 mb-3 shadow-lg">
@@ -197,6 +195,7 @@
             <div id="chapters-list" class="space-y-2 max-h-48 overflow-y-auto pr-1"></div>
         </div>
 
+        <!-- EDITOR SECTION -->
         <div id="editor-section" class="space-y-4 hidden">
             <div>
                 <label id="lang-editor-chaptitle" class="block text-sm font-medium text-slate-400 mb-1.5">အခန်းခေါင်းစဉ် (Chapter Title)</label>
@@ -208,12 +207,12 @@
             </div>
         </div>
 
+        <!-- DOWNLOAD BUTTON -->
         <div class="mt-6">
             <button onclick="generateEPUB()" id="lang-download-btn" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-4 rounded-xl flex items-center justify-center gap-2 text-lg shadow-lg transition active:scale-98">
                 <i class="fa-solid fa-download text-xl"></i> <span>ePub ဖိုင် ထုတ်ယူမည်</span>
             </button>
         </div>
-
     </div>
 
     <script>
@@ -346,7 +345,6 @@
             renderChaptersList();
         }
 
-        // 🌙 NIGHT MODE / NORMAL MODE SWITCHER
         function toggleNightMode() {
             const body = document.body;
             const icon = document.getElementById('night-mode-icon');
@@ -394,16 +392,13 @@
             }
         }
 
-        // 🔐 AUTHENTICATION SYSTEM
         function checkUserAuth() {
             const loggedInUser = localStorage.getItem('epub_user_session');
             const savedLang = localStorage.getItem('epub_language');
             if (savedLang) currentLang = savedLang;
 
             if (loggedInUser) {
-                // အကောင့်ဝင်ပြီးပါက Context Dynamic ပြောင်းနိုင်ရန် class ဖယ်ရှားခြင်း
                 document.getElementById('body-ctx').classList.remove('always-dark-auth');
-                
                 document.getElementById('auth-screen').classList.add('hidden');
                 document.getElementById('main-app-screen').classList.remove('hidden');
                 document.getElementById('user-display-email').innerHTML = `<i class="fa-solid fa-circle-user text-emerald-500 text-sm"></i> ${loggedInUser}`;
@@ -415,7 +410,6 @@
                 applySavedNightMode();
                 applyLanguage(); 
             } else {
-                // အကောင့်မဝင်ရသေးပါက အမြဲတမ်း Night Mode သတ်မှတ်ခြင်း
                 document.getElementById('body-ctx').classList.add('always-dark-auth');
                 document.getElementById('main-app-screen').classList.add('hidden');
                 document.getElementById('auth-screen').classList.remove('hidden');
@@ -482,8 +476,8 @@
                 plugins: 'lists link charmap',
                 toolbar: 'bold italic underline | numlist bullist | custom_image link | removeformat',
                 autoresize_bottom_margin: 10,
-                promotion: false,  // Premium Promo Link များ ဖျောက်ထားရန်
-                branding: false,   // အောက်ခြေက TinyMCE Logo Warning ဖျောက်ရန်
+                promotion: false,  // Premium Badge ကြော်ငြာများ ပိတ်ရန်
+                branding: false,   // အောက်ခြေက tiny စာသား ပိတ်ရန်
                 
                 setup: function(editor) {
                     editor.ui.registry.addButton('custom_image', {
